@@ -5,9 +5,22 @@ create table if not exists public.profiles (
   full_name text not null,
   email text not null,
   role text not null check (role in ('admin', 'coach_principal', 'coach', 'parent')),
+  team_id uuid,
+  profile_status text not null default 'actif' check (profile_status in ('actif', 'en_attente')),
   parent_player_id uuid,
   created_at timestamptz not null default now()
 );
+
+create table if not exists public.teams (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  code text not null unique,
+  created_by uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+
+alter table public.profiles
+  add constraint profiles_team_id_fkey foreign key (team_id) references public.teams(id) on delete set null;
 
 create table if not exists public.tournees (
   id uuid primary key default gen_random_uuid(),
@@ -23,6 +36,7 @@ create table if not exists public.tournees (
 create table if not exists public.players (
   id uuid primary key default gen_random_uuid(),
   tournee_id uuid not null references public.tournees(id) on delete cascade,
+  code text not null unique default upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 5)),
   full_name text not null,
   birth_year integer,
   ranking text,
@@ -98,6 +112,9 @@ create table if not exists public.notifications (
 );
 
 create index if not exists players_tournee_id_idx on public.players(tournee_id);
+create index if not exists players_code_idx on public.players(code);
+create index if not exists profiles_team_id_idx on public.profiles(team_id);
+create index if not exists teams_code_idx on public.teams(code);
 create index if not exists events_tournee_day_idx on public.events(tournee_id, day_date, start_time);
 create index if not exists event_players_player_idx on public.event_players(player_id);
 create index if not exists notifications_profile_idx on public.notifications(profile_id, created_at desc);
@@ -195,12 +212,13 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.profiles (id, full_name, email, role)
+  insert into public.profiles (id, full_name, email, role, profile_status)
   values (
     new.id,
     coalesce(new.raw_user_meta_data ->> 'full_name', split_part(new.email, '@', 1)),
     new.email,
-    coalesce(new.raw_user_meta_data ->> 'role', 'parent')
+    coalesce(new.raw_user_meta_data ->> 'role', 'coach'),
+    'actif'
   )
   on conflict (id) do nothing;
   return new;
@@ -214,6 +232,7 @@ create trigger on_auth_user_created
 
 alter table public.profiles enable row level security;
 alter table public.tournees enable row level security;
+alter table public.teams enable row level security;
 alter table public.players enable row level security;
 alter table public.tournee_coaches enable row level security;
 alter table public.events enable row level security;
@@ -229,6 +248,14 @@ create policy "profiles_admin_all" on public.profiles
 create policy "profiles_update_self_limited" on public.profiles
   for update using (id = auth.uid()) with check (id = auth.uid());
 
+create policy "teams_select_authenticated" on public.teams
+  for select using (auth.uid() is not null);
+create policy "teams_insert_authenticated" on public.teams
+  for insert with check (auth.uid() = created_by);
+create policy "teams_update_owner_or_admin" on public.teams
+  for update using (created_by = auth.uid() or public.is_admin())
+  with check (created_by = auth.uid() or public.is_admin());
+
 create policy "tournees_select_staff_or_parent_active" on public.tournees
   for select using (
     public.is_staff()
@@ -242,6 +269,7 @@ create policy "players_select_scoped" on public.players
     public.is_tournee_coach(tournee_id)
     or id = public.parent_player_id()
     or parent_profile_id = auth.uid()
+    or code is not null
   );
 create policy "players_manage_admin_principal" on public.players
   for all using (public.can_manage_tournee(tournee_id)) with check (public.can_manage_tournee(tournee_id));

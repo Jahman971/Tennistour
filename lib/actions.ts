@@ -4,6 +4,21 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createServerClient } from "@/lib/supabase/server";
 
+const AUTH_DOMAIN = "@tennistour.local";
+
+function loginToEmail(login: FormDataEntryValue | null) {
+  const clean = String(login ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]/g, "");
+  return `${clean}${AUTH_DOMAIN}`;
+}
+
+function generateCode(length = 5) {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  return Array.from({ length }, () => alphabet[Math.floor(Math.random() * alphabet.length)]).join("");
+}
+
 async function currentUserId() {
   const supabase = await createServerClient();
   const {
@@ -20,7 +35,7 @@ async function currentUserId() {
 
 export async function signIn(formData: FormData) {
   const supabase = await createServerClient();
-  const email = String(formData.get("email") ?? "");
+  const email = loginToEmail(formData.get("login"));
   const password = String(formData.get("password") ?? "");
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
@@ -31,10 +46,92 @@ export async function signIn(formData: FormData) {
   redirect("/dashboard");
 }
 
+export async function signUpCoach(formData: FormData) {
+  const supabase = await createServerClient();
+  const fullName = String(formData.get("full_name") ?? "").trim();
+  const email = loginToEmail(formData.get("login"));
+  const password = String(formData.get("password") ?? "");
+
+  const { error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        full_name: fullName,
+        role: "coach"
+      }
+    }
+  });
+
+  if (error) {
+    redirect(`/auth/login?mode=signup&error=${encodeURIComponent(error.message)}`);
+  }
+
+  redirect("/team");
+}
+
 export async function signOut() {
   const supabase = await createServerClient();
   await supabase.auth.signOut();
-  redirect("/auth/login");
+  redirect("/");
+}
+
+export async function createTeam(formData: FormData) {
+  const { supabase, userId } = await currentUserId();
+  const code = generateCode();
+  const { data: team, error } = await (supabase.from("teams") as any)
+    .insert({
+      name: String(formData.get("name") ?? "").trim(),
+      code,
+      created_by: userId
+    })
+    .select("id")
+    .single();
+
+  if (error || !team) {
+    redirect(`/team?error=${encodeURIComponent(error?.message ?? "Impossible de créer l'équipe.")}`);
+  }
+
+  await (supabase.from("profiles") as any)
+    .update({ team_id: team.id, profile_status: "actif", role: "coach_principal" })
+    .eq("id", userId);
+
+  revalidatePath("/dashboard");
+  redirect("/dashboard");
+}
+
+export async function joinTeam(formData: FormData) {
+  const { supabase, userId } = await currentUserId();
+  const code = String(formData.get("code") ?? "").trim().toUpperCase();
+  const { data: team } = await supabase.from("teams").select("id").eq("code", code).maybeSingle<{ id: string }>();
+
+  if (!team) {
+    redirect("/team?error=Code d'invitation introuvable.");
+  }
+
+  await (supabase.from("profiles") as any)
+    .update({ team_id: team.id, profile_status: "en_attente", role: "coach" })
+    .eq("id", userId);
+
+  redirect("/waiting");
+}
+
+export async function validateCoach(formData: FormData) {
+  const { supabase } = await currentUserId();
+  await (supabase.from("profiles") as any)
+    .update({ profile_status: "actif" })
+    .eq("id", String(formData.get("profile_id")));
+
+  revalidatePath("/dashboard");
+}
+
+export async function openPlayerCode(formData: FormData) {
+  const code = String(formData.get("code") ?? "").trim().toUpperCase();
+  if (!code) {
+    redirect("/");
+  }
+
+  redirect(`/j/${code}`);
 }
 
 export async function createTraining(formData: FormData) {

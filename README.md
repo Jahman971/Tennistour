@@ -41,8 +41,9 @@ supabase db push
 La migration crée :
 
 - `profiles`
+- `teams`
 - `tournees`
-- `players`
+- `players` avec un `code` public de suivi
 - `tournee_coaches`
 - `events` avec `start_time` et `end_time` pour chaque créneau
 - `event_players`
@@ -59,18 +60,23 @@ Les policies RLS limitent les accès :
 
 ## Connexion
 
-L'application n'embarque aucun compte de démonstration.
+L'application ne demande pas de créer les coachs manuellement dans Supabase.
 
-Pour se connecter :
+Accès joueur / parent :
 
-1. Créer un utilisateur dans Supabase : `Authentication` puis `Users`.
-2. Renseigner son email et son mot de passe.
-3. Dans la table `profiles`, vérifier que la ligne a été créée automatiquement.
-4. Attribuer le bon rôle dans `profiles.role` : `admin`, `coach_principal`, `coach` ou `parent`.
-5. Pour un parent, renseigner `profiles.parent_player_id` avec l'identifiant du joueur concerné.
-6. Ouvrir `/auth/login` et se connecter avec l'email et le mot de passe.
+1. Ouvrir `/`.
+2. Entrer le code joueur transmis par le coach.
+3. Le planning et les résultats du joueur s'affichent sans compte utilisateur.
 
-Pour créer le premier administrateur, créez l'utilisateur dans Supabase Auth puis mettez `profiles.role` à `admin`.
+Accès coach :
+
+1. Ouvrir `/auth/login`.
+2. Se connecter avec un identifiant simple, par exemple `jimmy`, et un mot de passe.
+3. Pour créer un compte coach, utiliser l'onglet `Inscription`.
+4. Après inscription, créer son équipe ou rejoindre une équipe avec le code d'invitation.
+5. Un coach qui rejoint une équipe reste en attente jusqu'à validation par le coach principal.
+
+Le coach principal voit le code d'invitation de son équipe dans le dashboard et valide les coachs adjoints depuis le même écran.
 
 ## Déploiement Vercel
 

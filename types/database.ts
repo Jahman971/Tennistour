@@ -1,4 +1,5 @@
 export type UserRole = "admin" | "coach_principal" | "coach" | "parent";
+export type ProfileStatus = "actif" | "en_attente";
 export type EventType = "match" | "training";
 export type EventStatus = "draft" | "scheduled" | "completed" | "cancelled";
 export type TourneeStatus = "draft" | "active" | "archived";
@@ -13,6 +14,8 @@ export type Database = {
           full_name: string;
           email: string;
           role: UserRole;
+          team_id: string | null;
+          profile_status: ProfileStatus;
           parent_player_id: string | null;
           created_at: string;
         };
@@ -21,6 +24,8 @@ export type Database = {
           full_name: string;
           email: string;
           role: UserRole;
+          team_id?: string | null;
+          profile_status?: ProfileStatus;
           parent_player_id?: string | null;
           created_at?: string;
         };
@@ -49,10 +54,29 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["tournees"]["Insert"]>;
         Relationships: [];
       };
+      teams: {
+        Row: {
+          id: string;
+          name: string;
+          code: string;
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          code: string;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["teams"]["Insert"]>;
+        Relationships: [];
+      };
       players: {
         Row: {
           id: string;
           tournee_id: string;
+          code: string;
           full_name: string;
           birth_year: number | null;
           ranking: string | null;
@@ -62,6 +86,7 @@ export type Database = {
         Insert: {
           id?: string;
           tournee_id: string;
+          code?: string;
           full_name: string;
           birth_year?: number | null;
           ranking?: string | null;
@@ -215,3 +240,4 @@ export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 export type Player = Database["public"]["Tables"]["players"]["Row"];
 export type Tournee = Database["public"]["Tables"]["tournees"]["Row"];
 export type Event = Database["public"]["Tables"]["events"]["Row"];
+export type Team = Database["public"]["Tables"]["teams"]["Row"];
