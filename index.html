@@ -576,12 +576,14 @@ async function viewProfil(){
   if(p.role === 'coach' && p.team_id){
     const { data: team } = await supabase.from('teams').select('*').eq('id', p.team_id).maybeSingle();
     if(team){
+      const isPrincipal = team.created_by === STATE.session.user.id;
       teamHtml = `
         <div class="card">
           <h3>Équipe</h3>
           <p class="muted">${esc(team.nom)}</p>
           <label>Code d'invitation (à donner aux coachs adjoints)</label>
           <div class="code-badge">${esc(team.code)}</div>
+          ${isPrincipal ? `<button class="btn secondary" onclick="regenerateTeamCode('${team.id}')">↺ Générer un nouveau code</button>` : ''}
         </div>`;
     }
   }
@@ -595,6 +597,14 @@ async function viewProfil(){
     ${teamHtml}
   `, 'profile');
 }
+window.regenerateTeamCode = async (teamId) => {
+  if(!confirm("Générer un nouveau code d'invitation ? L'ancien code ne fonctionnera plus pour rejoindre l'équipe.")) return;
+  const newCode = genCode();
+  const { error } = await supabase.from('teams').update({ code: newCode }).eq('id', teamId);
+  if(error){ toast(error.message, true); return; }
+  toast('Nouveau code généré');
+  viewProfil();
+};
 window.logout = async () => { await supabase.auth.signOut(); STATE.profile=null; navigate('#/'); };
 
 // ---------------------------------------------------------------
