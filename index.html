@@ -398,16 +398,124 @@ function shell(content, navActive){
 }
 
 // ---------------------------------------------------------------
-// VUE : AUTH
+// VUE : LANDING (accès direct par code joueur, façon Brunoy)
+// ---------------------------------------------------------------
+function getSavedCodes(){
+  try{ return JSON.parse(localStorage.getItem('setpoint_codes')||'[]'); }catch{ return []; }
+}
+function saveCode(code, nom){
+  const list = getSavedCodes().filter(c=>c.code!==code);
+  list.unshift({code, nom});
+  localStorage.setItem('setpoint_codes', JSON.stringify(list.slice(0,8)));
+}
+function viewLanding(){
+  const saved = getSavedCodes();
+  const savedHtml = saved.length ? `
+    <div class="card">
+      <h3>Suivis récents</h3>
+      ${saved.map(c=>`
+        <div class="row between" style="padding:6px 0; cursor:pointer" onclick="navigate('#/j/${esc(c.code)}')">
+          <div>${esc(c.nom)}</div>
+          <div class="code-badge" style="font-size:13px; padding:4px 8px;">${esc(c.code)}</div>
+        </div>`).join('')}
+    </div>` : '';
+
+  app.innerHTML = `
+    <main style="padding:16px;">
+      <div style="text-align:center; padding:50px 10px 10px;">
+        <div style="font-family:var(--fnt-head); font-size:34px; font-weight:900; letter-spacing:4px; color:var(--accent); text-transform:uppercase;">🎾 Set Point</div>
+        <p class="muted" style="margin-top:6px;">Suivi de tournois en direct</p>
+      </div>
+
+      <div class="card">
+        <label>Code joueur</label>
+        <div class="row">
+          <input id="playerCodeInput" placeholder="CODE" maxlength="5" style="text-transform:uppercase; flex:1;" autocapitalize="characters" autocomplete="off">
+          <button class="btn clay" style="width:auto; margin-top:0; padding:12px 18px;" onclick="goToPlayerCode()">→</button>
+        </div>
+        <p class="muted" style="margin-top:8px;">Entre le code donné par le coach pour suivre les matchs en direct</p>
+        <div class="error" id="landingErr"></div>
+      </div>
+
+      ${savedHtml}
+
+      <button class="btn secondary" style="margin-top:18px;" onclick="navigate('#/coach-login')">🔑 Accès Coach</button>
+    </main>`;
+
+  const input = document.getElementById('playerCodeInput');
+  input.addEventListener('keydown', e => { if(e.key==='Enter') goToPlayerCode(); });
+}
+window.goToPlayerCode = () => {
+  const code = document.getElementById('playerCodeInput').value.trim().toUpperCase();
+  if(!code){ document.getElementById('landingErr').textContent = 'Entre un code.'; return; }
+  navigate('#/j/'+code);
+};
+
+// ---------------------------------------------------------------
+// VUE : SUIVI PAR CODE (sans compte, accès joueur/parent)
+// ---------------------------------------------------------------
+async function viewPlayerCode(code){
+  app.innerHTML = `<main><div class="empty">Chargement…</div></main>`;
+  const { data: player, error } = await supabase.from('players').select('*').eq('code', code).maybeSingle();
+  if(error || !player){
+    app.innerHTML = `
+      <main>
+        <div class="card" style="text-align:center">
+          <h3>Code introuvable</h3>
+          <p class="muted">Vérifie le code donné par le coach (5 caractères).</p>
+          <button class="btn clay" onclick="navigate('#/')">← Retour</button>
+        </div>
+      </main>`;
+    return;
+  }
+  saveCode(player.code, player.nom);
+
+  const { data: matches } = await supabase.from('matches')
+    .select('*, tournaments(nom)')
+    .or(`joueur1_id.eq.${player.id},joueur2_id.eq.${player.id}`)
+    .order('updated_at',{ascending:false});
+
+  const idsNeeded = new Set();
+  (matches||[]).forEach(m=>{ idsNeeded.add(m.joueur1_id); idsNeeded.add(m.joueur2_id); });
+  let namesMap = {};
+  if(idsNeeded.size){
+    const { data: pls } = await supabase.from('players').select('id,nom').in('id', [...idsNeeded]);
+    (pls||[]).forEach(p=>namesMap[p.id]=p.nom);
+  }
+
+  const order = { en_cours:0, a_venir:1, termine:2 };
+  const sorted = [...(matches||[])].sort((a,b)=> (order[a.statut]??3) - (order[b.statut]??3));
+
+  const matchesHtml = sorted.length ? sorted.map(m => `
+    <div onclick="navigate('#/match/${m.id}')" style="cursor:pointer">
+      <p class="muted" style="margin:0 0 4px">${esc(m.tournaments?.nom||'')}</p>
+      ${scoreboardHTML(m, namesMap[m.joueur1_id]||'—', namesMap[m.joueur2_id]||'—')}
+    </div>`).join('') : `<div class="empty"><div class="big">🎾</div>Aucun match pour l'instant.</div>`;
+
+  app.innerHTML = `
+    <div class="topbar">
+      <div class="brand"><span class="dot"></span> Set Point</div>
+      <div class="who" onclick="navigate('#/')">Quitter</div>
+    </div>
+    <main>
+      <h2 style="margin:4px 0 2px">${esc(player.nom)}</h2>
+      <p class="muted" style="margin-top:0">Code ${esc(player.code)}</p>
+      ${matchesHtml}
+    </main>`;
+}
+
+// ---------------------------------------------------------------
+// VUE : ACCÈS COACH (connexion / inscription par email)
 // ---------------------------------------------------------------
 let authMode = 'login';
 function viewAuth(){
   app.innerHTML = `
     <div class="topbar"><div class="brand"><span class="dot"></span> Set Point</div></div>
     <main>
-      <div class="card">
-        <h3>${authMode==='login' ? 'Connexion' : 'Créer un compte'}</h3>
-        <p class="muted">Suivi en direct des tournois — coachs, parents &amp; joueurs.</p>
+      <button class="btn ghost" onclick="navigate('#/')">← Retour</button>
+      <div class="card" style="margin-top:12px;">
+        <h3>🔑 Accès Coach</h3>
+        <p class="muted">Espace réservé aux coachs pour gérer les tournois, joueurs et scores en direct.</p>
         <div class="tabs">
           <button class="${authMode==='login'?'active':''}" onclick="setAuthMode('login')">Connexion</button>
           <button class="${authMode==='signup'?'active':''}" onclick="setAuthMode('signup')">Inscription</button>
@@ -416,12 +524,6 @@ function viewAuth(){
           ${authMode==='signup' ? `
             <label>Nom / prénom</label>
             <input name="nom" required placeholder="Ex: Jimmy Martin">
-            <label>Je suis…</label>
-            <select name="role" required>
-              <option value="coach">Coach</option>
-              <option value="parent">Parent</option>
-              <option value="enfant">Joueur / enfant</option>
-            </select>
           ` : ''}
           <label>Email</label>
           <input type="email" name="email" required placeholder="email@exemple.com">
@@ -455,7 +557,7 @@ async function onAuthSubmit(e){
       }
       const uid = data.user?.id;
       if(uid){
-        await supabase.from('profiles').upsert({ id:uid, role:f.get('role'), nom:f.get('nom') });
+        await supabase.from('profiles').upsert({ id:uid, role:'coach', nom:f.get('nom') });
       }
     }
     await loadSession();
@@ -493,7 +595,7 @@ async function viewProfil(){
     ${teamHtml}
   `, 'profile');
 }
-window.logout = async () => { await supabase.auth.signOut(); STATE.profile=null; navigate('#/login'); };
+window.logout = async () => { await supabase.auth.signOut(); STATE.profile=null; navigate('#/'); };
 
 // ---------------------------------------------------------------
 // VUE : COACH — CONFIGURATION DE L'ÉQUIPE (étape obligatoire avant accès)
@@ -1101,11 +1203,19 @@ async function loadSession(){
   router();
 }
 function router(){
+  const hash = location.hash || '#/';
   if(liveChannel && !location.hash.startsWith('#/match/')){ supabase.removeChannel(liveChannel); liveChannel=null; }
-  if(!STATE.session){ viewAuth(); return; }
+
+  // Accès public par code joueur (aucun compte requis)
+  let mCode;
+  if((mCode = hash.match(/^#\/j\/(.+)$/))) return viewPlayerCode(mCode[1].toUpperCase());
+
+  if(!STATE.session){
+    if(hash === '#/coach-login') return viewAuth();
+    return viewLanding();
+  }
   if(!STATE.profile){ shell(`<div class="empty">Profil introuvable. Reconnecte-toi.</div><button class="btn secondary" onclick="logout()">Déconnexion</button>`); return; }
 
-  const hash = location.hash || '#/';
   const role = STATE.profile.role;
 
   // Un coach doit appartenir à une équipe avant d'accéder au reste de l'app
@@ -1118,7 +1228,7 @@ function router(){
   }
 
   let mTour, mMatch;
-  if(hash === '#/' || hash === '#/login'){
+  if(hash === '#/' || hash === '#/login' || hash === '#/coach-login'){
     navigate((role==='coach'||role==='admin') ? '#/coach' : '#/suivi'); return;
   }
   if(hash === '#/profil') return viewProfil();
@@ -1135,7 +1245,7 @@ window.addEventListener('hashchange', router);
 
 supabase.auth.onAuthStateChange((_event, session) => {
   STATE.session = session;
-  if(!session){ STATE.profile=null; navigate('#/login'); router(); }
+  if(!session){ STATE.profile=null; navigate('#/'); router(); }
 });
 
 loadSession().catch(showFatalError);
