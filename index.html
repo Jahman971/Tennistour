@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0C0C0C">
-<title>Set Point — Suivi de tournois</title>
+<title>Tennistour — Suivi de tournois</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
@@ -390,7 +390,7 @@ function shell(content, navActive){
   }
   app.innerHTML = `
     <div class="topbar">
-      <div class="brand"><span class="dot"></span> Set Point</div>
+      <div class="brand"><span class="dot"></span> Tennistour</div>
       ${STATE.profile ? `<div class="who" onclick="navigate('#/profil')">${esc(STATE.profile.role==='admin'?'admin':STATE.profile.role)}</div>` : ''}
     </div>
     <main>${content}</main>
@@ -424,7 +424,7 @@ function viewLanding(){
   app.innerHTML = `
     <main style="padding:16px;">
       <div style="text-align:center; padding:50px 10px 10px;">
-        <div style="font-family:var(--fnt-head); font-size:34px; font-weight:900; letter-spacing:4px; color:var(--accent); text-transform:uppercase;">🎾 Set Point</div>
+        <div style="font-family:var(--fnt-head); font-size:34px; font-weight:900; letter-spacing:4px; color:var(--accent); text-transform:uppercase;">🎾 Tennistour</div>
         <p class="muted" style="margin-top:6px;">Suivi de tournois en direct</p>
       </div>
 
@@ -543,7 +543,7 @@ async function viewPlayerCode(code){
 
   app.innerHTML = `
     <div class="topbar">
-      <div class="brand"><span class="dot"></span> Set Point</div>
+      <div class="brand"><span class="dot"></span> Tennistour</div>
       <div class="who" onclick="navigate('#/')">Quitter</div>
     </div>
     <main>
@@ -570,7 +570,7 @@ function emailToLogin(email){
 let authMode = 'login';
 function viewAuth(){
   app.innerHTML = `
-    <div class="topbar"><div class="brand"><span class="dot"></span> Set Point</div></div>
+    <div class="topbar"><div class="brand"><span class="dot"></span> Tennistour</div></div>
     <main>
       <button class="btn ghost" onclick="navigate('#/')">← Retour</button>
       <div class="card" style="margin-top:12px;">
@@ -673,7 +673,7 @@ let teamSetupMode = 'create';
 function viewTeamSetup(){
   app.innerHTML = `
     <div class="topbar">
-      <div class="brand"><span class="dot"></span> Set Point</div>
+      <div class="brand"><span class="dot"></span> Tennistour</div>
       <div class="who" onclick="navigate('#/profil')">${esc(STATE.profile.role)}</div>
     </div>
     <main>
@@ -735,7 +735,7 @@ async function viewWaitingValidation(){
   const { data: team } = await supabase.from('teams').select('*').eq('id', STATE.profile.team_id).maybeSingle();
   app.innerHTML = `
     <div class="topbar">
-      <div class="brand"><span class="dot"></span> Set Point</div>
+      <div class="brand"><span class="dot"></span> Tennistour</div>
       <div class="who" onclick="navigate('#/profil')">${esc(STATE.profile.role)}</div>
     </div>
     <main>
