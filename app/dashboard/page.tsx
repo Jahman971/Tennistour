@@ -26,7 +26,7 @@ export default async function DashboardPage() {
       <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
           <h1 className="font-display text-5xl font-bold uppercase text-white">Dashboard</h1>
-          <p className="mt-1 text-white/55">Pilotage opérationnel de la tournée active.</p>
+          <p className="mt-1 text-white/55">Vue d'ensemble de votre tournée.</p>
         </div>
         {profile.role === "admin" || profile.role === "coach_principal" ? (
           <div className="flex gap-2">
@@ -51,7 +51,7 @@ export default async function DashboardPage() {
       </section>
       <Card className="mt-6">
         <CardTitle>Tournée</CardTitle>
-        <p className="mt-2 text-sm text-white/60">Les données affichées proviennent de Supabase et sont filtrées par les policies RLS.</p>
+        <p className="mt-2 text-sm text-white/60">Retrouvez ici les indicateurs principaux et les actions rapides.</p>
       </Card>
     </AppShell>
   );

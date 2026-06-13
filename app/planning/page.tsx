@@ -44,7 +44,7 @@ export default async function PlanningPage() {
             </div>
           </Card>
         ))}
-        {(events ?? []).length === 0 ? <Card className="text-sm text-white/60">Aucun événement visible pour votre profil.</Card> : null}
+        {(events ?? []).length === 0 ? <Card className="text-sm text-white/60">Aucun événement planifié.</Card> : null}
       </div>
     </AppShell>
   );

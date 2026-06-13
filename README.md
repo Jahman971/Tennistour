@@ -38,12 +38,6 @@ Appliquer la migration :
 supabase db push
 ```
 
-Charger les données de départ :
-
-```bash
-supabase db reset
-```
-
 La migration crée :
 
 - `profiles`
@@ -63,9 +57,20 @@ Les policies RLS limitent les accès :
 - Coach : planning, résultats, joueurs et débriefs de sa tournée.
 - Parent : uniquement planning, résultats et notifications de son enfant.
 
-## Authentification
+## Connexion
 
-Les comptes sont gérés par Supabase Auth. À la création d’un utilisateur, un trigger crée automatiquement un `profile` avec le rôle `parent` par défaut. Modifier le rôle dans `profiles` après invitation ou création du compte.
+L'application n'embarque aucun compte de démonstration.
+
+Pour se connecter :
+
+1. Créer un utilisateur dans Supabase : `Authentication` puis `Users`.
+2. Renseigner son email et son mot de passe.
+3. Dans la table `profiles`, vérifier que la ligne a été créée automatiquement.
+4. Attribuer le bon rôle dans `profiles.role` : `admin`, `coach_principal`, `coach` ou `parent`.
+5. Pour un parent, renseigner `profiles.parent_player_id` avec l'identifiant du joueur concerné.
+6. Ouvrir `/auth/login` et se connecter avec l'email et le mot de passe.
+
+Pour créer le premier administrateur, créez l'utilisateur dans Supabase Auth puis mettez `profiles.role` à `admin`.
 
 ## Déploiement Vercel
 
@@ -85,7 +90,7 @@ Les fichiers PWA sont dans `public/manifest.json`, `public/sw.js` et `public/reg
 Le service worker gère :
 
 - cache minimal de l’application
-- fallback offline vers la connexion
+- mode hors ligne minimal
 - réception d’événements Push Web
 
 Pour la production, brancher l’envoi Push côté serveur via Supabase Edge Functions ou un backend Vercel utilisant les abonnements navigateur.
