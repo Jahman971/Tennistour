@@ -1,6 +1,6 @@
 {
-  "name": "Set Point - Suivi de tournois tennis",
-  "short_name": "Set Point",
+  "name": "Tennistour - Suivi de tournois tennis",
+  "short_name": "Tennistour",
   "description": "Suivi en direct des tournois de tennis pour coachs, parents et joueurs",
   "start_url": "./index.html",
   "scope": "./",
