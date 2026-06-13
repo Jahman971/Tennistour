@@ -567,7 +567,6 @@ function loginToEmail(login){
 function emailToLogin(email){
   return (email||'').replace(AUTH_DOMAIN,'');
 }
-let authMode = 'login';
 function viewAuth(){
   app.innerHTML = `
     <div class="topbar"><div class="brand"><span class="dot"></span> Tennistour</div></div>
@@ -575,28 +574,19 @@ function viewAuth(){
       <button class="btn ghost" onclick="navigate('#/')">← Retour</button>
       <div class="card" style="margin-top:12px;">
         <h3>🔑 Accès Coach</h3>
-        <p class="muted">Espace réservé aux coachs pour gérer les tournois, joueurs et scores en direct.</p>
-        <div class="tabs">
-          <button class="${authMode==='login'?'active':''}" onclick="setAuthMode('login')">Connexion</button>
-          <button class="${authMode==='signup'?'active':''}" onclick="setAuthMode('signup')">Inscription</button>
-        </div>
+        <p class="muted">Connexion avec l'identifiant et le mot de passe fournis par l'administrateur.</p>
         <form id="authForm">
-          ${authMode==='signup' ? `
-            <label>Nom / prénom</label>
-            <input name="nom" required placeholder="Ex: Jimmy Martin">
-          ` : ''}
           <label>Identifiant</label>
           <input name="login" required placeholder="Ex: jimmy" autocapitalize="none" autocomplete="username" pattern="[A-Za-z0-9._-]+">
           <label>Mot de passe</label>
-          <input type="password" name="password" required minlength="6" placeholder="6 caractères min." autocomplete="current-password">
-          <button class="btn clay" type="submit">${authMode==='login' ? 'Se connecter' : "S'inscrire"}</button>
+          <input type="password" name="password" required minlength="6" placeholder="Mot de passe" autocomplete="current-password">
+          <button class="btn clay" type="submit">Se connecter</button>
           <div class="error" id="authError"></div>
         </form>
       </div>
     </main>`;
   document.getElementById('authForm').addEventListener('submit', onAuthSubmit);
 }
-window.setAuthMode = m => { authMode = m; viewAuth(); };
 async function onAuthSubmit(e){
   e.preventDefault();
   const f = new FormData(e.target);
@@ -604,26 +594,49 @@ async function onAuthSubmit(e){
   const errEl = document.getElementById('authError');
   errEl.textContent = '';
   try{
-    if(authMode==='login'){
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if(error) throw error;
-    } else {
-      const { data, error } = await supabase.auth.signUp({ email, password });
-      if(error) throw error;
-      if(!data.session){
-        errEl.style.color = 'var(--clay)';
-        errEl.textContent = "Compte créé mais non connecté. Demande à l'administrateur de désactiver la confirmation par e-mail dans Supabase (Authentication > Providers > Email), puis réessaie de te connecter.";
-      }
-      const uid = data.user?.id;
-      if(uid){
-        await supabase.from('profiles').upsert({ id:uid, role:'coach', nom:f.get('nom') });
-      }
-    }
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if(error) throw error;
     await loadSession();
   }catch(err){
     errEl.style.color='var(--clay)';
     errEl.textContent = err.message || 'Erreur';
   }
+}
+
+// ---------------------------------------------------------------
+// VUE : CHANGEMENT DE MOT DE PASSE OBLIGATOIRE
+// ---------------------------------------------------------------
+function viewChangePassword(){
+  app.innerHTML = `
+    <div class="topbar"><div class="brand"><span class="dot"></span> Tennistour</div></div>
+    <main>
+      <div class="card" style="margin-top:12px;">
+        <h3>🔒 Nouveau mot de passe requis</h3>
+        <p class="muted">Pour des raisons de sécurité, choisis un nouveau mot de passe avant de continuer.</p>
+        <form id="pwdForm">
+          <label>Nouveau mot de passe</label>
+          <input type="password" name="password" required minlength="6" placeholder="6 caractères min." autocomplete="new-password">
+          <label>Confirmer le mot de passe</label>
+          <input type="password" name="password2" required minlength="6" placeholder="Répéter le mot de passe" autocomplete="new-password">
+          <button class="btn clay" type="submit">Valider</button>
+          <div class="error" id="pwdError"></div>
+        </form>
+      </div>
+    </main>`;
+  document.getElementById('pwdForm').addEventListener('submit', async e=>{
+    e.preventDefault();
+    const f = new FormData(e.target);
+    const p1 = f.get('password'), p2 = f.get('password2');
+    const errEl = document.getElementById('pwdError');
+    if(p1 !== p2){ errEl.textContent = 'Les mots de passe ne correspondent pas.'; return; }
+    const { error: authErr } = await supabase.auth.updateUser({ password: p1 });
+    if(authErr){ errEl.textContent = authErr.message; return; }
+    const { error: profErr } = await supabase.from('profiles').update({ must_change_password: false }).eq('id', STATE.session.user.id);
+    if(profErr){ errEl.textContent = profErr.message; return; }
+    STATE.profile.must_change_password = false;
+    toast('Mot de passe mis à jour');
+    router();
+  });
 }
 
 // ---------------------------------------------------------------
@@ -1579,6 +1592,8 @@ function router(){
     return viewLanding();
   }
   if(!STATE.profile){ shell(`<div class="empty">Profil introuvable. Reconnecte-toi.</div><button class="btn secondary" onclick="logout()">Déconnexion</button>`); return; }
+
+  if(STATE.profile.must_change_password) return viewChangePassword();
 
   const role = STATE.profile.role;
 
