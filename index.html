@@ -792,9 +792,63 @@ async function viewAdminHome(){
   shell(`
     <h2 style="margin:4px 0 14px">Toutes les équipes</h2>
     <p class="muted" style="margin-top:-10px">Vue administrateur — accès à toutes les tournées et matchs.</p>
+    <button class="btn secondary" onclick="navigate('#/admin/utilisateurs')">👥 Gestion des utilisateurs</button>
     ${teamsHtml}
   `, 'home');
 }
+
+// ---------------------------------------------------------------
+// VUE : ADMIN — GESTION DES UTILISATEURS
+// ---------------------------------------------------------------
+async function viewAdminUsers(){
+  shell(`<div class="empty">Chargement…</div>`, 'home');
+  const { data: profiles } = await supabase.from('profiles').select('*').order('created_at',{ascending:false});
+  const { data: teams } = await supabase.from('teams').select('id, nom');
+  const teamName = tid => (teams||[]).find(t=>t.id===tid)?.nom || '—';
+
+  const rows = (profiles||[]).length ? (profiles||[]).map(p=>{
+    const isMe = p.id === STATE.session.user.id;
+    return `
+    <div class="card">
+      <div class="row between">
+        <div>
+          <strong>${esc(p.nom)}</strong>
+        </div>
+        <div style="text-align:right">
+          <span class="pill ${p.role==='admin'?'done':'upcoming'}">${esc(p.role)}</span>
+          ${p.role==='coach' ? `<div style="margin-top:4px"><span class="pill ${p.statut==='actif'?'done':'live'}">${p.statut==='actif'?'Validé':'En attente'}</span></div>` : ''}
+        </div>
+      </div>
+      ${p.team_id ? `<p class="muted" style="margin:6px 0 0">Équipe : ${esc(teamName(p.team_id))}</p>` : ''}
+      <div class="row" style="margin-top:10px; flex-wrap:wrap; gap:8px;">
+        ${p.role==='coach' && p.statut!=='actif' ? `<button class="btn small" onclick="adminSetStatut('${p.id}','actif')">Valider</button>` : ''}
+        ${p.role==='coach' && p.statut==='actif' ? `<button class="btn small secondary" onclick="adminSetStatut('${p.id}','en_attente')">Mettre en attente</button>` : ''}
+        ${p.role==='coach' ? `<button class="btn small secondary" onclick="adminSetRole('${p.id}','admin')">Promouvoir admin</button>` : ''}
+        ${p.role==='admin' && !isMe ? `<button class="btn small secondary" onclick="adminSetRole('${p.id}','coach')">Rétrograder coach</button>` : ''}
+      </div>
+    </div>`;
+  }).join('') : `<div class="empty">Aucun utilisateur.</div>`;
+
+  shell(`
+    <button class="btn ghost" onclick="navigate('#/coach')">← Toutes les équipes</button>
+    <h2 style="margin:8px 0 14px">Gestion des utilisateurs</h2>
+    ${rows}
+  `, 'home');
+}
+window.adminSetStatut = async (profileId, statut) => {
+  const { error } = await supabase.from('profiles').update({ statut }).eq('id', profileId);
+  if(error){ toast(error.message, true); return; }
+  toast('Statut mis à jour');
+  viewAdminUsers();
+};
+window.adminSetRole = async (profileId, role) => {
+  if(!confirm(`Changer le rôle de cet utilisateur en "${role}" ?`)) return;
+  const payload = role==='admin' ? { role, team_id:null, statut:'actif' } : { role:'coach' };
+  const { error } = await supabase.from('profiles').update(payload).eq('id', profileId);
+  if(error){ toast(error.message, true); return; }
+  toast('Rôle mis à jour');
+  viewAdminUsers();
+};
 
 // ---------------------------------------------------------------
 // VUE : COACH — LISTE DES TOURNÉES
@@ -1507,6 +1561,7 @@ function router(){
   if(hash === '#/profil') return viewProfil();
   if(hash === '#/equipe') return viewTeamSetup();
   if(hash === '#/coach') return role==='admin' ? viewAdminHome() : viewCoachHome();
+  if(hash === '#/admin/utilisateurs') return role==='admin' ? viewAdminUsers() : (navigate('#/coach'), undefined);
   if(hash === '#/suivi') return viewSuivi();
   if((mTour = hash.match(/^#\/coach\/tournee\/(.+)$/))) return viewCoachTournee(mTour[1]);
   if((mTour = hash.match(/^#\/coach\/tournoi\/(.+)$/))) return viewCoachTournament(mTour[1]);
