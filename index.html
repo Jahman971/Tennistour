@@ -1058,12 +1058,31 @@ function renderPublicMatch(m, n1, n2){
 // ---------------------------------------------------------------
 // ROUTAGE
 // ---------------------------------------------------------------
+function withTimeout(promise, ms, label){
+  return Promise.race([
+    promise,
+    new Promise((_, rej) => setTimeout(() => rej(new Error(`Délai dépassé (${label})`)), ms))
+  ]);
+}
 async function loadSession(){
-  const { data } = await supabase.auth.getSession();
-  STATE.session = data.session;
+  try{
+    const { data } = await withTimeout(supabase.auth.getSession(), 8000, 'session');
+    STATE.session = data.session;
+  }catch(err){
+    console.warn('getSession a échoué/timeout', err);
+    STATE.session = null;
+  }
   if(STATE.session){
-    const { data: profile } = await supabase.from('profiles').select('*').eq('id', STATE.session.user.id).maybeSingle();
-    STATE.profile = profile;
+    try{
+      const { data: profile } = await withTimeout(
+        supabase.from('profiles').select('*').eq('id', STATE.session.user.id).maybeSingle(),
+        8000, 'profil'
+      );
+      STATE.profile = profile;
+    }catch(err){
+      console.warn('chargement du profil a échoué/timeout', err);
+      STATE.profile = null;
+    }
   } else {
     STATE.profile = null;
   }
@@ -1107,7 +1126,7 @@ supabase.auth.onAuthStateChange((_event, session) => {
   if(!session){ STATE.profile=null; navigate('#/login'); router(); }
 });
 
-loadSession();
+loadSession().catch(showFatalError);
 
 // PWA : service worker
 if('serviceWorker' in navigator){
