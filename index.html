@@ -198,6 +198,7 @@ try{
 // HELPERS
 // ---------------------------------------------------------------
 const esc = s => (s ?? '').toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fullName = p => [p?.prenom, p?.nom].filter(Boolean).join(' ') || '—';
 const genCode = () => Array.from({length:5}, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*32)]).join('');
 function navigate(hash){ location.hash = hash; }
 function toast(msg, isError){
@@ -469,7 +470,7 @@ async function viewPlayerCode(code){
       </main>`;
     return;
   }
-  saveCode(player.code, player.nom);
+  saveCode(player.code, fullName(player));
 
   const { data: matches } = await supabase.from('matches')
     .select('*, tournaments(nom)')
@@ -484,8 +485,8 @@ async function viewPlayerCode(code){
   (matches||[]).forEach(m=>{ idsNeeded.add(m.joueur1_id); idsNeeded.add(m.joueur2_id); });
   let namesMap = {};
   if(idsNeeded.size){
-    const { data: pls } = await supabase.from('players').select('id,nom').in('id', [...idsNeeded]);
-    (pls||[]).forEach(p=>namesMap[p.id]=p.nom);
+    const { data: pls } = await supabase.from('players').select('id,nom,prenom').in('id', [...idsNeeded]);
+    (pls||[]).forEach(p=>namesMap[p.id]=fullName(p));
   }
 
   // --- Planning combiné (matchs + entraînements), groupé par jour ---
@@ -547,7 +548,7 @@ async function viewPlayerCode(code){
       <div class="who" onclick="navigate('#/')">Quitter</div>
     </div>
     <main>
-      <h2 style="margin:4px 0 2px">${esc(player.nom)}</h2>
+      <h2 style="margin:4px 0 2px">${esc(fullName(player))}</h2>
       <p class="muted" style="margin-top:0">Code ${esc(player.code)}</p>
       <h3 style="margin:18px 0 8px">Planning</h3>
       ${planningHtml}
@@ -661,7 +662,7 @@ async function viewProfil(){
   }
   shell(`
     <div class="card">
-      <h3>${esc(p.nom)}</h3>
+      <h3>${esc(fullName(p))}</h3>
       <p class="muted">Rôle : ${esc(p.role)}${p.role==='coach' ? ` · ${p.statut==='actif' ? '<span style="color:var(--accent)">Validé</span>' : '<span style="color:var(--live)">En attente de validation</span>'}` : ''}</p>
       <p class="muted">Identifiant : ${esc(emailToLogin(STATE.session.user.email))}</p>
       <button class="btn secondary" onclick="logout()">Se déconnecter</button>
@@ -825,7 +826,7 @@ async function viewAdminUsers(){
     <div class="card">
       <div class="row between">
         <div>
-          <strong>${esc(p.nom)}</strong>
+          <strong>${esc(fullName(p))}</strong>
         </div>
         <div style="text-align:right">
           <span class="pill ${p.role==='admin'?'done':'upcoming'}">${esc(p.role)}</span>
@@ -849,8 +850,10 @@ async function viewAdminUsers(){
     <div class="card">
       <h3>+ Créer un compte</h3>
       <form id="createUserForm">
-        <label>Nom / prénom</label>
-        <input name="nom" required placeholder="Ex: Lohan Dupont">
+        <label>Prénom</label>
+        <input name="prenom" placeholder="Ex: Lohan">
+        <label>Nom</label>
+        <input name="nom" required placeholder="Ex: Dupont">
         <label>Identifiant</label>
         <input name="login" required placeholder="Ex: lohan" autocapitalize="none" pattern="[A-Za-z0-9._-]+">
         <label>Rôle</label>
@@ -879,7 +882,7 @@ async function viewAdminUsers(){
     const resEl = document.getElementById('createUserResult');
     errEl.textContent = ''; resEl.innerHTML = '';
     const { data, error } = await supabase.functions.invoke('admin-create-user', {
-      body: { nom: f.get('nom'), login: f.get('login'), role: f.get('role'), team_id: f.get('team_id')||null }
+      body: { nom: f.get('nom'), prenom: f.get('prenom')||null, login: f.get('login'), role: f.get('role'), team_id: f.get('team_id')||null }
     });
     if(error || data?.error){ errEl.textContent = data?.error || error.message; return; }
     resEl.innerHTML = `
@@ -937,14 +940,14 @@ async function viewCoachHome(){
   const { data: team } = await supabase.from('teams').select('*').eq('id', teamId).maybeSingle();
   if(team && team.created_by === STATE.session.user.id){
     const { data: pending } = await supabase.from('profiles')
-      .select('id, nom').eq('team_id', teamId).eq('role','coach').eq('statut','en_attente');
+      .select('id, nom, prenom').eq('team_id', teamId).eq('role','coach').eq('statut','en_attente');
     if(pending && pending.length){
       pendingHtml = `
         <div class="card" style="border-color:var(--accent)">
           <h3>Coachs en attente de validation</h3>
           ${pending.map(p=>`
             <div class="row between" style="padding:6px 0">
-              <div>${esc(p.nom)}</div>
+              <div>${esc(fullName(p))}</div>
               <button class="btn small" onclick="validateCoach('${p.id}')">Valider</button>
             </div>`).join('')}
         </div>`;
@@ -1018,14 +1021,14 @@ async function viewCoachTournee(id){
     matches = data || [];
   }
 
-  const playerName = pid => (roster||[]).find(p=>p.id===pid)?.nom || '—';
+  const playerName = pid => fullName((roster||[]).find(p=>p.id===pid));
 
   const { data: formats } = await supabase.from('formats').select('*').order('id');
 
   // --- Joueurs de la tournée ---
   const tourneePlayersHtml = tourneePlayers.length ? tourneePlayers.map(p=>`
     <div class="row between" style="padding:8px 0; border-bottom:1px solid var(--brd)">
-      <div>${esc(p.nom)}</div>
+      <div>${esc(fullName(p))}</div>
       <div class="code-badge" style="font-size:14px; padding:4px 8px;">${esc(p.code)}</div>
     </div>`).join('') : `<p class="muted">Aucun joueur inscrit à cette tournée.</p>`;
 
@@ -1100,7 +1103,7 @@ async function viewCoachTournee(id){
         <label>Inscrire depuis l'effectif de l'équipe</label>
         <div class="row">
           <select name="player_id" style="flex:1">
-            ${rosterAvailable.map(p=>`<option value="${p.id}">${esc(p.nom)} (${esc(p.code)})</option>`).join('')}
+            ${rosterAvailable.map(p=>`<option value="${p.id}">${esc(fullName(p))} (${esc(p.code)})</option>`).join('')}
           </select>
           <button class="btn small" type="submit" style="width:auto">Ajouter</button>
         </div>
@@ -1108,7 +1111,8 @@ async function viewCoachTournee(id){
       <form id="newTourneePlayerForm" style="margin-top:10px">
         <label>Nouveau joueur (pas encore dans l'effectif)</label>
         <div class="row">
-          <input name="nom" placeholder="Ex: Lucas Petit" style="flex:1">
+          <input name="prenom" placeholder="Prénom" style="flex:1">
+          <input name="nom" placeholder="Nom" style="flex:1">
           <button class="btn small" type="submit" style="width:auto">Créer</button>
         </div>
         <p class="muted" style="margin-top:8px">Un code à 5 caractères est généré pour chaque joueur : les parents s'en servent pour suivre ses matchs et son planning en direct.</p>
@@ -1154,7 +1158,7 @@ async function viewCoachTournee(id){
         <input type="number" name="duration_minutes" placeholder="Ex: 60">
         <label>Joueurs concernés</label>
         <select name="player_ids" multiple style="height:${Math.min(160, 36+(tourneePlayers.length*22))}px">
-          ${tourneePlayers.map(p=>`<option value="${p.id}">${esc(p.nom)}</option>`).join('')}
+          ${tourneePlayers.map(p=>`<option value="${p.id}">${esc(fullName(p))}</option>`).join('')}
         </select>
         <p class="muted" style="margin-top:6px">Maintiens (ou Ctrl/Cmd + clic) pour sélectionner plusieurs joueurs. Laisse vide pour toute l'équipe.</p>
         <button class="btn clay" type="submit">Programmer l'entraînement</button>
@@ -1177,13 +1181,14 @@ async function viewCoachTournee(id){
 
   document.getElementById('newTourneePlayerForm').addEventListener('submit', async e=>{
     e.preventDefault();
-    const nom = new FormData(e.target).get('nom').trim();
-    if(!nom) return;
+    const f = new FormData(e.target);
+    const prenom = f.get('prenom').trim(), nom = f.get('nom').trim();
+    if(!nom && !prenom) return;
     const code = genCode();
-    const { data: pl, error } = await supabase.from('players').insert({ nom, code, team_id: tournee.team_id, created_by: STATE.session.user.id }).select().single();
+    const { data: pl, error } = await supabase.from('players').insert({ prenom: prenom||null, nom, code, team_id: tournee.team_id, created_by: STATE.session.user.id }).select().single();
     if(error){ toast(error.message, true); return; }
     await supabase.from('tournee_players').insert({ tournee_id: id, player_id: pl.id });
-    toast(`${nom} inscrit à la tournée · code ${code}`);
+    toast(`${fullName(pl)} inscrit à la tournée · code ${code}`);
     viewCoachTournee(id);
   });
 
@@ -1242,7 +1247,7 @@ async function viewCoachTournament(id){
   const { data: matches } = await supabase.from('matches')
     .select('*').eq('tournament_id', id).order('scheduled_at',{ascending:true, nullsFirst:false});
 
-  const playerName = pid => (players.find(p=>p.id===pid)?.nom) || '—';
+  const playerName = pid => fullName(players.find(p=>p.id===pid));
 
   // Planning : regroupement des matchs par jour
   const dateFmt = new Intl.DateTimeFormat('fr-FR', { weekday:'long', day:'numeric', month:'long' });
@@ -1276,7 +1281,7 @@ async function viewCoachTournament(id){
 
   const playersHtml = players.length ? players.map(p=>`
     <div class="row between" style="padding:8px 0; border-bottom:1px solid var(--brd)">
-      <div>${esc(p.nom)}</div>
+      <div>${esc(fullName(p))}</div>
       <div class="code-badge" style="font-size:14px; padding:4px 8px;">${esc(p.code)}</div>
     </div>`).join('') : `<p class="muted">Aucun joueur inscrit.</p>`;
 
@@ -1293,7 +1298,7 @@ async function viewCoachTournament(id){
         <label>Inscrire depuis les joueurs de la tournée</label>
         <div class="row">
           <select name="player_id" style="flex:1">
-            ${rosterAvailable.map(p=>`<option value="${p.id}">${esc(p.nom)} (${esc(p.code)})</option>`).join('')}
+            ${rosterAvailable.map(p=>`<option value="${p.id}">${esc(fullName(p))} (${esc(p.code)})</option>`).join('')}
           </select>
           <button class="btn small" type="submit" style="width:auto">Ajouter</button>
         </div>
@@ -1304,9 +1309,9 @@ async function viewCoachTournament(id){
     <div class="card">
       <form id="matchForm">
         <label>Joueur 1</label>
-        <select name="j1">${players.map(p=>`<option value="${p.id}">${esc(p.nom)}</option>`).join('')}</select>
+        <select name="j1">${players.map(p=>`<option value="${p.id}">${esc(fullName(p))}</option>`).join('')}</select>
         <label>Joueur 2</label>
-        <select name="j2">${players.map(p=>`<option value="${p.id}">${esc(p.nom)}</option>`).join('')}</select>
+        <select name="j2">${players.map(p=>`<option value="${p.id}">${esc(fullName(p))}</option>`).join('')}</select>
         <label>Date et heure (optionnel)</label>
         <input type="datetime-local" name="scheduled_at">
         <label>Tour / phase (optionnel)</label>
@@ -1355,11 +1360,11 @@ async function viewCoachMatch(id){
   shell(`<div class="empty">Chargement…</div>`, 'home');
   const { data: m } = await supabase.from('matches').select('*, tournaments(nom, format_id)').eq('id', id).single();
   if(!m){ shell(`<div class="empty">Match introuvable.</div>`,'home'); return; }
-  const { data: p1 } = await supabase.from('players').select('nom').eq('id', m.joueur1_id).single();
-  const { data: p2 } = await supabase.from('players').select('nom').eq('id', m.joueur2_id).single();
+  const { data: p1 } = await supabase.from('players').select('nom,prenom').eq('id', m.joueur1_id).single();
+  const { data: p2 } = await supabase.from('players').select('nom,prenom').eq('id', m.joueur2_id).single();
 
   STATE.history = [];
-  renderCoachMatch(m, p1.nom, p2.nom);
+  renderCoachMatch(m, fullName(p1), fullName(p2));
 }
 
 function renderCoachMatch(m, n1, n2){
@@ -1485,8 +1490,8 @@ async function viewSuivi(){
   matches.forEach(m=>{ idsNeeded.add(m.joueur1_id); idsNeeded.add(m.joueur2_id); });
   let namesMap = {};
   if(idsNeeded.size){
-    const { data: pls } = await supabase.from('players').select('id,nom').in('id', [...idsNeeded]);
-    (pls||[]).forEach(p=>namesMap[p.id]=p.nom);
+    const { data: pls } = await supabase.from('players').select('id,nom,prenom').in('id', [...idsNeeded]);
+    (pls||[]).forEach(p=>namesMap[p.id]=fullName(p));
   }
 
   const order = { en_cours:0, a_venir:1, termine:2 };
@@ -1518,12 +1523,12 @@ async function viewSuivi(){
         <button class="btn clay" type="submit">Suivre</button>
         <div class="error" id="followErr"></div>
       </form>
-      ${followedPlayers.length ? `<p class="muted" style="margin-top:10px">Suivis : ${followedPlayers.map(p=>esc(p.nom)).join(', ')}</p>` : ''}
+      ${followedPlayers.length ? `<p class="muted" style="margin-top:10px">Suivis : ${followedPlayers.map(p=>esc(fullName(p))).join(', ')}</p>` : ''}
     </div>`;
 
   shell(`
     <h2 style="margin:4px 0 14px">Mes matchs</h2>
-    ${myPlayer ? `<p class="muted">Profil joueur lié : <strong>${esc(myPlayer.nom)}</strong></p>` : ''}
+    ${myPlayer ? `<p class="muted">Profil joueur lié : <strong>${esc(fullName(myPlayer))}</strong></p>` : ''}
     ${claimBox}
     ${followBox}
     ${matchesHtml}
@@ -1536,7 +1541,7 @@ async function viewSuivi(){
     if(error || !pl){ document.getElementById('followErr').textContent='Code introuvable.'; return; }
     const { error: fErr } = await supabase.from('follows').insert({ parent_id: uid, player_id: pl.id });
     if(fErr && !fErr.message.includes('duplicate')){ document.getElementById('followErr').textContent=fErr.message; return; }
-    toast(`Tu suis maintenant ${pl.nom}`);
+    toast(`Tu suis maintenant ${fullName(pl)}`);
     viewSuivi();
   });
 
@@ -1561,14 +1566,14 @@ async function viewMatchPublic(id){
   shell(`<div class="empty">Chargement…</div>`, 'home');
   const { data: m } = await supabase.from('matches').select('*, tournaments(nom)').eq('id', id).single();
   if(!m){ shell(`<div class="empty">Match introuvable.</div>`,'home'); return; }
-  const { data: p1 } = await supabase.from('players').select('nom').eq('id', m.joueur1_id).single();
-  const { data: p2 } = await supabase.from('players').select('nom').eq('id', m.joueur2_id).single();
-  renderPublicMatch(m, p1.nom, p2.nom);
+  const { data: p1 } = await supabase.from('players').select('nom,prenom').eq('id', m.joueur1_id).single();
+  const { data: p2 } = await supabase.from('players').select('nom,prenom').eq('id', m.joueur2_id).single();
+  renderPublicMatch(m, fullName(p1), fullName(p2));
 
   if(liveChannel) supabase.removeChannel(liveChannel);
   liveChannel = supabase.channel('match-'+id)
     .on('postgres_changes', { event:'UPDATE', schema:'public', table:'matches', filter:`id=eq.${id}` }, payload => {
-      renderPublicMatch(payload.new, p1.nom, p2.nom);
+      renderPublicMatch(payload.new, fullName(p1), fullName(p2));
     }).subscribe();
 }
 function renderPublicMatch(m, n1, n2){
