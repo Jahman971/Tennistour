@@ -152,8 +152,9 @@ a.link{color:var(--accent); font-weight:600; text-decoration:none;}
 </head>
 <body>
 <div id="app">
-  <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0C0C0C;color:#D7E552;font-family:'Barlow Condensed',sans-serif;font-size:14px;letter-spacing:2px;text-transform:uppercase;">
-    Chargement…
+  <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0C0C0C;color:#D7E552;font-family:'Barlow Condensed',sans-serif;font-size:14px;letter-spacing:2px;text-transform:uppercase;gap:10px;text-align:center;padding:20px;">
+    <div>Chargement…</div>
+    <div id="boot-status" style="font-family:'Inter',sans-serif;font-size:11px;letter-spacing:0;text-transform:none;color:#777;"></div>
   </div>
 </div>
 
@@ -1058,6 +1059,10 @@ function renderPublicMatch(m, n1, n2){
 // ---------------------------------------------------------------
 // ROUTAGE
 // ---------------------------------------------------------------
+function setLoadingStatus(text){
+  const el = document.getElementById('boot-status');
+  if(el) el.textContent = text;
+}
 function withTimeout(promise, ms, label){
   return Promise.race([
     promise,
@@ -1065,27 +1070,34 @@ function withTimeout(promise, ms, label){
   ]);
 }
 async function loadSession(){
+  setLoadingStatus('Connexion à Supabase…');
   try{
-    const { data } = await withTimeout(supabase.auth.getSession(), 8000, 'session');
+    const { data, error } = await withTimeout(supabase.auth.getSession(), 5000, 'session');
+    if(error) throw error;
     STATE.session = data.session;
   }catch(err){
     console.warn('getSession a échoué/timeout', err);
+    setLoadingStatus('Erreur session : ' + (err?.message || err));
     STATE.session = null;
   }
   if(STATE.session){
+    setLoadingStatus('Chargement du profil…');
     try{
-      const { data: profile } = await withTimeout(
+      const { data: profile, error } = await withTimeout(
         supabase.from('profiles').select('*').eq('id', STATE.session.user.id).maybeSingle(),
-        8000, 'profil'
+        5000, 'profil'
       );
+      if(error) throw error;
       STATE.profile = profile;
     }catch(err){
       console.warn('chargement du profil a échoué/timeout', err);
+      setLoadingStatus('Erreur profil : ' + (err?.message || err));
       STATE.profile = null;
     }
   } else {
     STATE.profile = null;
   }
+  setLoadingStatus('Affichage…');
   router();
 }
 function router(){
