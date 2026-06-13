@@ -379,7 +379,8 @@ function shell(content, navActive){
   } else if(role === 'coach'){
     nav = `
       <div class="tab-bar">
-        <button class="${navActive==='home'?'active':''}" onclick="navigate('#/coach')">🏟️<span class="label">Tournois</span></button>
+        <button class="${navActive==='home'?'active':''}" onclick="navigate('#/coach')">🏟️<span class="label">Tournées</span></button>
+        <button class="${navActive==='planning'?'active':''}" onclick="navigate('#/coach/planning')">📅<span class="label">Mon planning</span></button>
         <button class="${navActive==='profile'?'active':''}" onclick="navigate('#/profil')">👤<span class="label">Profil</span></button>
       </div>`;
   } else if(role){
@@ -913,6 +914,78 @@ window.adminSetRole = async (profileId, role) => {
 };
 
 // ---------------------------------------------------------------
+// VUE : COACH — MON PLANNING (étapes/entraînements où je suis affecté)
+// ---------------------------------------------------------------
+async function viewMyPlanning(){
+  shell(`<div class="empty">Chargement…</div>`, 'planning');
+  const uid = STATE.session.user.id;
+  const teamId = STATE.profile.team_id;
+
+  const { data: ec } = await supabase.from('etape_coaches').select('tournament_id').eq('profile_id', uid);
+  const etapeIds = (ec||[]).map(r=>r.tournament_id);
+
+  const { data: tc } = await supabase.from('training_coaches').select('training_id').eq('profile_id', uid);
+  const trainingIds = (tc||[]).map(r=>r.training_id);
+
+  let etapes = [], matches = [], trainings = [];
+  if(etapeIds.length){
+    const { data } = await supabase.from('tournaments').select('*, tournees(nom)').in('id', etapeIds);
+    etapes = data || [];
+    const { data: m } = await supabase.from('matches').select('*, tournaments(nom)').in('tournament_id', etapeIds);
+    matches = m || [];
+  }
+  if(trainingIds.length){
+    const { data } = await supabase.from('trainings').select('*, training_players(player_id), tournees(nom)').in('id', trainingIds);
+    trainings = data || [];
+  }
+
+  const { data: roster } = await supabase.from('players').select('*').eq('team_id', teamId);
+  const playerName = pid => fullName((roster||[]).find(p=>p.id===pid));
+
+  const dateFmt = new Intl.DateTimeFormat('fr-FR', { weekday:'long', day:'numeric', month:'long' });
+  const timeFmt = new Intl.DateTimeFormat('fr-FR', { hour:'2-digit', minute:'2-digit' });
+  const items = [];
+  matches.forEach(m=> items.push({ type:'match', date:m.scheduled_at, data:m }));
+  trainings.forEach(tr=> items.push({ type:'training', date:tr.scheduled_at, data:tr }));
+  const groups = new Map();
+  items.forEach(it=>{
+    const key = it.date ? it.date.slice(0,10) : 'none';
+    if(!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(it);
+  });
+  const sortedKeys = [...groups.keys()].sort((a,b)=> a==='none'?1 : b==='none'?-1 : a.localeCompare(b));
+  const planningHtml = items.length ? sortedKeys.map(key=>{
+    const label = key==='none' ? 'Non planifié' : dateFmt.format(new Date(key+'T00:00:00'));
+    const rowsHtml = groups.get(key).sort((a,b)=> (a.date||'').localeCompare(b.date||'')).map(it=>{
+      const time = it.date ? timeFmt.format(new Date(it.date)) : '';
+      if(it.type==='match'){
+        const m = it.data;
+        const statusPill = m.statut==='en_cours' ? '<span class="pill live">Live</span>'
+          : m.statut==='termine' ? '<span class="pill done">Terminé</span>' : '<span class="pill upcoming">À venir</span>';
+        return `<div class="card" onclick="navigate('#/coach/match/${m.id}')" style="cursor:pointer">
+          <div class="row between"><div>🎾 <strong>${esc(playerName(m.joueur1_id))}</strong> vs <strong>${esc(playerName(m.joueur2_id))}</strong></div>${statusPill}</div>
+          <p class="muted">${time?`🕐 ${time} · `:''}${esc(m.tournaments?.nom||'')}${m.court?' · '+esc(m.court):''}</p>
+        </div>`;
+      } else {
+        const tr = it.data;
+        const names = (tr.training_players||[]).map(tp=>playerName(tp.player_id)).join(', ');
+        return `<div class="card" style="background:var(--s3)">
+          <div>🏋️ <strong>${esc(tr.titre)}</strong></div>
+          <p class="muted">${time?`🕐 ${time}`:''}${tr.lieu?' · 📍 '+esc(tr.lieu):''} · ${esc(tr.tournees?.nom||'')}</p>
+          <p class="muted">👥 ${esc(names || "Toute l'équipe")}</p>
+        </div>`;
+      }
+    }).join('');
+    return `<h3 style="margin:18px 0 8px; text-transform:capitalize;">${esc(label)}</h3>${rowsHtml}`;
+  }).join('') : `<div class="empty"><div class="big">📅</div>Aucun événement ne t'est encore affecté.<br>Le superviseur affecte les coachs depuis chaque tournée.</div>`;
+
+  shell(`
+    <h2 style="margin:4px 0 14px">Mon planning</h2>
+    ${planningHtml}
+  `, 'planning');
+}
+
+// ---------------------------------------------------------------
 // VUE : COACH — LISTE DES TOURNÉES
 // ---------------------------------------------------------------
 async function viewCoachHome(){
@@ -1021,6 +1094,22 @@ async function viewCoachTournee(id){
     matches = data || [];
   }
 
+  // Coachs de l'équipe (pour affectation) + affectations existantes
+  const { data: teamCoaches } = await supabase.from('profiles').select('id, nom, prenom').eq('team_id', tournee.team_id).eq('role','coach').eq('statut','actif');
+  const coachName = pid => fullName((teamCoaches||[]).find(c=>c.id===pid));
+
+  let etapeCoachMap = {}; // etapeId -> [profileId,...]
+  if(etapeIds.length){
+    const { data: ec } = await supabase.from('etape_coaches').select('*').in('tournament_id', etapeIds);
+    (ec||[]).forEach(r=>{ (etapeCoachMap[r.tournament_id] ||= []).push(r.profile_id); });
+  }
+  const trainingIds = (trainings||[]).map(tr=>tr.id);
+  let trainingCoachMap = {};
+  if(trainingIds.length){
+    const { data: tc } = await supabase.from('training_coaches').select('*').in('training_id', trainingIds);
+    (tc||[]).forEach(r=>{ (trainingCoachMap[r.training_id] ||= []).push(r.profile_id); });
+  }
+
   const playerName = pid => fullName((roster||[]).find(p=>p.id===pid));
 
   const { data: formats } = await supabase.from('formats').select('*').order('id');
@@ -1033,22 +1122,46 @@ async function viewCoachTournee(id){
     </div>`).join('') : `<p class="muted">Aucun joueur inscrit à cette tournée.</p>`;
 
   // --- Étapes ---
-  const etapesHtml = (etapes||[]).length ? etapes.map(e=>`
-    <div class="card" onclick="navigate('#/coach/tournoi/${e.id}')" style="cursor:pointer">
-      <h3 style="margin:0">${esc(e.nom)}</h3>
-      <p class="muted">${esc(e.lieu||'')} ${e.date_debut?'· '+e.date_debut+(e.date_fin?(' → '+e.date_fin):''):''}</p>
-      <p class="muted">Format : ${esc(e.formats?.nom||'—')}</p>
-    </div>`).join('') : `<p class="muted">Aucune étape pour l'instant.</p>`;
+  const etapesHtml = (etapes||[]).length ? etapes.map(e=>{
+    const assigned = etapeCoachMap[e.id] || [];
+    return `
+    <div class="card">
+      <div onclick="navigate('#/coach/tournoi/${e.id}')" style="cursor:pointer">
+        <h3 style="margin:0">${esc(e.nom)}</h3>
+        <p class="muted">${esc(e.lieu||'')} ${e.date_debut?'· '+e.date_debut+(e.date_fin?(' → '+e.date_fin):''):''}</p>
+        <p class="muted">Format : ${esc(e.formats?.nom||'—')}</p>
+      </div>
+      <p class="muted" style="margin-top:6px">🧑‍🏫 ${assigned.length ? assigned.map(coachName).map(esc).join(', ') : 'Aucun coach affecté'}</p>
+      ${(teamCoaches||[]).length ? `
+      <form class="etapeCoachForm" data-id="${e.id}" style="margin-top:6px">
+        <label>Affecter des coachs à cette étape</label>
+        <select name="coach_ids" multiple style="height:${Math.min(120, 36+((teamCoaches||[]).length*22))}px">
+          ${(teamCoaches||[]).map(c=>`<option value="${c.id}" ${assigned.includes(c.id)?'selected':''}>${esc(fullName(c))}</option>`).join('')}
+        </select>
+        <button class="btn small secondary" type="submit" style="margin-top:6px">Enregistrer</button>
+      </form>` : ''}
+    </div>`;
+  }).join('') : `<p class="muted">Aucune étape pour l'instant.</p>`;
 
   // --- Entraînements ---
   const trainingsHtml = (trainings||[]).length ? trainings.map(tr=>{
     const names = (tr.training_players||[]).map(tp=>playerName(tp.player_id)).join(', ');
     const when = tr.scheduled_at ? new Intl.DateTimeFormat('fr-FR',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}).format(new Date(tr.scheduled_at)) : 'Non planifié';
+    const assigned = trainingCoachMap[tr.id] || [];
     return `<div class="card">
       <div class="row between"><strong>${esc(tr.titre)}</strong><span class="muted">🕐 ${esc(when)}</span></div>
       ${tr.lieu ? `<p class="muted" style="margin:4px 0 0">📍 ${esc(tr.lieu)}</p>` : ''}
       ${tr.description ? `<p class="muted" style="margin:4px 0 0">${esc(tr.description)}</p>` : ''}
       <p class="muted" style="margin:4px 0 0">👥 ${esc(names || 'Aucun joueur assigné')}</p>
+      <p class="muted" style="margin:4px 0 0">🧑‍🏫 ${assigned.length ? assigned.map(coachName).map(esc).join(', ') : 'Aucun coach affecté'}</p>
+      ${(teamCoaches||[]).length ? `
+      <form class="trainingCoachForm" data-id="${tr.id}" style="margin-top:6px">
+        <label>Affecter des coachs à cet entraînement</label>
+        <select name="coach_ids" multiple style="height:${Math.min(120, 36+((teamCoaches||[]).length*22))}px">
+          ${(teamCoaches||[]).map(c=>`<option value="${c.id}" ${assigned.includes(c.id)?'selected':''}>${esc(fullName(c))}</option>`).join('')}
+        </select>
+        <button class="btn small secondary" type="submit" style="margin-top:6px">Enregistrer</button>
+      </form>` : ''}
     </div>`;
   }).join('') : `<p class="muted">Aucun entraînement programmé.</p>`;
 
@@ -1169,6 +1282,33 @@ async function viewCoachTournee(id){
     <h3 style="margin:18px 0 8px">Planning de la tournée</h3>
     ${planningHtml}
   `, 'home');
+
+  document.querySelectorAll('.etapeCoachForm').forEach(form=>{
+    form.addEventListener('submit', async e=>{
+      e.preventDefault();
+      const etapeId = form.dataset.id;
+      const selected = [...form.coach_ids.selectedOptions].map(o=>o.value);
+      await supabase.from('etape_coaches').delete().eq('tournament_id', etapeId);
+      if(selected.length){
+        await supabase.from('etape_coaches').insert(selected.map(pid=>({ tournament_id: etapeId, profile_id: pid })));
+      }
+      toast('Affectation enregistrée');
+      viewCoachTournee(id);
+    });
+  });
+  document.querySelectorAll('.trainingCoachForm').forEach(form=>{
+    form.addEventListener('submit', async e=>{
+      e.preventDefault();
+      const trainingId = form.dataset.id;
+      const selected = [...form.coach_ids.selectedOptions].map(o=>o.value);
+      await supabase.from('training_coaches').delete().eq('training_id', trainingId);
+      if(selected.length){
+        await supabase.from('training_coaches').insert(selected.map(pid=>({ training_id: trainingId, profile_id: pid })));
+      }
+      toast('Affectation enregistrée');
+      viewCoachTournee(id);
+    });
+  });
 
   document.getElementById('addTourneePlayerForm')?.addEventListener('submit', async e=>{
     e.preventDefault();
@@ -1664,6 +1804,7 @@ function router(){
   if(hash === '#/profil') return viewProfil();
   if(hash === '#/equipe') return viewTeamSetup();
   if(hash === '#/coach') return role==='admin' ? viewAdminHome() : viewCoachHome();
+  if(hash === '#/coach/planning') return role==='coach' ? viewMyPlanning() : (navigate('#/coach'), undefined);
   if(hash === '#/admin/utilisateurs') return role==='admin' ? viewAdminUsers() : (navigate('#/coach'), undefined);
   if(hash === '#/suivi') return viewSuivi();
   if((mTour = hash.match(/^#\/coach\/tournee\/(.+)$/))) return viewCoachTournee(mTour[1]);
