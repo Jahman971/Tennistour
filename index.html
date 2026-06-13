@@ -153,6 +153,62 @@ textarea{resize:vertical; min-height:90px;}
 .empty .big{font-family:var(--fnt-head); font-size:40px; color:var(--brd); margin-bottom:10px;}
 a.link{color:var(--accent); font-weight:600; text-decoration:none;}
 
+/* Pyramide tournée */
+.pyramid{
+  background:linear-gradient(135deg,rgba(215,229,82,.10),rgba(255,255,255,.02));
+  border:1px solid rgba(215,229,82,.35);
+}
+.pyramid-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin-top:10px;
+}
+.pyramid-stat{
+  background:var(--s3);
+  border:1px solid var(--brd);
+  border-radius:var(--r);
+  padding:10px;
+}
+.pyramid-stat .num{
+  font-family:var(--fnt-head);
+  font-size:28px;
+  font-weight:900;
+  color:var(--accent);
+  line-height:1;
+}
+.pyramid-stat .label{
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:1.2px;
+  color:var(--gray);
+  margin-top:4px;
+}
+.event-kind{
+  display:inline-block;
+  font-size:9px;
+  text-transform:uppercase;
+  letter-spacing:1.3px;
+  padding:3px 8px;
+  border-radius:999px;
+  font-weight:700;
+  font-family:var(--fnt-head);
+  background:var(--accent3);
+  color:var(--accent);
+  border:1px solid rgba(215,229,82,.25);
+}
+.event-kind.training{
+  background:rgba(46,125,91,.12);
+  color:var(--court);
+  border-color:rgba(46,125,91,.3);
+}
+.event-kind.match{
+  background:var(--live2);
+  color:var(--live);
+  border-color:rgba(193,87,58,.35);
+}
+
+
 </style>
 </head>
 <body>
@@ -465,12 +521,12 @@ async function viewPlayerCode(code){
   saveCode(player.code, fullName(player));
 
   const { data: matches } = await supabase.from('matches')
-    .select('*, tournaments(nom)')
+    .select('*, tournaments(nom, lieu, tournee_id, tournees(nom))')
     .or(`joueur1_id.eq.${player.id},joueur2_id.eq.${player.id}`)
-    .order('updated_at',{ascending:false});
+    .order('scheduled_at',{ascending:true, nullsFirst:false});
 
   const { data: trainingLinks } = await supabase.from('training_players')
-    .select('trainings(*)').eq('player_id', player.id);
+    .select('trainings(*, tournees(nom))').eq('player_id', player.id);
   const trainings = (trainingLinks||[]).map(l=>l.trainings).filter(Boolean);
 
   const idsNeeded = new Set();
@@ -503,14 +559,14 @@ async function viewPlayerCode(code){
         const statusPill = m.statut==='en_cours' ? '<span class="pill live">Live</span>'
           : m.statut==='termine' ? '<span class="pill done">Terminé</span>' : '<span class="pill upcoming">À venir</span>';
         return `<div class="card" onclick="navigate('#/match/${m.id}')" style="cursor:pointer">
-          <div class="row between"><div>🎾 <strong>${esc(namesMap[m.joueur1_id]||'—')}</strong> vs <strong>${esc(namesMap[m.joueur2_id]||'—')}</strong></div>${statusPill}</div>
-          <p class="muted">${time?`🕐 ${time} · `:''}${esc(m.tournaments?.nom||'')}${m.court?' · '+esc(m.court):''}</p>
+          <div class="row between"><div><span class="event-kind match">Match</span> <strong>${esc(namesMap[m.joueur1_id]||'—')}</strong> vs <strong>${esc(namesMap[m.joueur2_id]||'—')}</strong></div>${statusPill}</div>
+          <p class="muted">${time?`🕐 ${time} · `:''}${esc(m.tournaments?.tournees?.nom||'Tournée')} · ${esc(m.tournaments?.nom||'Tournoi')}${m.court?' · '+esc(m.court):''}</p>
         </div>`;
       } else {
         const tr = it.data;
         return `<div class="card" style="background:var(--s3)">
-          <div>🏋️ <strong>${esc(tr.titre)}</strong></div>
-          <p class="muted">${time?`🕐 ${time}`:''}${tr.lieu?' · 📍 '+esc(tr.lieu):''}</p>
+          <div><span class="event-kind training">Entraînement</span> <strong>${esc(tr.titre)}</strong></div>
+          <p class="muted">${time?`🕐 ${time} · `:''}${esc(tr.tournees?.nom||'Tournée')}${tr.lieu?' · 📍 '+esc(tr.lieu):''}</p>
           ${tr.description ? `<p class="muted">${esc(tr.description)}</p>` : ''}
         </div>`;
       }
@@ -542,7 +598,8 @@ async function viewPlayerCode(code){
     <main>
       <h2 style="margin:4px 0 2px">${esc(fullName(player))}</h2>
       <p class="muted" style="margin-top:0">Code ${esc(player.code)}</p>
-      <h3 style="margin:18px 0 8px">Planning</h3>
+      <h3 style="margin:18px 0 8px">Planning joueur</h3>
+      <p class="muted" style="margin-top:-4px">Vision issue de la pyramide : tournée → tournois / entraînements → joueurs → matchs.</p>
       ${planningHtml}
       <h3 style="margin:18px 0 8px">Scores &amp; débriefs</h3>
       ${matchesHtml}
@@ -971,14 +1028,14 @@ async function viewMyPlanning(){
         const statusPill = m.statut==='en_cours' ? '<span class="pill live">Live</span>'
           : m.statut==='termine' ? '<span class="pill done">Terminé</span>' : '<span class="pill upcoming">À venir</span>';
         return `<div class="card" onclick="navigate('#/coach/match/${m.id}')" style="cursor:pointer">
-          <div class="row between"><div>🎾 <strong>${esc(playerName(m.joueur1_id))}</strong> vs <strong>${esc(playerName(m.joueur2_id))}</strong></div>${statusPill}</div>
+          <div class="row between"><div><span class="event-kind match">Match</span> <strong>${esc(playerName(m.joueur1_id))}</strong> vs <strong>${esc(playerName(m.joueur2_id))}</strong></div>${statusPill}</div>
           <p class="muted">${time?`🕐 ${time} · `:''}${esc(m.tournaments?.nom||'')}${m.court?' · '+esc(m.court):''}</p>
         </div>`;
       } else {
         const tr = it.data;
         const names = (tr.training_players||[]).map(tp=>playerName(tp.player_id)).join(', ');
         return `<div class="card" style="background:var(--s3)">
-          <div>🏋️ <strong>${esc(tr.titre)}</strong></div>
+          <div><span class="event-kind training">Entraînement</span> <strong>${esc(tr.titre)}</strong></div>
           <p class="muted">${time?`🕐 ${time}`:''}${tr.lieu?' · 📍 '+esc(tr.lieu):''} · ${esc(tr.tournees?.nom||'')}</p>
           <p class="muted">👥 ${esc(names || "Toute l'équipe")}</p>
         </div>`;
@@ -988,7 +1045,8 @@ async function viewMyPlanning(){
   }).join('') : `<div class="empty"><div class="big">📅</div>Aucun événement ne t'est encore affecté.<br>Le superviseur affecte les coachs depuis chaque tournée.</div>`;
 
   shell(`
-    <h2 style="margin:4px 0 14px">Mon planning</h2>
+    <h2 style="margin:4px 0 14px">Mon planning coach</h2>
+    <div class="card pyramid"><h3>Vision coach</h3><p class="muted">Tu vois les matchs des tournois où tu es affecté et les entraînements où tu es affecté.</p></div>
     ${planningHtml}
   `, 'planning');
 }
@@ -1037,6 +1095,7 @@ async function viewCoachHome(){
 
   shell(`
     <h2 style="margin:4px 0 14px">Tournées de l'équipe</h2>
+    <div class="card pyramid"><h3>Logique de programmation</h3><p class="muted">Paramètre une tournée, ajoute ses tournois et entraînements, affecte les joueurs, puis l'application génère le planning semaine / jour par profil.</p></div>
     ${pendingHtml}
     ${list}
     <div class="card">
@@ -1121,6 +1180,17 @@ async function viewCoachTournee(id){
   const playerName = pid => fullName((roster||[]).find(p=>p.id===pid));
 
   const { data: formats } = await supabase.from('formats').select('*').order('id');
+  const pyramidHtml = `
+    <div class="card pyramid">
+      <h3>Structure de la tournée</h3>
+      <p class="muted">Une tournée contient 1 à N tournois, 1 à N entraînements, chaque événement contient 1 à N joueurs, et chaque joueur peut avoir 1 à N matchs.</p>
+      <div class="pyramid-grid">
+        <div class="pyramid-stat"><div class="num">${(etapes||[]).length}</div><div class="label">Tournois / étapes</div></div>
+        <div class="pyramid-stat"><div class="num">${(trainings||[]).length}</div><div class="label">Entraînements</div></div>
+        <div class="pyramid-stat"><div class="num">${tourneePlayers.length}</div><div class="label">Joueurs tournée</div></div>
+        <div class="pyramid-stat"><div class="num">${matches.length}</div><div class="label">Matchs programmés</div></div>
+      </div>
+    </div>`;
 
   // --- Joueurs de la tournée ---
   const tourneePlayersHtml = tourneePlayers.length ? tourneePlayers.map(p=>`
@@ -1195,14 +1265,14 @@ async function viewCoachTournee(id){
         const statusPill = m.statut==='en_cours' ? '<span class="pill live">Live</span>'
           : m.statut==='termine' ? '<span class="pill done">Terminé</span>' : '<span class="pill upcoming">À venir</span>';
         return `<div class="card" onclick="navigate('#/coach/match/${m.id}')" style="cursor:pointer">
-          <div class="row between"><div>🎾 <strong>${esc(playerName(m.joueur1_id))}</strong> vs <strong>${esc(playerName(m.joueur2_id))}</strong></div>${statusPill}</div>
+          <div class="row between"><div><span class="event-kind match">Match</span> <strong>${esc(playerName(m.joueur1_id))}</strong> vs <strong>${esc(playerName(m.joueur2_id))}</strong></div>${statusPill}</div>
           <p class="muted">${time?`🕐 ${time} · `:''}${esc(m.tournaments?.nom||'')}${m.court?' · '+esc(m.court):''}</p>
         </div>`;
       } else {
         const tr = it.data;
         const names = (tr.training_players||[]).map(tp=>playerName(tp.player_id)).join(', ');
         return `<div class="card" style="background:var(--s3)">
-          <div class="row between"><div>🏋️ <strong>${esc(tr.titre)}</strong></div></div>
+          <div class="row between"><div><span class="event-kind training">Entraînement</span> <strong>${esc(tr.titre)}</strong></div></div>
           <p class="muted">${time?`🕐 ${time}`:''}${tr.lieu?' · 📍 '+esc(tr.lieu):''}</p>
           <p class="muted">👥 ${esc(names||"Toute l'équipe")}</p>
         </div>`;
@@ -1215,6 +1285,8 @@ async function viewCoachTournee(id){
     <button class="btn ghost" onclick="navigate('${tournee.team_id===STATE.profile.team_id ? '#/mon-equipe' : '#/coach'}')">← Toutes les tournées</button>
     <h2 style="margin:8px 0 2px">${esc(tournee.nom)}</h2>
     <p class="muted" style="margin-top:0">${esc(tournee.lieu||'')} ${tournee.date_debut?'· '+tournee.date_debut+(tournee.date_fin?(' → '+tournee.date_fin):''):''}</p>
+
+    ${pyramidHtml}
 
     <h3 style="margin:18px 0 8px">Joueurs de la tournée</h3>
     <div class="card">
