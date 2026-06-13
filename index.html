@@ -653,7 +653,7 @@ async function viewProfil(){
   if(p.role === 'coach' && p.team_id){
     const { data: team } = await supabase.from('teams').select('*').eq('id', p.team_id).maybeSingle();
     if(team){
-      const isPrincipal = team.created_by === STATE.session.user.id;
+      const isPrincipal = team.created_by === STATE.session.user.id || STATE.profile.superviseur;
       teamHtml = `
         <div class="card">
           <h3>Équipe</h3>
@@ -835,12 +835,15 @@ async function viewAdminUsers(){
         <div style="text-align:right">
           <span class="pill ${p.role==='admin'?'done':'upcoming'}">${esc(p.role)}</span>
           ${p.role==='coach' ? `<div style="margin-top:4px"><span class="pill ${p.statut==='actif'?'done':'live'}">${p.statut==='actif'?'Validé':'En attente'}</span></div>` : ''}
+          ${p.superviseur ? `<div style="margin-top:4px"><span class="pill done">Superviseur</span></div>` : ''}
         </div>
       </div>
       ${p.team_id ? `<p class="muted" style="margin:6px 0 0">Équipe : ${esc(teamName(p.team_id))}</p>` : ''}
       <div class="row" style="margin-top:10px; flex-wrap:wrap; gap:8px;">
         ${p.role==='coach' && p.statut!=='actif' ? `<button class="btn small" onclick="adminSetStatut('${p.id}','actif')">Valider</button>` : ''}
         ${p.role==='coach' && p.statut==='actif' ? `<button class="btn small secondary" onclick="adminSetStatut('${p.id}','en_attente')">Mettre en attente</button>` : ''}
+        ${p.role==='coach' && p.team_id && !p.superviseur ? `<button class="btn small secondary" onclick="adminSetSuperviseur('${p.id}',true)">Promouvoir superviseur</button>` : ''}
+        ${p.role==='coach' && p.superviseur ? `<button class="btn small secondary" onclick="adminSetSuperviseur('${p.id}',false)">Retirer superviseur</button>` : ''}
         ${p.role==='coach' ? `<button class="btn small secondary" onclick="adminSetRole('${p.id}','admin')">Promouvoir admin</button>` : ''}
         ${p.role==='admin' && !isMe ? `<button class="btn small secondary" onclick="adminSetRole('${p.id}','coach')">Rétrograder coach</button>` : ''}
         ${!isMe ? `<button class="btn small clay" onclick="adminDeleteUser('${p.id}','${esc(fullName(p)).replace(/'/g,"\\\\'")}')">Supprimer</button>` : ''}
@@ -914,6 +917,12 @@ window.adminSetRole = async (profileId, role) => {
   const { error } = await supabase.from('profiles').update(payload).eq('id', profileId);
   if(error){ toast(error.message, true); return; }
   toast('Rôle mis à jour');
+  viewAdminUsers();
+};
+window.adminSetSuperviseur = async (profileId, value) => {
+  const { error } = await supabase.from('profiles').update({ superviseur: value }).eq('id', profileId);
+  if(error){ toast(error.message, true); return; }
+  toast(value ? 'Promu superviseur' : 'Superviseur retiré');
   viewAdminUsers();
 };
 window.adminDeleteUser = async (profileId, nom) => {
@@ -1022,7 +1031,7 @@ async function viewCoachHome(){
   // Le coach principal valide les coachs adjoints en attente
   let pendingHtml = '';
   const { data: team } = await supabase.from('teams').select('*').eq('id', teamId).maybeSingle();
-  if(team && team.created_by === STATE.session.user.id){
+  if(team && (team.created_by === STATE.session.user.id || STATE.profile.superviseur)){
     const { data: pending } = await supabase.from('profiles')
       .select('id, nom, prenom').eq('team_id', teamId).eq('role','coach').eq('statut','en_attente');
     if(pending && pending.length){
