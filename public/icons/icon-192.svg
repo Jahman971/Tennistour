@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192" role="img" aria-label="TennisTour">
+  <rect width="192" height="192" rx="38" fill="#0C0C0C"/>
+  <circle cx="96" cy="96" r="62" fill="#D7E552"/>
+  <path d="M48 96h96M96 34c30 31 30 93 0 124M96 34c-30 31-30 93 0 124" fill="none" stroke="#0C0C0C" stroke-width="10" stroke-linecap="round"/>
+</svg>
