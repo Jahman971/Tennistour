@@ -18,7 +18,7 @@ export default async function DebriefsPage() {
   const { supabase, profile } = await requireSession();
 
   if (profile.role === "parent") {
-    redirect("/parent");
+    redirect("/");
   }
 
   const [{ data: events }, { data: players }, { data: debriefs }] = await Promise.all([

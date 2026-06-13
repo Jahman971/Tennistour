@@ -14,17 +14,17 @@ export default function HomePage() {
             <Trophy className="h-7 w-7" />
           </div>
           <h1 className="font-display text-5xl font-bold uppercase text-accent">TennisTour</h1>
-          <p className="mt-2 text-sm text-white/55">Suivi de tournées tennis en direct</p>
+          <p className="mt-2 text-sm text-white/55">Suivi parent par code joueur</p>
         </div>
         <Card>
-          <CardTitle>Code joueur</CardTitle>
+          <CardTitle>Code parent</CardTitle>
           <form action={openPlayerCode} className="mt-4 flex gap-2">
             <Input name="code" placeholder="CODE" maxLength={5} className="uppercase" autoCapitalize="characters" required />
             <Button type="submit" aria-label="Ouvrir le suivi">
               <ArrowRight className="h-4 w-4" />
             </Button>
           </form>
-          <p className="mt-3 text-sm text-white/50">Entrez le code transmis par le coach pour suivre le planning et les résultats.</p>
+          <p className="mt-3 text-sm text-white/50">Entrez le code joueur transmis par le coach pour suivre uniquement son planning et ses résultats.</p>
         </Card>
         <Link href="/auth/login" className="mt-4 block">
           <Button type="button" variant="secondary" className="w-full">

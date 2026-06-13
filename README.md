@@ -2,7 +2,7 @@
 
 Organisez et pilotez vos tournées de tennis.
 
-TennisTour est une application Next.js 15 connectée à Supabase pour gérer les tournées, coachs, joueurs, matchs, entraînements, résultats, débriefs et notifications parents.
+TennisTour est une application Next.js 15 connectée à Supabase pour gérer les tournées, coachs, joueurs, matchs, entraînements, résultats, débriefs et accès parents par code.
 
 ## Stack
 
@@ -56,17 +56,18 @@ Les policies RLS limitent les accès :
 - Admin : accès total.
 - Coach principal : gestion de sa tournée.
 - Coach : planning, résultats, joueurs et débriefs de sa tournée.
-- Parent : uniquement planning, résultats et notifications de son enfant.
+- Parent : aucun compte, accès uniquement par code joueur.
 
 ## Connexion
 
 L'application ne demande pas de créer les coachs manuellement dans Supabase.
 
-Accès joueur / parent :
+Accès parent :
 
 1. Ouvrir `/`.
 2. Entrer le code joueur transmis par le coach.
 3. Le planning et les résultats du joueur s'affichent sans compte utilisateur.
+4. Les débriefs et commentaires coach ne sont jamais affichés dans cet espace.
 
 Accès coach :
 

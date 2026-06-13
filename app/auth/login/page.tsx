@@ -34,7 +34,7 @@ function LoginForm({ searchParams }: { searchParams: { error?: string; mode?: st
           {isSignup ? "S'inscrire" : "Se connecter"}
         </Button>
       </form>
-      <Link href="/" className="mt-5 block text-center text-sm text-white/55 hover:text-accent">Retour au suivi joueur</Link>
+      <Link href="/" className="mt-5 block text-center text-sm text-white/55 hover:text-accent">Retour au suivi parent</Link>
     </Card>
   );
 }

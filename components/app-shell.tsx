@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarDays, ClipboardList, Home, LogOut, MessageSquareText, Trophy, UserRound } from "lucide-react";
+import { CalendarDays, ClipboardList, Home, LogOut, MessageSquareText, Trophy } from "lucide-react";
 import { signOut } from "@/lib/actions";
 import type { Profile } from "@/types/database";
 import { Button } from "@/components/ui/button";
@@ -8,8 +8,7 @@ const navigation = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
   { href: "/planning", label: "Planning", icon: CalendarDays },
   { href: "/results", label: "Résultats", icon: Trophy },
-  { href: "/debriefs", label: "Débriefs", icon: ClipboardList },
-  { href: "/parent", label: "Parent", icon: UserRound }
+  { href: "/debriefs", label: "Débriefs", icon: ClipboardList }
 ];
 
 export function AppShell({ profile, children }: { profile: Profile; children: React.ReactNode }) {
