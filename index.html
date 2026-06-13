@@ -571,7 +571,7 @@ async function viewWaitingValidation(){
       <div class="card" style="text-align:center">
         <div class="big" style="font-family:var(--fnt-head); font-size:40px; margin-bottom:6px">⏳</div>
         <h3>Inscription envoyée !</h3>
-        <p class="muted">Ton compte est en attente de validation par le coach principal de <strong>${esc(team?.nom||'l\\'équipe')}</strong>.</p>
+        <p class="muted">Ton compte est en attente de validation par le coach principal de <strong>${esc(team?.nom||"l'équipe")}</strong>.</p>
         <p class="muted">Préviens-le que tu as rejoint l'équipe avec son code — il doit te valider depuis son espace Tournois.</p>
         <button class="btn clay" onclick="refreshValidation()">↺ Vérifier à nouveau</button>
         <button class="btn secondary" onclick="logout()">Se déconnecter</button>
