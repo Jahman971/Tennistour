@@ -40,7 +40,10 @@ export async function signIn(formData: FormData) {
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
-    redirect(`/auth/login?error=${encodeURIComponent(error.message)}`);
+    const message = error.message.includes("Invalid login credentials")
+      ? "Identifiant ou mot de passe incorrect. Si c'est votre première connexion, utilisez d'abord l'onglet Inscription."
+      : error.message;
+    redirect(`/auth/login?error=${encodeURIComponent(message)}`);
   }
 
   redirect("/dashboard");
@@ -52,7 +55,7 @@ export async function signUpCoach(formData: FormData) {
   const email = loginToEmail(formData.get("login"));
   const password = String(formData.get("password") ?? "");
 
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
@@ -65,6 +68,10 @@ export async function signUpCoach(formData: FormData) {
 
   if (error) {
     redirect(`/auth/login?mode=signup&error=${encodeURIComponent(error.message)}`);
+  }
+
+  if (!data.session) {
+    redirect(`/auth/login?error=${encodeURIComponent("Compte créé. La confirmation email est active dans Supabase : confirmez l'email ou désactivez la confirmation email, puis connectez-vous.")}`);
   }
 
   redirect("/team");
