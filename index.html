@@ -1,1858 +1,1124 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0C0C0C">
-<title>Tennistour — Suivi de tournois</title>
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png">
-<link rel="icon" href="icon-192.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>TennisTour — Planning tournée</title>
+
 <style>
 :root{
-  --bg:#0C0C0C; --s1:#141414; --s2:#1C1C1C; --s3:#242424; --brd:#2E2E2E;
-  --accent:#D7E552; --accent2:rgba(215,229,82,.15); --accent3:rgba(215,229,82,.08);
-  --live:#C1573A; --live2:rgba(193,87,58,.15);
-  --court:#2E7D5B; --gold:#D97706;
-  --white:#FFF; --light:#CCC; --gray:#777; --dim:#444;
-  --fnt-head:'Barlow Condensed',sans-serif; --fnt-body:'Inter',sans-serif;
-  --r:10px; --rL:14px; --safe-b:env(safe-area-inset-bottom,0px);
+  --bg:#0f1115;
+  --card:#181b22;
+  --card2:#20242d;
+  --line:#303541;
+  --txt:#ffffff;
+  --muted:#9ca3af;
+  --accent:#d7e552;
+  --red:#d65a3a;
+  --green:#31a66a;
+  --blue:#4f8cff;
+  --radius:14px;
 }
-*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
-html,body{margin:0;height:100%;}
+*{box-sizing:border-box}
 body{
-  font-family:var(--fnt-body);
+  margin:0;
   background:var(--bg);
-  color:var(--white);
-  -webkit-font-smoothing:antialiased;
-  padding-bottom:env(safe-area-inset-bottom);
+  color:var(--txt);
+  font-family:Arial, sans-serif;
 }
-h1,h2,h3,.score-num,.tab-bar .label,.brand{font-family:var(--fnt-head); letter-spacing:.02em;}
-#app{max-width:560px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;}
-
-/* Top bar */
-.topbar{
-  background:var(--s1); color:var(--white);
-  padding:14px 16px 10px; padding-top:calc(14px + env(safe-area-inset-top,0px));
-  display:flex; align-items:center; justify-content:space-between;
-  position:sticky; top:0; z-index:20; border-bottom:1px solid var(--brd);
+#app{
+  max-width:620px;
+  margin:auto;
+  min-height:100vh;
 }
-.topbar .brand{font-size:20px; font-weight:900; text-transform:uppercase; letter-spacing:3px; display:flex; align-items:center; gap:8px; color:var(--accent);}
-.topbar .brand .dot{width:10px;height:10px;border-radius:50%;background:var(--accent); box-shadow:0 0 8px var(--accent);}
-.topbar .who{font-family:var(--fnt-head); font-size:11px; color:var(--accent); text-transform:uppercase; letter-spacing:2px; font-weight:700; cursor:pointer; border:1px solid var(--brd); padding:6px 12px; border-radius:999px; background:var(--s2);}
-
-main{flex:1; padding:16px 16px 90px;}
-
-/* Cards / generic */
-.card{background:var(--s2); border:1px solid var(--brd); border-radius:var(--rL); padding:14px; margin-bottom:12px;}
-.card h3{margin:0 0 10px; font-size:16px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--white);}
-.muted{color:var(--gray); font-size:13px;}
-.row{display:flex; gap:8px; align-items:center;}
-.row.between{justify-content:space-between;}
-.pill{display:inline-block; font-size:9px; text-transform:uppercase; letter-spacing:1.5px; padding:3px 9px; border-radius:999px; font-weight:700; font-family:var(--fnt-head);}
-.pill.live{background:var(--live2); color:var(--live); border:1px solid rgba(193,87,58,.4);}
-.pill.upcoming{background:var(--s3); color:var(--gray); border:1px solid var(--brd);}
-.pill.done{background:rgba(46,125,91,.15); color:var(--court); border:1px solid rgba(46,125,91,.35);}
-
-/* Forms */
-label{display:block; font-size:10px; text-transform:uppercase; letter-spacing:1.5px; color:var(--gray); margin:14px 0 6px; font-weight:700;}
+header{
+  position:sticky;
+  top:0;
+  z-index:20;
+  background:#11141a;
+  border-bottom:1px solid var(--line);
+  padding:14px 16px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.brand{
+  font-weight:900;
+  letter-spacing:1px;
+  color:var(--accent);
+}
+.role{
+  font-size:12px;
+  color:var(--muted);
+  border:1px solid var(--line);
+  padding:6px 10px;
+  border-radius:999px;
+}
+main{
+  padding:16px 16px 90px;
+}
+.card{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  padding:14px;
+  margin-bottom:12px;
+}
+.card2{background:var(--card2)}
+h1,h2,h3{margin:0 0 10px}
+h2{font-size:21px}
+h3{
+  font-size:15px;
+  text-transform:uppercase;
+  letter-spacing:.8px;
+}
+p{margin:6px 0}
+.muted{color:var(--muted);font-size:13px}
+label{
+  display:block;
+  margin:12px 0 6px;
+  color:var(--muted);
+  font-size:12px;
+  font-weight:700;
+}
 input,select,textarea{
-  width:100%; padding:12px; border:1px solid var(--brd); border-radius:var(--r);
-  font-size:15px; font-family:inherit; background:var(--s3); color:var(--white);
+  width:100%;
+  padding:12px;
+  border-radius:10px;
+  border:1px solid var(--line);
+  background:#11141a;
+  color:var(--txt);
+  font-size:15px;
 }
-input::placeholder,textarea::placeholder{color:var(--dim);}
-input:focus,select:focus,textarea:focus{outline:none; border-color:var(--accent);}
-textarea{resize:vertical; min-height:90px;}
+textarea{min-height:80px}
+button{
+  border:0;
+  border-radius:10px;
+  padding:12px;
+  font-weight:800;
+  cursor:pointer;
+}
 .btn{
-  display:block; width:100%;
-  border:none; border-radius:var(--r); padding:14px; font-size:15px; font-weight:700;
-  font-family:var(--fnt-head); text-transform:uppercase; letter-spacing:2px;
-  cursor:pointer; background:var(--accent); color:#0C0C0C; margin-top:14px; text-align:center;
-  transition:transform .1s;
+  width:100%;
+  background:var(--accent);
+  color:#111;
+  margin-top:12px;
 }
-.btn:active{transform:scale(.98);}
-.btn.secondary{background:var(--s3); color:var(--light); border:1px solid var(--brd);}
-.btn.clay{background:var(--live); color:var(--white);}
-.btn.ghost{background:none; color:var(--accent); text-transform:none; letter-spacing:0; font-family:var(--fnt-body); font-weight:600; padding:8px; border:1px solid rgba(215,229,82,.3); border-radius:var(--r); width:auto; margin-top:0;}
-.btn.small{width:auto; padding:10px 16px; font-size:12px; margin-top:0;}
-.error{color:var(--live); font-size:13px; margin-top:8px;}
-.tabs{display:flex; gap:6px; margin-bottom:16px;}
-.tabs button{flex:1; padding:10px; border-radius:var(--r); border:1px solid var(--brd); background:var(--s2); color:var(--light); font-family:var(--fnt-head); text-transform:uppercase; letter-spacing:1.5px; font-size:13px; font-weight:700; cursor:pointer;}
-.tabs button.active{background:var(--accent); color:#0C0C0C; border-color:var(--accent);}
-
-/* Bottom nav */
-.tab-bar{
-  position:fixed; bottom:0; left:0; right:0; max-width:560px; margin:0 auto;
-  background:var(--s1); display:flex; padding:8px env(safe-area-inset-bottom) calc(8px + env(safe-area-inset-bottom));
-  border-top:1px solid var(--brd);
+.btn2{
+  background:var(--card2);
+  color:var(--txt);
+  border:1px solid var(--line);
 }
-.tab-bar button{
-  flex:1; background:none; border:none; color:var(--gray); padding:8px 0;
-  display:flex; flex-direction:column; align-items:center; gap:3px; cursor:pointer;
+.btn-red{background:var(--red);color:white}
+.row{
+  display:flex;
+  gap:8px;
+  align-items:center;
 }
-.tab-bar button.active{color:var(--accent);}
-.tab-bar .label{font-size:10px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700;}
-
-/* Scoreboard (signature element) */
-.board{
-  background:linear-gradient(135deg,#161616 0%,#0F0F0F 100%);
-  color:var(--white); border:1px solid var(--brd); border-radius:var(--rL);
-  padding:16px; margin-bottom:14px; overflow:hidden; position:relative;
+.between{justify-content:space-between}
+.grid2{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
 }
-.board .tour-name{font-size:10px; text-transform:uppercase; letter-spacing:2px; color:var(--accent); margin-bottom:10px; font-weight:700;}
-.board .player-row{
-  display:grid; grid-template-columns:1fr auto; gap:10px; align-items:center;
-  padding:10px 0; border-bottom:1px solid var(--brd);
+.pill{
+  display:inline-block;
+  padding:4px 8px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:800;
 }
-.board .player-row:last-of-type{border-bottom:none;}
-.board .player-name{font-size:16px; font-weight:600; font-family:var(--fnt-head); letter-spacing:.5px;}
-.board .sets{display:flex; gap:8px;}
-.board .set-score{
-  font-family:var(--fnt-head); font-size:20px; font-weight:700; min-width:28px; text-align:center;
-  background:var(--s3); border-radius:6px; padding:4px 0; border:1px solid var(--brd);
+.live{background:rgba(214,90,58,.15);color:var(--red)}
+.done{background:rgba(49,166,106,.15);color:var(--green)}
+.plan{background:rgba(79,140,255,.15);color:var(--blue)}
+.nav{
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  max-width:620px;
+  margin:auto;
+  background:#11141a;
+  border-top:1px solid var(--line);
+  display:flex;
+  padding:8px;
 }
-.board .set-score.current{background:var(--accent); color:#0C0C0C; border-color:var(--accent);}
-.board .tb-note{font-size:10px; vertical-align:super; opacity:.7;}
-.board .live-tag{
-  position:absolute; top:14px; right:16px; background:var(--live2); color:var(--live);
-  border:1px solid rgba(193,87,58,.4);
-  font-size:9px; font-family:var(--fnt-head); font-weight:700; text-transform:uppercase; letter-spacing:2px; padding:4px 10px; border-radius:999px;
-  display:flex; align-items:center; gap:6px;
+.nav button{
+  flex:1;
+  background:none;
+  color:var(--muted);
+  font-size:12px;
 }
-.board .live-tag .blink{width:6px;height:6px;border-radius:50%;background:var(--live);animation:blink 1.2s infinite;}
-@keyframes blink{0%,100%{opacity:1;}50%{opacity:.2;}}
-.board .tiebreak-banner{
-  margin-top:12px; background:var(--accent3); border:1px solid rgba(215,229,82,.3); border-radius:var(--r); padding:10px 14px;
-  display:flex; justify-content:space-between; align-items:center;
+.nav button.active{color:var(--accent)}
+.day-title{
+  margin:20px 0 8px;
+  color:var(--accent);
+  text-transform:capitalize;
 }
-.board .tiebreak-banner .tb-points{font-family:var(--fnt-head); font-size:24px; font-weight:900; color:var(--accent);}
-.board .tiebreak-banner .tb-label{font-size:10px; text-transform:uppercase; letter-spacing:1.5px; align-self:center; color:var(--light); font-weight:700;}
-
-/* Coach scoring controls */
-.live-board{
-  background:var(--s1); border:1px solid var(--brd); border-radius:var(--rL);
-  padding:16px 10px; margin-bottom:14px;
+.event-time{
+  font-weight:900;
+  color:var(--accent);
 }
-.live-row{display:flex; align-items:center; justify-content:space-between; gap:6px;}
-.live-player{flex:1; text-align:center; padding:10px 4px; border-radius:var(--r); transition:background .2s, box-shadow .2s;}
-.live-player.serving{background:var(--accent3); box-shadow:inset 0 0 0 1px var(--accent2);}
-.live-name{font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; min-height:16px; color:var(--white); word-break:break-word;}
-.live-big{font-family:var(--fnt-head); font-size:52px; font-weight:900; color:var(--accent); line-height:1;}
-.live-vs{flex:0 0 auto; text-align:center; padding:0 6px; min-width:64px;}
-.live-mode{font-size:10px; text-transform:uppercase; letter-spacing:2px; color:var(--live); font-weight:700;}
-.live-sets{font-size:13px; color:var(--light); margin-top:6px; font-weight:700;}
-.score-btns{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
-.score-btns .btn{margin-top:0; padding:20px 10px; font-size:14px;}
-.code-badge{
-  display:inline-flex; align-items:center; gap:8px; background:var(--s3); border:1px dashed var(--accent);
-  border-radius:var(--r); padding:8px 12px; font-family:var(--fnt-head); font-size:18px; font-weight:700; letter-spacing:3px; margin-top:6px; color:var(--accent);
+.small{
+  font-size:12px;
+  padding:8px 10px;
+  width:auto;
 }
-.empty{text-align:center; color:var(--gray); padding:40px 10px; font-size:14px;}
-.empty .big{font-family:var(--fnt-head); font-size:40px; color:var(--brd); margin-bottom:10px;}
-a.link{color:var(--accent); font-weight:600; text-decoration:none;}
-
+.empty{
+  text-align:center;
+  color:var(--muted);
+  padding:30px 10px;
+}
+.code{
+  display:inline-block;
+  color:var(--accent);
+  border:1px dashed var(--accent);
+  padding:5px 9px;
+  border-radius:8px;
+  letter-spacing:2px;
+}
 </style>
 </head>
+
 <body>
-<div id="app">
-  <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0C0C0C;color:#D7E552;font-family:'Barlow Condensed',sans-serif;font-size:14px;letter-spacing:2px;text-transform:uppercase;gap:10px;text-align:center;padding:20px;">
-    <div>Chargement…</div>
-    <div id="boot-status" style="font-family:'Inter',sans-serif;font-size:11px;letter-spacing:0;text-transform:none;color:#777;"></div>
-  </div>
-</div>
+<div id="app">Chargement...</div>
 
 <script type="module">
 import { createClient } from './supabase.bundle.js';
 
-// ====================== CONFIGURATION ======================
-// Remplace par les valeurs de ton projet Supabase (Project Settings > API)
+/* =========================
+   CONFIG SUPABASE
+========================= */
+
 const SUPABASE_URL = 'https://oijaymahnevydzfgqlhi.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_49oduZZ5jt9TOo1p4oTbpw_LwpbWUXV';
-// =============================================================
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const app = document.getElementById('app');
-const STATE = { session:null, profile:null, route:'#/login', cache:{}, history:[] };
 
-// Affiche toute erreur fatale au lieu de laisser un écran noir silencieux
-function showFatalError(err){
-  console.error(err);
-  app.innerHTML = `
-    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:#0C0C0C;">
-      <div style="max-width:400px;text-align:center;color:#fff;font-family:'Inter',sans-serif;">
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;color:#C1573A;text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;">Erreur de chargement</div>
-        <p style="color:#CCC;font-size:14px;line-height:1.6;margin-bottom:10px;">${(err && (err.message||err.toString())) || 'Erreur inconnue'}</p>
-        <p style="color:#777;font-size:12px;">Vérifie ta connexion internet, puis recharge la page.</p>
-      </div>
-    </div>`;
-}
-window.addEventListener('error', e => showFatalError(e.error || e.message));
-window.addEventListener('unhandledrejection', e => showFatalError(e.reason));
-
-let supabase;
-try{
-  supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-}catch(err){
-  showFatalError(err);
-  throw err;
-}
-
-// ---------------------------------------------------------------
-// HELPERS
-// ---------------------------------------------------------------
-const esc = s => (s ?? '').toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const fullName = p => [p?.prenom, p?.nom].filter(Boolean).join(' ') || '—';
-const genCode = () => Array.from({length:5}, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*32)]).join('');
-function navigate(hash){ location.hash = hash; }
-function toast(msg, isError){
-  let t = document.querySelector('.toast');
-  if(!t){ t = document.createElement('div'); t.className='toast';
-    t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1A2421;color:#fff;padding:10px 18px;border-radius:999px;font-size:13px;z-index:99;max-width:90%;text-align:center;';
-    document.body.appendChild(t);
-  }
-  t.style.background = isError ? '#C1573A' : '#1A2421';
-  t.textContent = msg; t.style.opacity='1';
-  clearTimeout(t._tm); t._tm = setTimeout(()=>{ t.style.opacity='0'; }, 2400);
-}
-
-// ---------------------------------------------------------------
-// MOTEUR DE SCORE TENNIS (paramétrable selon le format du tournoi)
-// ---------------------------------------------------------------
-function initLiveState(format){
-  return {
-    format,
-    sets: [],            // [{games:[g1,g2], tb:[t1,t2]|null, superTb:bool}]
-    games: [0,0],
-    points: [0,0],       // utilisé uniquement en tie-break / super tie-break
-    serve: 0,            // 0 ou 1 : index du joueur au service
-    inTiebreak: false,
-    inSuperTb: false,
-    finished: false,
-    winner: null
-  };
-}
-function setWinner(s){
-  if(s.superTb) return s.tb[0] > s.tb[1] ? 0 : 1;
-  return s.games[0] > s.games[1] ? 0 : 1;
-}
-function setsWon(state){
-  const w=[0,0];
-  state.sets.forEach(s => w[setWinner(s)]++);
-  return w;
-}
-function afterSetPush(state){
-  const f = state.format;
-  const sw = setsWon(state);
-  if(sw[0] >= f.nb_sets_gagnants || sw[1] >= f.nb_sets_gagnants){
-    state.finished = true;
-    state.winner = sw[0] > sw[1] ? 0 : 1;
-    return;
-  }
-  if(sw[0] === f.nb_sets_gagnants - 1 && sw[1] === f.nb_sets_gagnants - 1 && f.super_tb_set_final){
-    state.inSuperTb = true; // le set décisif se joue directement en super tie-break
-    state.points=[0,0];
-  }
-}
-// Ajoute 1 jeu (mode normal) ou 1 point (tie-break / super tie-break) au joueur p
-function addPoint(state, p){
-  if(state.finished) return state;
-  const o = p===0?1:0, f = state.format;
-
-  if(state.inTiebreak || state.inSuperTb){
-    state.points[p]++;
-    const target = state.inSuperTb ? f.points_super_tb : 7;
-    if(state.points[p] >= target && (state.points[p]-state.points[o]) >= 2){
-      const gset=[...state.games]; gset[p]++;
-      state.sets.push({games:gset, tb:[...state.points], superTb: state.inSuperTb});
-      state.games=[0,0]; state.points=[0,0];
-      state.inTiebreak=false; state.inSuperTb=false;
-      state.serve = o;
-      afterSetPush(state);
-    }
-    return state;
-  }
-
-  // Mode normal : +1 jeu directement
-  state.games[p]++;
-  const g=state.games;
-  if(g[p] >= f.jeux_par_set && (g[p]-g[o]) >= 2){
-    state.sets.push({games:[...g], tb:null, superTb:false});
-    state.games=[0,0];
-    state.serve = o;
-    afterSetPush(state);
-  } else if(g[0]===f.seuil_tiebreak && g[1]===f.seuil_tiebreak){
-    state.inTiebreak = true;
-    state.points=[0,0];
-  } else {
-    state.serve = o; // alternance du service à chaque jeu
-  }
-  return state;
-}
-window.toggleServe = async () => {
-  const m = window._currentMatch;
-  STATE.history.push(JSON.parse(JSON.stringify(m.live_state)));
-  m.live_state.serve = m.live_state.serve === 0 ? 1 : 0;
-  await saveMatch(m);
+const STATE = {
+  session:null,
+  profile:null,
+  route:'#/'
 };
 
-// ---------------------------------------------------------------
-// SCOREBOARD HTML (réutilisé côté coach et côté spectateur)
-// ---------------------------------------------------------------
-function scoreboardHTML(m, p1Name, p2Name, opts={}){
-  const st = m.live_state && m.live_state.format ? m.live_state : null;
-  const sets = st ? st.sets : [];
-  const curGames = st ? st.games : [0,0];
-  const tbActive = st && (st.inTiebreak || st.inSuperTb);
-  const isLive = m.statut === 'en_cours';
-  const isDone = m.statut === 'termine';
+/* =========================
+   HELPERS
+========================= */
 
-  let setsHtml = '';
-  const renderSetCell = (idx, val, superTb, tb) => {
-    let extra='';
-    if(tb !== null && tb !== undefined) extra = `<span class="tb-note">${tb}</span>`;
-    return `<div class="set-score">${val}${extra}</div>`;
-  };
+const esc = v => (v ?? '').toString().replace(/[&<>"']/g, c => ({
+  '&':'&amp;',
+  '<':'&lt;',
+  '>':'&gt;',
+  '"':'&quot;',
+  "'":'&#39;'
+}[c]));
 
-  // colonnes : sets terminés + set courant (si pas fini et pas en super TB pur)
-  const colsP1=[], colsP2=[];
-  sets.forEach(s=>{
-    colsP1.push(renderSetCell(0, s.games[0], s.superTb, s.tb ? s.tb[0] : null));
-    colsP2.push(renderSetCell(0, s.games[1], s.superTb, s.tb ? s.tb[1] : null));
-  });
-  if(st && !st.finished && !st.inSuperTb){
-    colsP1.push(`<div class="set-score current">${curGames[0]}</div>`);
-    colsP2.push(`<div class="set-score current">${curGames[1]}</div>`);
-  }
+const fullName = p => [p?.prenom, p?.nom].filter(Boolean).join(' ') || p?.nom || '—';
 
-  const tieHtml = (st && tbActive) ? `
-    <div class="tiebreak-banner">
-      <span class="tb-label">${st.inSuperTb ? 'Super tie-break' : 'Jeu décisif'}</span>
-      <span class="tb-points">${st.points[0]} – ${st.points[1]}</span>
-    </div>` : '';
+const formatDate = iso => {
+  if(!iso) return 'Non planifié';
+  return new Intl.DateTimeFormat('fr-FR',{
+    weekday:'long',
+    day:'numeric',
+    month:'long'
+  }).format(new Date(iso));
+};
 
-  let liveTag = '';
-  if(isLive) liveTag = `<div class="live-tag"><span class="blink"></span> Live</div>`;
-  else if(isDone) liveTag = `<div class="live-tag" style="background:var(--court-2)">Terminé</div>`;
-  else liveTag = `<div class="live-tag" style="background:var(--grey)">À venir</div>`;
+const formatTime = iso => {
+  if(!iso) return '';
+  return new Intl.DateTimeFormat('fr-FR',{
+    hour:'2-digit',
+    minute:'2-digit'
+  }).format(new Date(iso));
+};
 
-  return `
-  <div class="board">
-    ${liveTag}
-    <div class="tour-name">${m.scheduled_at ? '🕐 '+new Intl.DateTimeFormat('fr-FR',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}).format(new Date(m.scheduled_at))+' · ' : ''}${esc(m.tour || 'Match')}${m.court ? ' · '+esc(m.court) : ''}</div>
-    <div class="player-row">
-      <div class="player-name">${esc(p1Name)}${(st && st.finished && st.winner===0) ? ' 🏆' : ''}${(isLive && st && st.serve===0) ? ' 🎾' : ''}</div>
-      <div class="sets">${colsP1.join('') || '<span class="muted">—</span>'}</div>
-    </div>
-    <div class="player-row">
-      <div class="player-name">${esc(p2Name)}${(st && st.finished && st.winner===1) ? ' 🏆' : ''}${(isLive && st && st.serve===1) ? ' 🎾' : ''}</div>
-      <div class="sets">${colsP2.join('') || '<span class="muted">—</span>'}</div>
-    </div>
-    ${tieHtml}
-  </div>`;
+function go(hash){
+  location.hash = hash;
 }
 
-// ---------------------------------------------------------------
-// RENDU GÉNÉRAL
-// ---------------------------------------------------------------
-function shell(content, navActive){
-  const role = STATE.profile?.role;
-  let nav = '';
-  if(role === 'admin'){
-    const hasTeam = !!STATE.profile.team_id;
-    nav = `
-      <div class="tab-bar">
-        <button class="${navActive==='admin'?'active':''}" onclick="navigate('#/coach')">🛠️<span class="label">Équipes</span></button>
-        ${hasTeam ? `<button class="${navActive==='home'?'active':''}" onclick="navigate('#/mon-equipe')">🏟️<span class="label">Ma tournée</span></button>` : ''}
-        ${hasTeam ? `<button class="${navActive==='planning'?'active':''}" onclick="navigate('#/coach/planning')">📅<span class="label">Planning</span></button>` : ''}
-        <button class="${navActive==='profile'?'active':''}" onclick="navigate('#/profil')">👤<span class="label">Profil</span></button>
-      </div>`;
-  } else if(role === 'coach'){
-    nav = `
-      <div class="tab-bar">
-        <button class="${navActive==='home'?'active':''}" onclick="navigate('#/coach')">🏟️<span class="label">Tournées</span></button>
-        <button class="${navActive==='planning'?'active':''}" onclick="navigate('#/coach/planning')">📅<span class="label">Mon planning</span></button>
-        <button class="${navActive==='profile'?'active':''}" onclick="navigate('#/profil')">👤<span class="label">Profil</span></button>
-      </div>`;
-  } else if(role){
-    nav = `
-      <div class="tab-bar">
-        <button class="${navActive==='home'?'active':''}" onclick="navigate('#/suivi')">🎾<span class="label">Mes matchs</span></button>
-        <button class="${navActive==='profile'?'active':''}" onclick="navigate('#/profil')">👤<span class="label">Profil</span></button>
-      </div>`;
-  }
+function toast(msg){
+  alert(msg);
+}
+
+function genCode(){
+  return Array.from({length:5}, () =>
+    'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*32)]
+  ).join('');
+}
+
+/* =========================
+   SHELL
+========================= */
+
+function shell(content, active='planning'){
+  const role = STATE.profile?.role || 'parent';
+
   app.innerHTML = `
-    <div class="topbar">
-      <div class="brand"><span class="dot"></span> Tennistour</div>
-      ${STATE.profile ? `<div class="who" onclick="navigate('#/profil')">${esc(STATE.profile.role==='admin'?'admin':STATE.profile.role)}</div>` : ''}
-    </div>
+    <header>
+      <div class="brand">🎾 TennisTour</div>
+      <div class="role">${esc(role)}</div>
+    </header>
+
     <main>${content}</main>
-    ${nav}
+
+    ${STATE.profile ? `
+    <div class="nav">
+      <button class="${active==='tournees'?'active':''}" onclick="go('#/tournees')">Tournées</button>
+      <button class="${active==='planning'?'active':''}" onclick="go('#/planning')">Planning</button>
+      <button class="${active==='joueurs'?'active':''}" onclick="go('#/joueurs')">Joueurs</button>
+      <button class="${active==='profil'?'active':''}" onclick="go('#/profil')">Profil</button>
+    </div>` : ''}
   `;
 }
 
-// ---------------------------------------------------------------
-// VUE : LANDING (accès direct par code joueur, façon Brunoy)
-// ---------------------------------------------------------------
-function getSavedCodes(){
-  try{ return JSON.parse(localStorage.getItem('setpoint_codes')||'[]'); }catch{ return []; }
-}
-function saveCode(code, nom){
-  const list = getSavedCodes().filter(c=>c.code!==code);
-  list.unshift({code, nom});
-  localStorage.setItem('setpoint_codes', JSON.stringify(list.slice(0,8)));
-}
-function viewLanding(){
-  const saved = getSavedCodes();
-  const savedHtml = saved.length ? `
-    <div class="card">
-      <h3>Suivis récents</h3>
-      ${saved.map(c=>`
-        <div class="row between" style="padding:6px 0; cursor:pointer" onclick="navigate('#/j/${esc(c.code)}')">
-          <div>${esc(c.nom)}</div>
-          <div class="code-badge" style="font-size:13px; padding:4px 8px;">${esc(c.code)}</div>
-        </div>`).join('')}
-    </div>` : '';
+window.go = go;
 
+/* =========================
+   LOGIN UNIQUE
+========================= */
+
+function viewLogin(){
   app.innerHTML = `
-    <main style="padding:16px;">
-      <div style="text-align:center; padding:50px 10px 10px;">
-        <div style="font-family:var(--fnt-head); font-size:34px; font-weight:900; letter-spacing:4px; color:var(--accent); text-transform:uppercase;">🎾 Tennistour</div>
-        <p class="muted" style="margin-top:6px;">Suivi de tournois en direct</p>
+    <main style="padding-top:60px">
+      <div style="text-align:center;margin-bottom:24px">
+        <h1 style="color:var(--accent)">🎾 TennisTour</h1>
+        <p class="muted">Programmation de tournée tennis</p>
       </div>
 
       <div class="card">
+        <h3>Accès parent / joueur</h3>
+        <p class="muted">Entre le code joueur donné par le superviseur.</p>
+
         <label>Code joueur</label>
-        <div class="row">
-          <input id="playerCodeInput" placeholder="CODE" maxlength="5" style="text-transform:uppercase; flex:1;" autocapitalize="characters" autocomplete="off">
-          <button class="btn clay" style="width:auto; margin-top:0; padding:12px 18px;" onclick="goToPlayerCode()">→</button>
-        </div>
-        <p class="muted" style="margin-top:8px;">Entre le code donné par le coach pour suivre les matchs en direct</p>
-        <div class="error" id="landingErr"></div>
+        <input id="playerCode" placeholder="Ex : A7K2P" maxlength="5" style="text-transform:uppercase">
+
+        <button class="btn" onclick="loginByPlayerCode()">Voir le planning</button>
       </div>
 
-      ${savedHtml}
+      <div class="card">
+        <h3>Accès admin / superviseur / coach</h3>
 
-      <button class="btn secondary" style="margin-top:18px;" onclick="navigate('#/coach-login')">🔑 Accès Coach</button>
-    </main>`;
+        <label>Email</label>
+        <input id="email" type="email" placeholder="email">
 
-  const input = document.getElementById('playerCodeInput');
-  input.addEventListener('keydown', e => { if(e.key==='Enter') goToPlayerCode(); });
+        <label>Mot de passe</label>
+        <input id="password" type="password" placeholder="mot de passe">
+
+        <button class="btn" onclick="login()">Se connecter</button>
+      </div>
+    </main>
+  `;
 }
-window.goToPlayerCode = () => {
-  const code = document.getElementById('playerCodeInput').value.trim().toUpperCase();
-  if(!code){ document.getElementById('landingErr').textContent = 'Entre un code.'; return; }
-  navigate('#/j/'+code);
-};
 
-// ---------------------------------------------------------------
-// VUE : SUIVI PAR CODE (sans compte, accès joueur/parent)
-// ---------------------------------------------------------------
-async function viewPlayerCode(code){
-  app.innerHTML = `<main><div class="empty">Chargement…</div></main>`;
-  const { data: player, error } = await supabase.from('players').select('*').eq('code', code).maybeSingle();
-  if(error || !player){
-    app.innerHTML = `
-      <main>
-        <div class="card" style="text-align:center">
-          <h3>Code introuvable</h3>
-          <p class="muted">Vérifie le code donné par le coach (5 caractères).</p>
-          <button class="btn clay" onclick="navigate('#/')">← Retour</button>
-        </div>
-      </main>`;
+window.login = async () => {
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+  if(error){
+    alert(error.message);
     return;
   }
-  saveCode(player.code, fullName(player));
 
-  const { data: matches } = await supabase.from('matches')
-    .select('*, tournaments(nom)')
-    .or(`joueur1_id.eq.${player.id},joueur2_id.eq.${player.id}`)
-    .order('updated_at',{ascending:false});
+  await loadSession();
+};
 
-  const { data: trainingLinks } = await supabase.from('training_players')
-    .select('trainings(*)').eq('player_id', player.id);
-  const trainings = (trainingLinks||[]).map(l=>l.trainings).filter(Boolean);
+window.loginByPlayerCode = () => {
+  const code = document.getElementById('playerCode').value.trim().toUpperCase();
+  if(!code) return alert('Entre un code joueur.');
+  go('#/parent/' + code);
+};
 
-  const idsNeeded = new Set();
-  (matches||[]).forEach(m=>{ idsNeeded.add(m.joueur1_id); idsNeeded.add(m.joueur2_id); });
-  let namesMap = {};
-  if(idsNeeded.size){
-    const { data: pls } = await supabase.from('players').select('id,nom,prenom').in('id', [...idsNeeded]);
-    (pls||[]).forEach(p=>namesMap[p.id]=fullName(p));
-  }
+window.logout = async () => {
+  await supabase.auth.signOut();
+  STATE.session = null;
+  STATE.profile = null;
+  go('#/');
+};
 
-  // --- Planning combiné (matchs + entraînements), groupé par jour ---
-  const dateFmt = new Intl.DateTimeFormat('fr-FR', { weekday:'long', day:'numeric', month:'long' });
-  const timeFmt = new Intl.DateTimeFormat('fr-FR', { hour:'2-digit', minute:'2-digit' });
-  const items = [];
-  (matches||[]).forEach(m=> items.push({ type:'match', date:m.scheduled_at, data:m }));
-  trainings.forEach(tr=> items.push({ type:'training', date:tr.scheduled_at, data:tr }));
-  const groups = new Map();
-  items.forEach(it=>{
-    const key = it.date ? it.date.slice(0,10) : 'none';
-    if(!groups.has(key)) groups.set(key, []);
-    groups.get(key).push(it);
-  });
-  const sortedKeys = [...groups.keys()].sort((a,b)=> a==='none'?1 : b==='none'?-1 : a.localeCompare(b));
-  const planningHtml = items.length ? sortedKeys.map(key=>{
-    const label = key==='none' ? 'Non planifié' : dateFmt.format(new Date(key+'T00:00:00'));
-    const rows = groups.get(key).sort((a,b)=> (a.date||'').localeCompare(b.date||'')).map(it=>{
-      const time = it.date ? timeFmt.format(new Date(it.date)) : '';
-      if(it.type==='match'){
-        const m = it.data;
-        const statusPill = m.statut==='en_cours' ? '<span class="pill live">Live</span>'
-          : m.statut==='termine' ? '<span class="pill done">Terminé</span>' : '<span class="pill upcoming">À venir</span>';
-        return `<div class="card" onclick="navigate('#/match/${m.id}')" style="cursor:pointer">
-          <div class="row between"><div>🎾 <strong>${esc(namesMap[m.joueur1_id]||'—')}</strong> vs <strong>${esc(namesMap[m.joueur2_id]||'—')}</strong></div>${statusPill}</div>
-          <p class="muted">${time?`🕐 ${time} · `:''}${esc(m.tournaments?.nom||'')}${m.court?' · '+esc(m.court):''}</p>
-        </div>`;
-      } else {
-        const tr = it.data;
-        return `<div class="card" style="background:var(--s3)">
-          <div>🏋️ <strong>${esc(tr.titre)}</strong></div>
-          <p class="muted">${time?`🕐 ${time}`:''}${tr.lieu?' · 📍 '+esc(tr.lieu):''}</p>
-          ${tr.description ? `<p class="muted">${esc(tr.description)}</p>` : ''}
-        </div>`;
-      }
-    }).join('');
-    return `<h3 style="margin:18px 0 8px; text-transform:capitalize;">${esc(label)}</h3>${rows}`;
-  }).join('') : `<div class="empty">Rien de programmé pour l'instant.</div>`;
+/* =========================
+   LOAD SESSION
+========================= */
 
-  // --- Scores & débriefs ---
-  const order = { en_cours:0, a_venir:1, termine:2 };
-  const sorted = [...(matches||[])].sort((a,b)=> (order[a.statut]??3) - (order[b.statut]??3));
+async function loadSession(){
+  const { data } = await supabase.auth.getSession();
+  STATE.session = data.session;
 
-  const matchesHtml = sorted.length ? sorted.map(m => `
-    <div onclick="navigate('#/match/${m.id}')" style="cursor:pointer">
-      <p class="muted" style="margin:0 0 4px">${esc(m.tournaments?.nom||'')}</p>
-      ${scoreboardHTML(m, namesMap[m.joueur1_id]||'—', namesMap[m.joueur2_id]||'—')}
-    </div>
-    ${m.statut==='termine' && m.debrief ? `
-      <div class="card" style="margin-top:-4px">
-        <h3>📝 Débrief du coach</h3>
-        <p class="muted" style="white-space:pre-wrap">${esc(m.debrief)}</p>
-      </div>` : ''}
-  `).join('') : `<div class="empty"><div class="big">🎾</div>Aucun match pour l'instant.</div>`;
-
-  app.innerHTML = `
-    <div class="topbar">
-      <div class="brand"><span class="dot"></span> Tennistour</div>
-      <div class="who" onclick="navigate('#/')">Quitter</div>
-    </div>
-    <main>
-      <h2 style="margin:4px 0 2px">${esc(fullName(player))}</h2>
-      <p class="muted" style="margin-top:0">Code ${esc(player.code)}</p>
-      <h3 style="margin:18px 0 8px">Planning</h3>
-      ${planningHtml}
-      <h3 style="margin:18px 0 8px">Scores &amp; débriefs</h3>
-      ${matchesHtml}
-    </main>`;
-}
-
-// ---------------------------------------------------------------
-// VUE : ACCÈS COACH (connexion / inscription par identifiant)
-// ---------------------------------------------------------------
-const AUTH_DOMAIN = '@setpoint.local';
-function loginToEmail(login){
-  const clean = (login||'').trim().toLowerCase().replace(/[^a-z0-9._-]/g,'');
-  return clean + AUTH_DOMAIN;
-}
-function emailToLogin(email){
-  return (email||'').replace(AUTH_DOMAIN,'');
-}
-function viewAuth(){
-  app.innerHTML = `
-    <div class="topbar"><div class="brand"><span class="dot"></span> Tennistour</div></div>
-    <main>
-      <button class="btn ghost" onclick="navigate('#/')">← Retour</button>
-      <div class="card" style="margin-top:12px;">
-        <h3>🔑 Accès Coach</h3>
-        <p class="muted">Connexion avec l'identifiant et le mot de passe fournis par l'administrateur.</p>
-        <form id="authForm">
-          <label>Identifiant</label>
-          <input name="login" required placeholder="Ex: jimmy" autocapitalize="none" autocomplete="username" pattern="[A-Za-z0-9._-]+">
-          <label>Mot de passe</label>
-          <input type="password" name="password" required minlength="6" placeholder="Mot de passe" autocomplete="current-password">
-          <button class="btn clay" type="submit">Se connecter</button>
-          <div class="error" id="authError"></div>
-        </form>
-      </div>
-    </main>`;
-  document.getElementById('authForm').addEventListener('submit', onAuthSubmit);
-}
-async function onAuthSubmit(e){
-  e.preventDefault();
-  const f = new FormData(e.target);
-  const email = loginToEmail(f.get('login')), password = f.get('password');
-  const errEl = document.getElementById('authError');
-  errEl.textContent = '';
-  try{
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if(error) throw error;
-    await loadSession();
-  }catch(err){
-    errEl.style.color='var(--clay)';
-    errEl.textContent = err.message || 'Erreur';
-  }
-}
-
-// ---------------------------------------------------------------
-// VUE : CHANGEMENT DE MOT DE PASSE OBLIGATOIRE
-// ---------------------------------------------------------------
-function viewChangePassword(){
-  app.innerHTML = `
-    <div class="topbar"><div class="brand"><span class="dot"></span> Tennistour</div></div>
-    <main>
-      <div class="card" style="margin-top:12px;">
-        <h3>🔒 Nouveau mot de passe requis</h3>
-        <p class="muted">Pour des raisons de sécurité, choisis un nouveau mot de passe avant de continuer.</p>
-        <form id="pwdForm">
-          <label>Nouveau mot de passe</label>
-          <input type="password" name="password" required minlength="6" placeholder="6 caractères min." autocomplete="new-password">
-          <label>Confirmer le mot de passe</label>
-          <input type="password" name="password2" required minlength="6" placeholder="Répéter le mot de passe" autocomplete="new-password">
-          <button class="btn clay" type="submit">Valider</button>
-          <div class="error" id="pwdError"></div>
-        </form>
-      </div>
-    </main>`;
-  document.getElementById('pwdForm').addEventListener('submit', async e=>{
-    e.preventDefault();
-    const f = new FormData(e.target);
-    const p1 = f.get('password'), p2 = f.get('password2');
-    const errEl = document.getElementById('pwdError');
-    if(p1 !== p2){ errEl.textContent = 'Les mots de passe ne correspondent pas.'; return; }
-    const { error: authErr } = await supabase.auth.updateUser({ password: p1 });
-    if(authErr){ errEl.textContent = authErr.message; return; }
-    const { error: profErr } = await supabase.from('profiles').update({ must_change_password: false }).eq('id', STATE.session.user.id);
-    if(profErr){ errEl.textContent = profErr.message; return; }
-    STATE.profile.must_change_password = false;
-    toast('Mot de passe mis à jour');
+  if(!STATE.session){
+    STATE.profile = null;
     router();
-  });
-}
-
-// ---------------------------------------------------------------
-// VUE : PROFIL
-// ---------------------------------------------------------------
-async function viewProfil(){
-  const p = STATE.profile;
-  let teamHtml = '';
-  if(p.role === 'coach' && p.team_id){
-    const { data: team } = await supabase.from('teams').select('*').eq('id', p.team_id).maybeSingle();
-    if(team){
-      const isPrincipal = team.created_by === STATE.session.user.id || STATE.profile.superviseur;
-      teamHtml = `
-        <div class="card">
-          <h3>Équipe</h3>
-          <p class="muted">${esc(team.nom)}</p>
-          <label>Code d'invitation (à donner aux coachs adjoints)</label>
-          <div class="code-badge">${esc(team.code)}</div>
-          ${isPrincipal ? `<button class="btn secondary" onclick="regenerateTeamCode('${team.id}')">↺ Générer un nouveau code</button>` : ''}
-        </div>`;
-    }
+    return;
   }
-  shell(`
-    <div class="card">
-      <h3>${esc(fullName(p))}</h3>
-      <p class="muted">Rôle : ${esc(p.role)}${p.role==='coach' ? ` · ${p.statut==='actif' ? '<span style="color:var(--accent)">Validé</span>' : '<span style="color:var(--live)">En attente de validation</span>'}` : ''}</p>
-      <p class="muted">Identifiant : ${esc(emailToLogin(STATE.session.user.email))}</p>
-      <button class="btn secondary" onclick="logout()">Se déconnecter</button>
-    </div>
-    ${teamHtml}
-  `, 'profile');
-}
-window.regenerateTeamCode = async (teamId) => {
-  if(!confirm("Générer un nouveau code d'invitation ? L'ancien code ne fonctionnera plus pour rejoindre l'équipe.")) return;
-  const newCode = genCode();
-  const { error } = await supabase.from('teams').update({ code: newCode }).eq('id', teamId);
-  if(error){ toast(error.message, true); return; }
-  toast('Nouveau code généré');
-  viewProfil();
-};
-window.logout = async () => { await supabase.auth.signOut(); STATE.profile=null; navigate('#/'); };
 
-// ---------------------------------------------------------------
-// VUE : COACH — CONFIGURATION DE L'ÉQUIPE (étape obligatoire avant accès)
-// ---------------------------------------------------------------
-let teamSetupMode = 'create';
-function viewTeamSetup(){
-  app.innerHTML = `
-    <div class="topbar">
-      <div class="brand"><span class="dot"></span> Tennistour</div>
-      <div class="who" onclick="navigate('#/profil')">${esc(STATE.profile.role)}</div>
-    </div>
-    <main>
-      <div class="card">
-        <h3>Ton équipe de coachs</h3>
-        <p class="muted">Avant de créer des tournois, rattache-toi à une équipe : crée celle de ton club, ou rejoins-en une avec le code donné par le coach principal.</p>
-        <div class="tabs">
-          <button class="${teamSetupMode==='create'?'active':''}" onclick="setTeamSetupMode('create')">Créer mon équipe</button>
-          <button class="${teamSetupMode==='join'?'active':''}" onclick="setTeamSetupMode('join')">Rejoindre</button>
-        </div>
-        ${teamSetupMode==='create' ? `
-          <form id="teamCreateForm">
-            <label>Nom de l'équipe / club</label>
-            <input name="nom" required placeholder="Ex: ES Brunoy Handball - Staff Tennis">
-            <button class="btn clay" type="submit">Créer l'équipe</button>
-            <div class="error" id="teamErr"></div>
-          </form>
-        ` : `
-          <form id="teamJoinForm">
-            <label>Code d'invitation (donné par le coach principal)</label>
-            <input name="code" required placeholder="CODE" style="text-transform:uppercase">
-            <button class="btn clay" type="submit">Rejoindre l'équipe</button>
-            <div class="error" id="teamErr"></div>
-          </form>
-        `}
-      </div>
-    </main>
-  `;
-  document.getElementById('teamCreateForm')?.addEventListener('submit', async e=>{
-    e.preventDefault();
-    const nom = new FormData(e.target).get('nom').trim();
-    const code = genCode();
-    const { data: team, error } = await supabase.from('teams').insert({ nom, code, created_by: STATE.session.user.id }).select().single();
-    if(error){ document.getElementById('teamErr').textContent = error.message; return; }
-    const { error: pErr } = await supabase.from('profiles').update({ team_id: team.id }).eq('id', STATE.session.user.id);
-    if(pErr){ document.getElementById('teamErr').textContent = pErr.message; return; }
-    STATE.profile.team_id = team.id;
-    toast(`Équipe créée · code ${code}`);
-    navigate('#/coach');
-  });
-  document.getElementById('teamJoinForm')?.addEventListener('submit', async e=>{
-    e.preventDefault();
-    const code = new FormData(e.target).get('code').trim().toUpperCase();
-    const { data: team, error } = await supabase.from('teams').select('*').eq('code', code).maybeSingle();
-    if(error || !team){ document.getElementById('teamErr').textContent = 'Code introuvable.'; return; }
-    const { error: pErr } = await supabase.from('profiles').update({ team_id: team.id, statut: 'en_attente' }).eq('id', STATE.session.user.id);
-    if(pErr){ document.getElementById('teamErr').textContent = pErr.message; return; }
-    STATE.profile.team_id = team.id;
-    STATE.profile.statut = 'en_attente';
-    navigate('#/coach');
-  });
-}
-window.setTeamSetupMode = m => { teamSetupMode = m; viewTeamSetup(); };
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', STATE.session.user.id)
+    .maybeSingle();
 
-// ---------------------------------------------------------------
-// VUE : COACH ADJOINT — EN ATTENTE DE VALIDATION (style Brunoy)
-// ---------------------------------------------------------------
-async function viewWaitingValidation(){
-  const { data: team } = await supabase.from('teams').select('*').eq('id', STATE.profile.team_id).maybeSingle();
-  app.innerHTML = `
-    <div class="topbar">
-      <div class="brand"><span class="dot"></span> Tennistour</div>
-      <div class="who" onclick="navigate('#/profil')">${esc(STATE.profile.role)}</div>
-    </div>
-    <main>
-      <div class="card" style="text-align:center">
-        <div class="big" style="font-family:var(--fnt-head); font-size:40px; margin-bottom:6px">⏳</div>
-        <h3>Inscription envoyée !</h3>
-        <p class="muted">Ton compte est en attente de validation par le coach principal de <strong>${esc(team?.nom||"l'équipe")}</strong>.</p>
-        <p class="muted">Préviens-le que tu as rejoint l'équipe avec son code — il doit te valider depuis son espace Tournois.</p>
-        <button class="btn clay" onclick="refreshValidation()">↺ Vérifier à nouveau</button>
-        <button class="btn secondary" onclick="logout()">Se déconnecter</button>
-      </div>
-    </main>
-  `;
-}
-window.refreshValidation = async () => {
-  const { data: profile } = await supabase.from('profiles').select('*').eq('id', STATE.session.user.id).maybeSingle();
   STATE.profile = profile;
-  if(profile?.statut === 'actif'){ toast('Compte validé !'); navigate('#/coach'); }
-  else { toast("Toujours en attente de validation.", true); }
-};
 
-// ---------------------------------------------------------------
-// VUE : ADMIN — VUE GLOBALE DE TOUTES LES ÉQUIPES
-// ---------------------------------------------------------------
-async function viewAdminHome(){
-  shell(`<div class="empty">Chargement…</div>`, 'admin');
-  const { data: teams } = await supabase.from('teams').select('*').order('created_at',{ascending:false});
-  const { data: tournees } = await supabase.from('tournees').select('*').order('date_debut',{ascending:false});
-  const { data: coaches } = await supabase.from('profiles').select('id, nom, team_id').eq('role','coach');
-
-  const tByTeam = {};
-  (tournees||[]).forEach(t => { (tByTeam[t.team_id] ||= []).push(t); });
-  const coachByTeam = {};
-  (coaches||[]).forEach(c => { (coachByTeam[c.team_id] ||= []).push(c.nom); });
-
-  const teamsHtml = (teams||[]).length ? (teams||[]).map(team => {
-    const tours = tByTeam[team.id] || [];
-    const tourHtml = tours.length ? tours.map(t => `
-      <div class="card" onclick="navigate('#/coach/tournee/${t.id}')" style="cursor:pointer; background:var(--s3)">
-        <div class="row between"><strong>${esc(t.nom)}</strong>${t.date_debut?`<span class="muted">${t.date_debut}</span>`:''}</div>
-        <p class="muted" style="margin:4px 0 0">${esc(t.lieu||'')}</p>
-      </div>`).join('') : `<p class="muted">Aucune tournée.</p>`;
-    return `
-      <div class="card">
-        <div class="row between">
-          <h3 style="margin:0">${esc(team.nom)}</h3>
-          <div class="code-badge" style="font-size:13px; padding:4px 8px;">${esc(team.code)}</div>
-        </div>
-        <p class="muted">Coachs : ${(coachByTeam[team.id]||[]).map(esc).join(', ')||'—'}</p>
-        ${tourHtml}
-      </div>`;
-  }).join('') : `<div class="empty"><div class="big">🛠️</div>Aucune équipe créée pour l'instant.</div>`;
-
-  shell(`
-    <h2 style="margin:4px 0 14px">Toutes les équipes</h2>
-    <p class="muted" style="margin-top:-10px">Vue administrateur — accès à toutes les tournées et matchs.</p>
-    <button class="btn secondary" onclick="navigate('#/admin/utilisateurs')">👥 Gestion des utilisateurs</button>
-    ${teamsHtml}
-  `, 'admin');
+  if(!location.hash || location.hash === '#/'){
+    go('#/planning');
+  }else{
+    router();
+  }
 }
 
-// ---------------------------------------------------------------
-// VUE : ADMIN — GESTION DES UTILISATEURS
-// ---------------------------------------------------------------
-async function viewAdminUsers(){
-  shell(`<div class="empty">Chargement…</div>`, 'admin');
-  const { data: profiles } = await supabase.from('profiles').select('*').order('created_at',{ascending:false});
-  const { data: teams } = await supabase.from('teams').select('id, nom');
-  const teamName = tid => (teams||[]).find(t=>t.id===tid)?.nom || '—';
+/* =========================
+   PLANNING CENTRAL
+========================= */
 
-  const rows = (profiles||[]).length ? (profiles||[]).map(p=>{
-    const isMe = p.id === STATE.session.user.id;
-    return `
-    <div class="card">
-      <div class="row between">
-        <div>
-          <strong>${esc(fullName(p))}</strong>
-        </div>
-        <div style="text-align:right">
-          <span class="pill ${p.role==='admin'?'done':'upcoming'}">${esc(p.role)}</span>
-          ${p.role==='coach' ? `<div style="margin-top:4px"><span class="pill ${p.statut==='actif'?'done':'live'}">${p.statut==='actif'?'Validé':'En attente'}</span></div>` : ''}
-          ${p.superviseur ? `<div style="margin-top:4px"><span class="pill done">Superviseur</span></div>` : ''}
-        </div>
-      </div>
-      ${p.team_id ? `<p class="muted" style="margin:6px 0 0">Équipe : ${esc(teamName(p.team_id))}</p>` : ''}
-      <div class="row" style="margin-top:10px; flex-wrap:wrap; gap:8px;">
-        ${p.role==='coach' && p.statut!=='actif' ? `<button class="btn small" onclick="adminSetStatut('${p.id}','actif')">Valider</button>` : ''}
-        ${p.role==='coach' && p.statut==='actif' ? `<button class="btn small secondary" onclick="adminSetStatut('${p.id}','en_attente')">Mettre en attente</button>` : ''}
-        ${p.role==='coach' && p.team_id && !p.superviseur ? `<button class="btn small secondary" onclick="adminSetSuperviseur('${p.id}',true)">Promouvoir superviseur</button>` : ''}
-        ${p.role==='coach' && p.superviseur ? `<button class="btn small secondary" onclick="adminSetSuperviseur('${p.id}',false)">Retirer superviseur</button>` : ''}
-        ${p.role==='coach' ? `<button class="btn small secondary" onclick="adminSetRole('${p.id}','admin')">Promouvoir admin</button>` : ''}
-        ${p.role==='admin' && !isMe ? `<button class="btn small secondary" onclick="adminSetRole('${p.id}','coach')">Rétrograder coach</button>` : ''}
-        ${!isMe ? `<button class="btn small clay" onclick="adminDeleteUser('${p.id}','${esc(fullName(p)).replace(/'/g,"\\\\'")}')">Supprimer</button>` : ''}
-      </div>
-    </div>`;
-  }).join('') : `<div class="empty">Aucun utilisateur.</div>`;
-
-  shell(`
-    <button class="btn ghost" onclick="navigate('#/coach')">← Toutes les équipes</button>
-    <h2 style="margin:8px 0 14px">Gestion des utilisateurs</h2>
-
-    <div class="card">
-      <h3>+ Créer un compte</h3>
-      <form id="createUserForm">
-        <label>Prénom</label>
-        <input name="prenom" placeholder="Ex: Lohan">
-        <label>Nom</label>
-        <input name="nom" required placeholder="Ex: Dupont">
-        <label>Identifiant</label>
-        <input name="login" required placeholder="Ex: lohan" autocapitalize="none" pattern="[A-Za-z0-9._-]+">
-        <label>Rôle</label>
-        <select name="role">
-          <option value="coach">Coach</option>
-          <option value="admin">Admin</option>
-        </select>
-        <label>Équipe (coach uniquement)</label>
-        <select name="team_id">
-          <option value="">— Aucune (à choisir à la connexion) —</option>
-          ${(teams||[]).map(t=>`<option value="${t.id}">${esc(t.nom)}</option>`).join('')}
-        </select>
-        <button class="btn clay" type="submit">Créer le compte</button>
-        <div class="error" id="createUserErr"></div>
-        <div id="createUserResult"></div>
-      </form>
-    </div>
-
-    ${rows}
-  `, 'home');
-
-  document.getElementById('createUserForm').addEventListener('submit', async e=>{
-    e.preventDefault();
-    const f = new FormData(e.target);
-    const errEl = document.getElementById('createUserErr');
-    const resEl = document.getElementById('createUserResult');
-    errEl.textContent = ''; resEl.innerHTML = '';
-    const { data, error } = await supabase.functions.invoke('admin-create-user', {
-      body: { nom: f.get('nom'), prenom: f.get('prenom')||null, login: f.get('login'), role: f.get('role'), team_id: f.get('team_id')||null }
-    });
-    if(error || data?.error){ errEl.textContent = data?.error || error.message; return; }
-    resEl.innerHTML = `
-      <div class="card" style="margin-top:10px; background:var(--accent3); border-color:var(--accent)">
-        <h3>Compte créé ✅</h3>
-        <p class="muted">Transmets ces informations à la personne — elle devra changer son mot de passe à la première connexion.</p>
-        <label>Identifiant</label>
-        <div class="code-badge">${esc(data.login)}</div>
-        <label>Mot de passe provisoire</label>
-        <div class="code-badge">${esc(data.password)}</div>
-      </div>`;
-    e.target.reset();
-  });
-}
-window.adminSetStatut = async (profileId, statut) => {
-  const { error } = await supabase.from('profiles').update({ statut }).eq('id', profileId);
-  if(error){ toast(error.message, true); return; }
-  toast('Statut mis à jour');
-  viewAdminUsers();
-};
-window.adminSetRole = async (profileId, role) => {
-  if(!confirm(`Changer le rôle de cet utilisateur en "${role}" ?`)) return;
-  const payload = role==='admin' ? { role, team_id:null, statut:'actif' } : { role:'coach' };
-  const { error } = await supabase.from('profiles').update(payload).eq('id', profileId);
-  if(error){ toast(error.message, true); return; }
-  toast('Rôle mis à jour');
-  viewAdminUsers();
-};
-window.adminSetSuperviseur = async (profileId, value) => {
-  const { error } = await supabase.from('profiles').update({ superviseur: value }).eq('id', profileId);
-  if(error){ toast(error.message, true); return; }
-  toast(value ? 'Promu superviseur' : 'Superviseur retiré');
-  viewAdminUsers();
-};
-window.adminDeleteUser = async (profileId, nom) => {
-  if(!confirm(`Supprimer définitivement le compte de ${nom} ? Cette action est irréversible.`)) return;
-  const { data, error } = await supabase.functions.invoke('admin-delete-user', { body: { profile_id: profileId } });
-  if(error || data?.error){ toast(data?.error || error.message, true); return; }
-  toast('Compte supprimé');
-  viewAdminUsers();
-};
-
-// ---------------------------------------------------------------
-// VUE : COACH — MON PLANNING (étapes/entraînements où je suis affecté)
-// ---------------------------------------------------------------
-async function viewMyPlanning(){
-  shell(`<div class="empty">Chargement…</div>`, 'planning');
-  const uid = STATE.session.user.id;
-  const teamId = STATE.profile.team_id;
-
-  const { data: ec } = await supabase.from('etape_coaches').select('tournament_id').eq('profile_id', uid);
-  const etapeIds = (ec||[]).map(r=>r.tournament_id);
-
-  const { data: tc } = await supabase.from('training_coaches').select('training_id').eq('profile_id', uid);
-  const trainingIds = (tc||[]).map(r=>r.training_id);
-
-  let etapes = [], matches = [], trainings = [];
-  if(etapeIds.length){
-    const { data } = await supabase.from('tournaments').select('*, tournees(nom)').in('id', etapeIds);
-    etapes = data || [];
-    const { data: m } = await supabase.from('matches').select('*, tournaments(nom)').in('tournament_id', etapeIds);
-    matches = m || [];
-  }
-  if(trainingIds.length){
-    const { data } = await supabase.from('trainings').select('*, training_players(player_id), tournees(nom)').in('id', trainingIds);
-    trainings = data || [];
-  }
-
-  const { data: roster } = await supabase.from('players').select('*').eq('team_id', teamId);
-  const playerName = pid => fullName((roster||[]).find(p=>p.id===pid));
-
-  const dateFmt = new Intl.DateTimeFormat('fr-FR', { weekday:'long', day:'numeric', month:'long' });
-  const timeFmt = new Intl.DateTimeFormat('fr-FR', { hour:'2-digit', minute:'2-digit' });
+async function getPlanningForPlayer(playerId){
   const items = [];
-  matches.forEach(m=> items.push({ type:'match', date:m.scheduled_at, data:m }));
-  trainings.forEach(tr=> items.push({ type:'training', date:tr.scheduled_at, data:tr }));
-  const groups = new Map();
-  items.forEach(it=>{
-    const key = it.date ? it.date.slice(0,10) : 'none';
-    if(!groups.has(key)) groups.set(key, []);
-    groups.get(key).push(it);
+
+  const { data: matches } = await supabase
+    .from('matches')
+    .select(`
+      *,
+      tournaments(nom, lieu, tournee_id, tournees(nom))
+    `)
+    .or(`joueur1_id.eq.${playerId},joueur2_id.eq.${playerId}`);
+
+  const { data: trainings } = await supabase
+    .from('training_players')
+    .select(`
+      player_id,
+      trainings(*, tournees(nom))
+    `)
+    .eq('player_id', playerId);
+
+  const playerIds = new Set();
+
+  (matches || []).forEach(m => {
+    playerIds.add(m.joueur1_id);
+    playerIds.add(m.joueur2_id);
   });
-  const sortedKeys = [...groups.keys()].sort((a,b)=> a==='none'?1 : b==='none'?-1 : a.localeCompare(b));
-  const planningHtml = items.length ? sortedKeys.map(key=>{
-    const label = key==='none' ? 'Non planifié' : dateFmt.format(new Date(key+'T00:00:00'));
-    const rowsHtml = groups.get(key).sort((a,b)=> (a.date||'').localeCompare(b.date||'')).map(it=>{
-      const time = it.date ? timeFmt.format(new Date(it.date)) : '';
-      if(it.type==='match'){
-        const m = it.data;
-        const statusPill = m.statut==='en_cours' ? '<span class="pill live">Live</span>'
-          : m.statut==='termine' ? '<span class="pill done">Terminé</span>' : '<span class="pill upcoming">À venir</span>';
-        return `<div class="card" onclick="navigate('#/coach/match/${m.id}')" style="cursor:pointer">
-          <div class="row between"><div>🎾 <strong>${esc(playerName(m.joueur1_id))}</strong> vs <strong>${esc(playerName(m.joueur2_id))}</strong></div>${statusPill}</div>
-          <p class="muted">${time?`🕐 ${time} · `:''}${esc(m.tournaments?.nom||'')}${m.court?' · '+esc(m.court):''}</p>
-        </div>`;
-      } else {
-        const tr = it.data;
-        const names = (tr.training_players||[]).map(tp=>playerName(tp.player_id)).join(', ');
-        return `<div class="card" style="background:var(--s3)">
-          <div>🏋️ <strong>${esc(tr.titre)}</strong></div>
-          <p class="muted">${time?`🕐 ${time}`:''}${tr.lieu?' · 📍 '+esc(tr.lieu):''} · ${esc(tr.tournees?.nom||'')}</p>
-          <p class="muted">👥 ${esc(names || "Toute l'équipe")}</p>
-        </div>`;
-      }
-    }).join('');
-    return `<h3 style="margin:18px 0 8px; text-transform:capitalize;">${esc(label)}</h3>${rowsHtml}`;
-  }).join('') : `<div class="empty"><div class="big">📅</div>Aucun événement ne t'est encore affecté.<br>Le superviseur affecte les coachs depuis chaque tournée.</div>`;
+
+  let playersMap = {};
+
+  if(playerIds.size){
+    const { data: players } = await supabase
+      .from('players')
+      .select('*')
+      .in('id', [...playerIds]);
+
+    (players || []).forEach(p => playersMap[p.id] = p);
+  }
+
+  (matches || []).forEach(m => {
+    items.push({
+      type:'match',
+      date:m.scheduled_at,
+      title:`Match : ${fullName(playersMap[m.joueur1_id])} vs ${fullName(playersMap[m.joueur2_id])}`,
+      subtitle:m.tournaments?.nom || '',
+      lieu:m.court || m.tournaments?.lieu || '',
+      status:m.statut,
+      id:m.id
+    });
+  });
+
+  (trainings || []).forEach(link => {
+    const t = link.trainings;
+    if(!t) return;
+
+    items.push({
+      type:'training',
+      date:t.scheduled_at,
+      title:`Entraînement : ${t.titre}`,
+      subtitle:t.tournees?.nom || '',
+      lieu:t.lieu || '',
+      status:'planifie',
+      id:t.id
+    });
+  });
+
+  return sortAndGroup(items);
+}
+
+async function getPlanningForCoach(profileId){
+  const items = [];
+
+  const { data: etapeLinks } = await supabase
+    .from('etape_coaches')
+    .select('tournament_id')
+    .eq('profile_id', profileId);
+
+  const tournamentIds = (etapeLinks || []).map(x => x.tournament_id);
+
+  const { data: trainingLinks } = await supabase
+    .from('training_coaches')
+    .select('training_id')
+    .eq('profile_id', profileId);
+
+  const trainingIds = (trainingLinks || []).map(x => x.training_id);
+
+  if(tournamentIds.length){
+    const { data: matches } = await supabase
+      .from('matches')
+      .select(`
+        *,
+        tournaments(nom, lieu, tournees(nom))
+      `)
+      .in('tournament_id', tournamentIds);
+
+    const ids = new Set();
+
+    (matches || []).forEach(m => {
+      ids.add(m.joueur1_id);
+      ids.add(m.joueur2_id);
+    });
+
+    let playersMap = {};
+
+    if(ids.size){
+      const { data: players } = await supabase
+        .from('players')
+        .select('*')
+        .in('id', [...ids]);
+
+      (players || []).forEach(p => playersMap[p.id] = p);
+    }
+
+    (matches || []).forEach(m => {
+      items.push({
+        type:'match',
+        date:m.scheduled_at,
+        title:`Match : ${fullName(playersMap[m.joueur1_id])} vs ${fullName(playersMap[m.joueur2_id])}`,
+        subtitle:m.tournaments?.nom || '',
+        lieu:m.court || m.tournaments?.lieu || '',
+        status:m.statut,
+        id:m.id
+      });
+    });
+  }
+
+  if(trainingIds.length){
+    const { data: trainings } = await supabase
+      .from('trainings')
+      .select('*, tournees(nom)')
+      .in('id', trainingIds);
+
+    (trainings || []).forEach(t => {
+      items.push({
+        type:'training',
+        date:t.scheduled_at,
+        title:`Entraînement : ${t.titre}`,
+        subtitle:t.tournees?.nom || '',
+        lieu:t.lieu || '',
+        status:'planifie',
+        id:t.id
+      });
+    });
+  }
+
+  return sortAndGroup(items);
+}
+
+async function getPlanningForSupervisor(){
+  const teamId = STATE.profile.team_id;
+  const items = [];
+
+  const { data: tournees } = await supabase
+    .from('tournees')
+    .select('id')
+    .eq('team_id', teamId);
+
+  const tourneeIds = (tournees || []).map(t => t.id);
+
+  if(!tourneeIds.length) return [];
+
+  const { data: tournaments } = await supabase
+    .from('tournaments')
+    .select('id')
+    .in('tournee_id', tourneeIds);
+
+  const tournamentIds = (tournaments || []).map(t => t.id);
+
+  if(tournamentIds.length){
+    const { data: matches } = await supabase
+      .from('matches')
+      .select(`
+        *,
+        tournaments(nom, lieu, tournees(nom))
+      `)
+      .in('tournament_id', tournamentIds);
+
+    const ids = new Set();
+
+    (matches || []).forEach(m => {
+      ids.add(m.joueur1_id);
+      ids.add(m.joueur2_id);
+    });
+
+    let playersMap = {};
+
+    if(ids.size){
+      const { data: players } = await supabase
+        .from('players')
+        .select('*')
+        .in('id', [...ids]);
+
+      (players || []).forEach(p => playersMap[p.id] = p);
+    }
+
+    (matches || []).forEach(m => {
+      items.push({
+        type:'match',
+        date:m.scheduled_at,
+        title:`Match : ${fullName(playersMap[m.joueur1_id])} vs ${fullName(playersMap[m.joueur2_id])}`,
+        subtitle:m.tournaments?.nom || '',
+        lieu:m.court || m.tournaments?.lieu || '',
+        status:m.statut,
+        id:m.id
+      });
+    });
+  }
+
+  const { data: trainings } = await supabase
+    .from('trainings')
+    .select('*, tournees(nom)')
+    .in('tournee_id', tourneeIds);
+
+  (trainings || []).forEach(t => {
+    items.push({
+      type:'training',
+      date:t.scheduled_at,
+      title:`Entraînement : ${t.titre}`,
+      subtitle:t.tournees?.nom || '',
+      lieu:t.lieu || '',
+      status:'planifie',
+      id:t.id
+    });
+  });
+
+  return sortAndGroup(items);
+}
+
+function sortAndGroup(items){
+  items.sort((a,b) => (a.date || '').localeCompare(b.date || ''));
+
+  const groups = {};
+
+  items.forEach(item => {
+    const key = item.date ? item.date.slice(0,10) : 'non-planifie';
+    if(!groups[key]) groups[key] = [];
+    groups[key].push(item);
+  });
+
+  return Object.entries(groups);
+}
+
+/* =========================
+   VIEW PLANNING
+========================= */
+
+async function viewPlanning(){
+  shell(`<div class="empty">Chargement du planning...</div>`, 'planning');
+
+  let groups = [];
+
+  if(STATE.profile.role === 'coach' && !STATE.profile.superviseur){
+    groups = await getPlanningForCoach(STATE.profile.id);
+  }else{
+    groups = await getPlanningForSupervisor();
+  }
 
   shell(`
-    <h2 style="margin:4px 0 14px">Mon planning</h2>
-    ${planningHtml}
+    <h2>Planning global</h2>
+    <p class="muted">Vue semaine et journée selon ton profil.</p>
+    ${renderPlanningGroups(groups)}
   `, 'planning');
 }
 
-// ---------------------------------------------------------------
-// VUE : COACH — LISTE DES TOURNÉES
-// ---------------------------------------------------------------
-async function viewCoachHome(){
-  shell(`<div class="empty">Chargement…</div>`, 'home');
+async function viewParentPlanning(code){
+  const { data: player } = await supabase
+    .from('players')
+    .select('*')
+    .eq('code', code)
+    .maybeSingle();
+
+  if(!player){
+    app.innerHTML = `
+      <main>
+        <div class="card">
+          <h3>Code introuvable</h3>
+          <p class="muted">Vérifie le code donné par le coach.</p>
+          <button class="btn" onclick="go('#/')">Retour</button>
+        </div>
+      </main>
+    `;
+    return;
+  }
+
+  const groups = await getPlanningForPlayer(player.id);
+
+  app.innerHTML = `
+    <header>
+      <div class="brand">🎾 TennisTour</div>
+      <div class="role">Parent</div>
+    </header>
+
+    <main>
+      <h2>${esc(fullName(player))}</h2>
+      <p class="muted">Planning joueur — code <span class="code">${esc(player.code)}</span></p>
+
+      ${renderPlanningGroups(groups)}
+
+      <button class="btn btn2" onclick="go('#/')">Quitter</button>
+    </main>
+  `;
+}
+
+function renderPlanningGroups(groups){
+  if(!groups.length){
+    return `<div class="empty">Aucun événement planifié.</div>`;
+  }
+
+  return groups.map(([day, items]) => `
+    <h3 class="day-title">${day === 'non-planifie' ? 'Non planifié' : formatDate(day)}</h3>
+
+    ${items.map(item => `
+      <div class="card ${item.type === 'training' ? 'card2' : ''}">
+        <div class="row between">
+          <div>
+            <div class="event-time">${item.date ? formatTime(item.date) : '--:--'}</div>
+            <strong>${esc(item.title)}</strong>
+          </div>
+
+          <span class="pill ${
+            item.status === 'en_cours' ? 'live' :
+            item.status === 'termine' ? 'done' : 'plan'
+          }">
+            ${item.type === 'match' ? 'Match' : 'Training'}
+          </span>
+        </div>
+
+        <p class="muted">${esc(item.subtitle)}</p>
+        ${item.lieu ? `<p class="muted">📍 ${esc(item.lieu)}</p>` : ''}
+
+        ${item.type === 'match' && STATE.profile ? `
+          <button class="btn2 small" onclick="go('#/match/${item.id}')">Ouvrir</button>
+        ` : ''}
+      </div>
+    `).join('')}
+  `).join('');
+}
+
+/* =========================
+   VIEW TOURNÉES
+========================= */
+
+async function viewTournees(){
+  shell(`<div class="empty">Chargement...</div>`, 'tournees');
+
   const teamId = STATE.profile.team_id;
-  const { data: tournees, error } = await supabase
-    .from('tournees').select('*')
+
+  const { data: tournees } = await supabase
+    .from('tournees')
+    .select('*')
     .eq('team_id', teamId)
     .order('date_debut', { ascending:false });
 
-  let list = '';
-  if(error){ list = `<div class="error">${esc(error.message)}</div>`; }
-  else if(!tournees.length){
-    list = `<div class="empty"><div class="big">🎾</div>Aucune tournée pour l'instant.<br>Crée la première tournée de l'équipe ci-dessous.</div>`;
-  } else {
-    list = tournees.map(t => `
-      <div class="card" onclick="navigate('#/coach/tournee/${t.id}')" style="cursor:pointer">
-        <h3 style="margin:0">${esc(t.nom)}</h3>
-        <p class="muted">${esc(t.lieu||'')} ${t.date_debut?'· '+t.date_debut+(t.date_fin?(' → '+t.date_fin):''):''}</p>
-      </div>`).join('');
-  }
-
-  // Le coach principal valide les coachs adjoints en attente
-  let pendingHtml = '';
-  const { data: team } = await supabase.from('teams').select('*').eq('id', teamId).maybeSingle();
-  if(team && (team.created_by === STATE.session.user.id || STATE.profile.superviseur)){
-    const { data: pending } = await supabase.from('profiles')
-      .select('id, nom, prenom').eq('team_id', teamId).eq('role','coach').eq('statut','en_attente');
-    if(pending && pending.length){
-      pendingHtml = `
-        <div class="card" style="border-color:var(--accent)">
-          <h3>Coachs en attente de validation</h3>
-          ${pending.map(p=>`
-            <div class="row between" style="padding:6px 0">
-              <div>${esc(fullName(p))}</div>
-              <button class="btn small" onclick="validateCoach('${p.id}')">Valider</button>
-            </div>`).join('')}
-        </div>`;
-    }
-  }
-
   shell(`
-    <h2 style="margin:4px 0 14px">Tournées de l'équipe</h2>
-    ${pendingHtml}
-    ${list}
-    <div class="card">
-      <h3>+ Nouvelle tournée</h3>
-      <form id="tourneeForm">
-        <label>Nom de la tournée</label>
-        <input name="nom" required placeholder="Ex: Tournée d'été 2026">
+    <h2>Tournées</h2>
+    <p class="muted">Une tournée contient 1 à N tournois et 1 à N entraînements.</p>
+
+    ${(tournees || []).map(t => `
+      <div class="card" onclick="go('#/tournee/${t.id}')">
+        <h3>${esc(t.nom)}</h3>
+        <p class="muted">${esc(t.lieu || '')}</p>
+        <p class="muted">${esc(t.date_debut || '')} → ${esc(t.date_fin || '')}</p>
+      </div>
+    `).join('') || `<div class="empty">Aucune tournée.</div>`}
+
+    ${STATE.profile.role === 'admin' || STATE.profile.superviseur ? `
+      <div class="card">
+        <h3>Créer une tournée</h3>
+
+        <label>Nom</label>
+        <input id="tourneeNom" placeholder="Ex : Tournée été 2026">
+
         <label>Lieu</label>
-        <input name="lieu" placeholder="Ex: Île-de-France">
-        <label>Date de début</label>
-        <input type="date" name="date_debut">
-        <label>Date de fin</label>
-        <input type="date" name="date_fin">
-        <button class="btn clay" type="submit">Créer la tournée</button>
-        <div class="error" id="tourneeErr"></div>
-      </form>
-    </div>
-  `, 'home');
+        <input id="tourneeLieu" placeholder="Ex : Bretagne">
 
-  document.getElementById('tourneeForm').addEventListener('submit', async e=>{
-    e.preventDefault();
-    const f = new FormData(e.target);
-    const { data, error } = await supabase.from('tournees').insert({
-      nom: f.get('nom'), lieu: f.get('lieu'),
-      date_debut: f.get('date_debut')||null, date_fin: f.get('date_fin')||null,
-      team_id: teamId, created_by: STATE.session.user.id
-    }).select().single();
-    if(error){ document.getElementById('tourneeErr').textContent = error.message; return; }
-    navigate('#/coach/tournee/'+data.id);
-  });
-}
-window.validateCoach = async (profileId) => {
-  const { error } = await supabase.from('profiles').update({ statut:'actif' }).eq('id', profileId);
-  if(error){ toast(error.message, true); return; }
-  toast('Coach validé');
-  viewCoachHome();
-};
-
-// ---------------------------------------------------------------
-// VUE : COACH — DÉTAIL TOURNÉE (étapes + entraînements + planning)
-// ---------------------------------------------------------------
-async function viewCoachTournee(id){
-  shell(`<div class="empty">Chargement…</div>`, 'home');
-
-  const { data: tournee } = await supabase.from('tournees').select('*').eq('id', id).maybeSingle();
-  if(!tournee){ shell(`<div class="empty">Tournée introuvable.</div>`,'home'); return; }
-
-  const { data: etapes } = await supabase.from('tournaments').select('*, formats(nom)').eq('tournee_id', id).order('date_debut');
-  const etapeIds = (etapes||[]).map(e=>e.id);
-
-  const { data: roster } = await supabase.from('players').select('*').eq('team_id', tournee.team_id).order('nom');
-
-  const { data: tnp } = await supabase.from('tournee_players').select('player_id, players(*)').eq('tournee_id', id);
-  const tourneePlayers = (tnp||[]).map(r=>r.players).filter(Boolean);
-  const tourneePlayerIds = new Set(tourneePlayers.map(p=>p.id));
-  const rosterAvailable = (roster||[]).filter(p=>!tourneePlayerIds.has(p.id));
-
-  const { data: trainings } = await supabase.from('trainings').select('*, training_players(player_id)').eq('tournee_id', id).order('scheduled_at');
-
-  let matches = [];
-  if(etapeIds.length){
-    const { data } = await supabase.from('matches').select('*, tournaments(nom)').in('tournament_id', etapeIds);
-    matches = data || [];
-  }
-
-  // Coachs de l'équipe (pour affectation) + affectations existantes
-  const { data: teamCoaches } = await supabase.from('profiles').select('id, nom, prenom').eq('team_id', tournee.team_id).eq('role','coach').eq('statut','actif');
-  const coachName = pid => fullName((teamCoaches||[]).find(c=>c.id===pid));
-
-  let etapeCoachMap = {}; // etapeId -> [profileId,...]
-  if(etapeIds.length){
-    const { data: ec } = await supabase.from('etape_coaches').select('*').in('tournament_id', etapeIds);
-    (ec||[]).forEach(r=>{ (etapeCoachMap[r.tournament_id] ||= []).push(r.profile_id); });
-  }
-  const trainingIds = (trainings||[]).map(tr=>tr.id);
-  let trainingCoachMap = {};
-  if(trainingIds.length){
-    const { data: tc } = await supabase.from('training_coaches').select('*').in('training_id', trainingIds);
-    (tc||[]).forEach(r=>{ (trainingCoachMap[r.training_id] ||= []).push(r.profile_id); });
-  }
-
-  const playerName = pid => fullName((roster||[]).find(p=>p.id===pid));
-
-  const { data: formats } = await supabase.from('formats').select('*').order('id');
-
-  // --- Joueurs de la tournée ---
-  const tourneePlayersHtml = tourneePlayers.length ? tourneePlayers.map(p=>`
-    <div class="row between" style="padding:8px 0; border-bottom:1px solid var(--brd)">
-      <div>${esc(fullName(p))}</div>
-      <div class="code-badge" style="font-size:14px; padding:4px 8px;">${esc(p.code)}</div>
-    </div>`).join('') : `<p class="muted">Aucun joueur inscrit à cette tournée.</p>`;
-
-  // --- Étapes ---
-  const etapesHtml = (etapes||[]).length ? etapes.map(e=>{
-    const assigned = etapeCoachMap[e.id] || [];
-    return `
-    <div class="card">
-      <div onclick="navigate('#/coach/tournoi/${e.id}')" style="cursor:pointer">
-        <h3 style="margin:0">${esc(e.nom)}</h3>
-        <p class="muted">${esc(e.lieu||'')} ${e.date_debut?'· '+e.date_debut+(e.date_fin?(' → '+e.date_fin):''):''}</p>
-        <p class="muted">Format : ${esc(e.formats?.nom||'—')}</p>
-      </div>
-      <p class="muted" style="margin-top:6px">🧑‍🏫 ${assigned.length ? assigned.map(coachName).map(esc).join(', ') : 'Aucun coach affecté'}</p>
-      ${(teamCoaches||[]).length ? `
-      <form class="etapeCoachForm" data-id="${e.id}" style="margin-top:6px">
-        <label>Affecter des coachs à cette étape</label>
-        <select name="coach_ids" multiple style="height:${Math.min(120, 36+((teamCoaches||[]).length*22))}px">
-          ${(teamCoaches||[]).map(c=>`<option value="${c.id}" ${assigned.includes(c.id)?'selected':''}>${esc(fullName(c))}</option>`).join('')}
-        </select>
-        <button class="btn small secondary" type="submit" style="margin-top:6px">Enregistrer</button>
-      </form>` : ''}
-    </div>`;
-  }).join('') : `<p class="muted">Aucune étape pour l'instant.</p>`;
-
-  // --- Entraînements ---
-  const trainingsHtml = (trainings||[]).length ? trainings.map(tr=>{
-    const names = (tr.training_players||[]).map(tp=>playerName(tp.player_id)).join(', ');
-    const when = tr.scheduled_at ? new Intl.DateTimeFormat('fr-FR',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}).format(new Date(tr.scheduled_at)) : 'Non planifié';
-    const assigned = trainingCoachMap[tr.id] || [];
-    return `<div class="card">
-      <div class="row between"><strong>${esc(tr.titre)}</strong><span class="muted">🕐 ${esc(when)}</span></div>
-      ${tr.lieu ? `<p class="muted" style="margin:4px 0 0">📍 ${esc(tr.lieu)}</p>` : ''}
-      ${tr.description ? `<p class="muted" style="margin:4px 0 0">${esc(tr.description)}</p>` : ''}
-      <p class="muted" style="margin:4px 0 0">👥 ${esc(names || 'Aucun joueur assigné')}</p>
-      <p class="muted" style="margin:4px 0 0">🧑‍🏫 ${assigned.length ? assigned.map(coachName).map(esc).join(', ') : 'Aucun coach affecté'}</p>
-      ${(teamCoaches||[]).length ? `
-      <form class="trainingCoachForm" data-id="${tr.id}" style="margin-top:6px">
-        <label>Affecter des coachs à cet entraînement</label>
-        <select name="coach_ids" multiple style="height:${Math.min(120, 36+((teamCoaches||[]).length*22))}px">
-          ${(teamCoaches||[]).map(c=>`<option value="${c.id}" ${assigned.includes(c.id)?'selected':''}>${esc(fullName(c))}</option>`).join('')}
-        </select>
-        <button class="btn small secondary" type="submit" style="margin-top:6px">Enregistrer</button>
-      </form>` : ''}
-    </div>`;
-  }).join('') : `<p class="muted">Aucun entraînement programmé.</p>`;
-
-  // --- Planning combiné (matchs + entraînements, groupés par jour) ---
-  const dateFmt = new Intl.DateTimeFormat('fr-FR', { weekday:'long', day:'numeric', month:'long' });
-  const timeFmt = new Intl.DateTimeFormat('fr-FR', { hour:'2-digit', minute:'2-digit' });
-  const items = [];
-  matches.forEach(m=> items.push({ type:'match', date: m.scheduled_at, data:m }));
-  (trainings||[]).forEach(tr=> items.push({ type:'training', date: tr.scheduled_at, data:tr }));
-  const groups = new Map();
-  items.forEach(it=>{
-    const key = it.date ? it.date.slice(0,10) : 'none';
-    if(!groups.has(key)) groups.set(key, []);
-    groups.get(key).push(it);
-  });
-  const sortedKeys = [...groups.keys()].sort((a,b)=> a==='none'?1 : b==='none'?-1 : a.localeCompare(b));
-  const planningHtml = items.length ? sortedKeys.map(key=>{
-    const label = key==='none' ? 'Non planifié' : dateFmt.format(new Date(key+'T00:00:00'));
-    const rows = groups.get(key).sort((a,b)=> (a.date||'').localeCompare(b.date||'')).map(it=>{
-      const time = it.date ? timeFmt.format(new Date(it.date)) : '';
-      if(it.type==='match'){
-        const m = it.data;
-        const statusPill = m.statut==='en_cours' ? '<span class="pill live">Live</span>'
-          : m.statut==='termine' ? '<span class="pill done">Terminé</span>' : '<span class="pill upcoming">À venir</span>';
-        return `<div class="card" onclick="navigate('#/coach/match/${m.id}')" style="cursor:pointer">
-          <div class="row between"><div>🎾 <strong>${esc(playerName(m.joueur1_id))}</strong> vs <strong>${esc(playerName(m.joueur2_id))}</strong></div>${statusPill}</div>
-          <p class="muted">${time?`🕐 ${time} · `:''}${esc(m.tournaments?.nom||'')}${m.court?' · '+esc(m.court):''}</p>
-        </div>`;
-      } else {
-        const tr = it.data;
-        const names = (tr.training_players||[]).map(tp=>playerName(tp.player_id)).join(', ');
-        return `<div class="card" style="background:var(--s3)">
-          <div class="row between"><div>🏋️ <strong>${esc(tr.titre)}</strong></div></div>
-          <p class="muted">${time?`🕐 ${time}`:''}${tr.lieu?' · 📍 '+esc(tr.lieu):''}</p>
-          <p class="muted">👥 ${esc(names||"Toute l'équipe")}</p>
-        </div>`;
-      }
-    }).join('');
-    return `<h3 style="margin:18px 0 8px; text-transform:capitalize;">${esc(label)}</h3>${rows}`;
-  }).join('') : `<div class="empty">Rien de programmé pour l'instant.</div>`;
-
-  shell(`
-    <button class="btn ghost" onclick="navigate('${tournee.team_id===STATE.profile.team_id ? '#/mon-equipe' : '#/coach'}')">← Toutes les tournées</button>
-    <h2 style="margin:8px 0 2px">${esc(tournee.nom)}</h2>
-    <p class="muted" style="margin-top:0">${esc(tournee.lieu||'')} ${tournee.date_debut?'· '+tournee.date_debut+(tournee.date_fin?(' → '+tournee.date_fin):''):''}</p>
-
-    <h3 style="margin:18px 0 8px">Joueurs de la tournée</h3>
-    <div class="card">
-      ${tourneePlayersHtml}
-      ${rosterAvailable.length ? `
-      <form id="addTourneePlayerForm" style="margin-top:10px">
-        <label>Inscrire depuis l'effectif de l'équipe</label>
-        <div class="row">
-          <select name="player_id" style="flex:1">
-            ${rosterAvailable.map(p=>`<option value="${p.id}">${esc(fullName(p))} (${esc(p.code)})</option>`).join('')}
-          </select>
-          <button class="btn small" type="submit" style="width:auto">Ajouter</button>
-        </div>
-      </form>` : ''}
-      <form id="newTourneePlayerForm" style="margin-top:10px">
-        <label>Nouveau joueur (pas encore dans l'effectif)</label>
-        <div class="row">
-          <input name="prenom" placeholder="Prénom" style="flex:1">
-          <input name="nom" placeholder="Nom" style="flex:1">
-          <button class="btn small" type="submit" style="width:auto">Créer</button>
-        </div>
-        <p class="muted" style="margin-top:8px">Un code à 5 caractères est généré pour chaque joueur : les parents s'en servent pour suivre ses matchs et son planning en direct.</p>
-      </form>
-    </div>
-
-    <h3 style="margin:18px 0 8px">Étapes (tournois)</h3>
-    ${etapesHtml}
-    <div class="card">
-      <h3>+ Nouvelle étape</h3>
-      <form id="etapeForm">
-        <label>Nom de l'étape</label>
-        <input name="nom" required placeholder="Ex: Tournoi de Brunoy">
-        <label>Lieu</label>
-        <input name="lieu" placeholder="Ex: Brunoy">
-        <label>Date de début</label>
-        <input type="date" name="date_debut">
-        <label>Date de fin</label>
-        <input type="date" name="date_fin">
-        <label>Format de match</label>
-        <select name="format_id">
-          ${(formats||[]).map(f=>`<option value="${f.id}">${esc(f.nom)}</option>`).join('')}
-        </select>
-        <button class="btn clay" type="submit">Créer l'étape</button>
-        <div class="error" id="etapeErr"></div>
-      </form>
-    </div>
-
-    <h3 style="margin:18px 0 8px">Entraînements</h3>
-    ${trainingsHtml}
-    <div class="card">
-      <h3>+ Nouvel entraînement</h3>
-      <form id="trainingForm">
-        <label>Titre</label>
-        <input name="titre" required placeholder="Ex: Séance physique matinale">
-        <label>Description (optionnel)</label>
-        <input name="description" placeholder="Ex: Renforcement + gainage">
-        <label>Lieu (optionnel)</label>
-        <input name="lieu" placeholder="Ex: Gymnase municipal">
-        <label>Date et heure</label>
-        <input type="datetime-local" name="scheduled_at">
-        <label>Durée (minutes, optionnel)</label>
-        <input type="number" name="duration_minutes" placeholder="Ex: 60">
-        <label>Joueurs concernés</label>
-        <select name="player_ids" multiple style="height:${Math.min(160, 36+(tourneePlayers.length*22))}px">
-          ${tourneePlayers.map(p=>`<option value="${p.id}">${esc(fullName(p))}</option>`).join('')}
-        </select>
-        <p class="muted" style="margin-top:6px">Maintiens (ou Ctrl/Cmd + clic) pour sélectionner plusieurs joueurs. Laisse vide pour toute l'équipe.</p>
-        <button class="btn clay" type="submit">Programmer l'entraînement</button>
-        <div class="error" id="trainingErr"></div>
-      </form>
-    </div>
-
-    <h3 style="margin:18px 0 8px">Planning de la tournée</h3>
-    ${planningHtml}
-  `, 'home');
-
-  document.querySelectorAll('.etapeCoachForm').forEach(form=>{
-    form.addEventListener('submit', async e=>{
-      e.preventDefault();
-      const etapeId = form.dataset.id;
-      const selected = [...form.coach_ids.selectedOptions].map(o=>o.value);
-      await supabase.from('etape_coaches').delete().eq('tournament_id', etapeId);
-      if(selected.length){
-        await supabase.from('etape_coaches').insert(selected.map(pid=>({ tournament_id: etapeId, profile_id: pid })));
-      }
-      toast('Affectation enregistrée');
-      viewCoachTournee(id);
-    });
-  });
-  document.querySelectorAll('.trainingCoachForm').forEach(form=>{
-    form.addEventListener('submit', async e=>{
-      e.preventDefault();
-      const trainingId = form.dataset.id;
-      const selected = [...form.coach_ids.selectedOptions].map(o=>o.value);
-      await supabase.from('training_coaches').delete().eq('training_id', trainingId);
-      if(selected.length){
-        await supabase.from('training_coaches').insert(selected.map(pid=>({ training_id: trainingId, profile_id: pid })));
-      }
-      toast('Affectation enregistrée');
-      viewCoachTournee(id);
-    });
-  });
-
-  document.getElementById('addTourneePlayerForm')?.addEventListener('submit', async e=>{
-    e.preventDefault();
-    const playerId = new FormData(e.target).get('player_id');
-    const { error } = await supabase.from('tournee_players').insert({ tournee_id: id, player_id: playerId });
-    if(error){ toast(error.message, true); return; }
-    toast('Joueur inscrit à la tournée');
-    viewCoachTournee(id);
-  });
-
-  document.getElementById('newTourneePlayerForm').addEventListener('submit', async e=>{
-    e.preventDefault();
-    const f = new FormData(e.target);
-    const prenom = f.get('prenom').trim(), nom = f.get('nom').trim();
-    if(!nom && !prenom) return;
-    const code = genCode();
-    const { data: pl, error } = await supabase.from('players').insert({ prenom: prenom||null, nom, code, team_id: tournee.team_id, created_by: STATE.session.user.id }).select().single();
-    if(error){ toast(error.message, true); return; }
-    await supabase.from('tournee_players').insert({ tournee_id: id, player_id: pl.id });
-    toast(`${fullName(pl)} inscrit à la tournée · code ${code}`);
-    viewCoachTournee(id);
-  });
-
-  document.getElementById('etapeForm').addEventListener('submit', async e=>{
-    e.preventDefault();
-    const f = new FormData(e.target);
-    const { data, error } = await supabase.from('tournaments').insert({
-      nom: f.get('nom'), lieu: f.get('lieu'),
-      date_debut: f.get('date_debut')||null, date_fin: f.get('date_fin')||null,
-      format_id: f.get('format_id'), team_id: tournee.team_id, tournee_id: id, coach_id: STATE.session.user.id
-    }).select().single();
-    if(error){ document.getElementById('etapeErr').textContent = error.message; return; }
-    navigate('#/coach/tournoi/'+data.id);
-  });
-
-  document.getElementById('trainingForm').addEventListener('submit', async e=>{
-    e.preventDefault();
-    const f = new FormData(e.target);
-    const scheduledAt = f.get('scheduled_at');
-    const { data: tr, error } = await supabase.from('trainings').insert({
-      tournee_id: id, titre: f.get('titre'), description: f.get('description')||null,
-      lieu: f.get('lieu')||null,
-      scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : null,
-      duration_minutes: f.get('duration_minutes')||null,
-      created_by: STATE.session.user.id
-    }).select().single();
-    if(error){ document.getElementById('trainingErr').textContent = error.message; return; }
-    const selected = [...e.target.player_ids.selectedOptions].map(o=>o.value);
-    if(selected.length){
-      await supabase.from('training_players').insert(selected.map(pid=>({ training_id: tr.id, player_id: pid })));
-    }
-    toast('Entraînement programmé');
-    viewCoachTournee(id);
-  });
-}
-
-// ---------------------------------------------------------------
-// VUE : COACH — DÉTAIL TOURNOI (joueurs + matchs)
-// ---------------------------------------------------------------
-async function viewCoachTournament(id){
-  shell(`<div class="empty">Chargement…</div>`, 'home');
-
-  const { data: t } = await supabase.from('tournaments').select('*, formats(*)').eq('id', id).single();
-  if(!t){ shell(`<div class="empty">Tournoi introuvable.</div>`,'home'); return; }
-
-  const { data: tp } = await supabase.from('tournament_players')
-    .select('player_id, players(*)').eq('tournament_id', id);
-  const players = (tp||[]).map(r=>r.players).filter(Boolean);
-  const playerIds = new Set(players.map(p=>p.id));
-
-  // Joueurs de la tournée non encore inscrits à cette étape
-  const { data: tnp } = await supabase.from('tournee_players').select('player_id, players(*)').eq('tournee_id', t.tournee_id);
-  const tourneeRoster = (tnp||[]).map(r=>r.players).filter(Boolean);
-  const rosterAvailable = tourneeRoster.filter(p=>!playerIds.has(p.id));
-
-  const { data: matches } = await supabase.from('matches')
-    .select('*').eq('tournament_id', id).order('scheduled_at',{ascending:true, nullsFirst:false});
-
-  const playerName = pid => fullName(players.find(p=>p.id===pid));
-
-  // Planning : regroupement des matchs par jour
-  const dateFmt = new Intl.DateTimeFormat('fr-FR', { weekday:'long', day:'numeric', month:'long' });
-  const timeFmt = new Intl.DateTimeFormat('fr-FR', { hour:'2-digit', minute:'2-digit' });
-  const groups = new Map(); // key: 'YYYY-MM-DD' or 'none' -> matches[]
-  (matches||[]).forEach(m=>{
-    const key = m.scheduled_at ? m.scheduled_at.slice(0,10) : 'none';
-    if(!groups.has(key)) groups.set(key, []);
-    groups.get(key).push(m);
-  });
-  const sortedKeys = [...groups.keys()].sort((a,b)=> a==='none'?1 : b==='none'?-1 : a.localeCompare(b));
-
-  const matchCard = m => {
-    const statusPill = m.statut==='en_cours' ? '<span class="pill live">Live</span>'
-      : m.statut==='termine' ? '<span class="pill done">Terminé</span>'
-      : '<span class="pill upcoming">À venir</span>';
-    const time = m.scheduled_at ? timeFmt.format(new Date(m.scheduled_at)) : null;
-    return `<div class="card" onclick="navigate('#/coach/match/${m.id}')" style="cursor:pointer">
-      <div class="row between">
-        <div><strong>${esc(playerName(m.joueur1_id))}</strong> vs <strong>${esc(playerName(m.joueur2_id))}</strong></div>
-        ${statusPill}
-      </div>
-      <p class="muted">${time ? `🕐 ${time} · ` : ''}${esc(m.tour||'')}${m.court?' · '+esc(m.court):''}</p>
-    </div>`;
-  };
-
-  const matchesHtml = (matches||[]).length ? sortedKeys.map(key=>{
-    const label = key==='none' ? 'Non planifié' : (dateFmt.format(new Date(key+'T00:00:00')));
-    return `<h3 style="margin:18px 0 8px; text-transform:capitalize;">${esc(label)}</h3>${groups.get(key).map(matchCard).join('')}`;
-  }).join('') : `<div class="empty">Aucun match créé pour ce tournoi.</div>`;
-
-  const playersHtml = players.length ? players.map(p=>`
-    <div class="row between" style="padding:8px 0; border-bottom:1px solid var(--brd)">
-      <div>${esc(fullName(p))}</div>
-      <div class="code-badge" style="font-size:14px; padding:4px 8px;">${esc(p.code)}</div>
-    </div>`).join('') : `<p class="muted">Aucun joueur inscrit.</p>`;
-
-  shell(`
-    <button class="btn ghost" onclick="navigate('#/coach/tournee/${t.tournee_id}')">← Retour à la tournée</button>
-    <h2 style="margin:8px 0 2px">${esc(t.nom)}</h2>
-    <p class="muted" style="margin-top:0">${esc(t.formats?.nom||'')}</p>
-
-    <div class="card">
-      <h3>Joueurs inscrits</h3>
-      ${playersHtml}
-      ${rosterAvailable.length ? `
-      <form id="rosterForm" style="margin-top:10px">
-        <label>Inscrire depuis les joueurs de la tournée</label>
-        <div class="row">
-          <select name="player_id" style="flex:1">
-            ${rosterAvailable.map(p=>`<option value="${p.id}">${esc(fullName(p))} (${esc(p.code)})</option>`).join('')}
-          </select>
-          <button class="btn small" type="submit" style="width:auto">Ajouter</button>
-        </div>
-      </form>` : `<p class="muted" style="margin-top:10px">Tous les joueurs de la tournée sont déjà inscrits à cette étape. Pour ajouter un nouveau joueur, fais-le depuis la page de la tournée.</p>`}
-    </div>
-
-    <h3 style="margin:18px 0 8px">+ Programmer un match</h3>
-    <div class="card">
-      <form id="matchForm">
-        <label>Joueur 1</label>
-        <select name="j1">${players.map(p=>`<option value="${p.id}">${esc(fullName(p))}</option>`).join('')}</select>
-        <label>Joueur 2</label>
-        <select name="j2">${players.map(p=>`<option value="${p.id}">${esc(fullName(p))}</option>`).join('')}</select>
-        <label>Date et heure (optionnel)</label>
-        <input type="datetime-local" name="scheduled_at">
-        <label>Tour / phase (optionnel)</label>
-        <input name="tour" placeholder="Ex: Demi-finale">
-        <label>Court (optionnel)</label>
-        <input name="court" placeholder="Ex: Court 2">
-        <button class="btn clay" type="submit">+ Créer le match</button>
-        <div class="error" id="matchErr"></div>
-      </form>
-    </div>
-    <h3 style="margin:18px 0 8px">Planning</h3>
-    ${matchesHtml}
-  `, 'home');
-
-  document.getElementById('rosterForm')?.addEventListener('submit', async e=>{
-    e.preventDefault();
-    const playerId = new FormData(e.target).get('player_id');
-    const { error } = await supabase.from('tournament_players').insert({ tournament_id: id, player_id: playerId });
-    if(error){ toast(error.message, true); return; }
-    toast('Joueur inscrit au tournoi');
-    viewCoachTournament(id);
-  });
-
-  document.getElementById('matchForm').addEventListener('submit', async e=>{
-    e.preventDefault();
-    const f = new FormData(e.target);
-    const j1=f.get('j1'), j2=f.get('j2');
-    if(!j1 || !j2 || j1===j2){ document.getElementById('matchErr').textContent='Choisis deux joueurs différents.'; return; }
-    const live_state = initLiveState(t.formats);
-    const scheduledAt = f.get('scheduled_at');
-    const { data, error } = await supabase.from('matches').insert({
-      tournament_id: id, joueur1_id:j1, joueur2_id:j2,
-      tour: f.get('tour')||null, court: f.get('court')||null,
-      scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : null,
-      live_state
-    }).select().single();
-    if(error){ document.getElementById('matchErr').textContent = error.message; return; }
-    navigate('#/coach/match/'+data.id);
-  });
-}
-
-// ---------------------------------------------------------------
-// VUE : COACH — SAISIE DU SCORE EN DIRECT
-// ---------------------------------------------------------------
-async function viewCoachMatch(id){
-  shell(`<div class="empty">Chargement…</div>`, 'home');
-  const { data: m } = await supabase.from('matches').select('*, tournaments(nom, format_id)').eq('id', id).single();
-  if(!m){ shell(`<div class="empty">Match introuvable.</div>`,'home'); return; }
-  const { data: p1 } = await supabase.from('players').select('nom,prenom').eq('id', m.joueur1_id).single();
-  const { data: p2 } = await supabase.from('players').select('nom,prenom').eq('id', m.joueur2_id).single();
-
-  STATE.history = [];
-  renderCoachMatch(m, fullName(p1), fullName(p2));
-}
-
-function renderCoachMatch(m, n1, n2){
-  const st = m.live_state;
-  const tbActive = st.inTiebreak || st.inSuperTb;
-  const modeLabel = st.inSuperTb ? 'Super tie-break' : (st.inTiebreak ? 'Jeu décisif' : 'Standard');
-  const unit = tbActive ? 'point' : 'jeu';
-  const sw = setsWon(st);
-  const disp1 = tbActive ? st.points[0] : st.games[0];
-  const disp2 = tbActive ? st.points[1] : st.games[1];
-
-  let actionBtn = '';
-  if(m.statut === 'a_venir'){
-    actionBtn = `<button class="btn clay" onclick="startMatch()">Démarrer le match</button>`;
-  } else if(m.statut === 'termine'){
-    actionBtn = `<div class="card" style="text-align:center"><strong>Match terminé</strong><br><span class="muted">Vainqueur : ${esc(st.winner===0?n1:n2)}</span></div>
-    <div class="card">
-      <h3>Débrief du coach</h3>
-      <p class="muted">Visible par les parents du joueur.</p>
-      <form id="debriefForm">
-        <textarea name="debrief" rows="4" placeholder="Ex: Bon match, sers ta deuxième balle plus haute, travailler le revers en montée de balle...">${esc(m.debrief||'')}</textarea>
-        <button class="btn clay" type="submit">Enregistrer le débrief</button>
-        <div class="error" id="debriefMsg"></div>
-      </form>
-    </div>
-    <button class="btn secondary" onclick="resetMatch()">Réinitialiser le match</button>`;
-  }
-
-  shell(`
-    <button class="btn ghost" onclick="navigate('#/coach/tournoi/${m.tournament_id}')">← Retour au tournoi</button>
-    ${scoreboardHTML(m, n1, n2)}
-    ${m.statut==='en_cours' ? `
-      <div class="live-board">
-        <div class="live-row">
-          <div class="live-player ${st.serve===0?'serving':''}">
-            <div class="live-name">${esc(n1)}${st.serve===0?' 🎾':''}</div>
-            <div class="live-big">${disp1}</div>
+        <div class="grid2">
+          <div>
+            <label>Début</label>
+            <input id="tourneeDebut" type="date">
           </div>
-          <div class="live-vs">
-            <div class="live-mode">${esc(modeLabel)}</div>
-            <div class="live-sets">Sets ${sw[0]} – ${sw[1]}</div>
-          </div>
-          <div class="live-player ${st.serve===1?'serving':''}">
-            <div class="live-name">${esc(n2)}${st.serve===1?' 🎾':''}</div>
-            <div class="live-big">${disp2}</div>
+          <div>
+            <label>Fin</label>
+            <input id="tourneeFin" type="date">
           </div>
         </div>
-      </div>
-      <div class="score-btns">
-        <button class="btn" onclick="scorePoint(0)">+1 ${unit} — ${esc(n1)}</button>
-        <button class="btn" onclick="scorePoint(1)">+1 ${unit} — ${esc(n2)}</button>
-      </div>
-      <div class="row" style="gap:8px; margin-top:8px">
-        <button class="btn secondary" style="flex:1" onclick="toggleServe()">🎾 Changer le service</button>
-        <button class="btn secondary" style="flex:1" onclick="undoPoint()">↺ Annuler</button>
+
+        <button class="btn" onclick="createTournee()">Créer</button>
       </div>
     ` : ''}
-    ${actionBtn}
-  `, 'home');
-
-  window._currentMatch = m;
-  window._n1 = n1; window._n2 = n2;
-
-  document.getElementById('debriefForm')?.addEventListener('submit', async e=>{
-    e.preventDefault();
-    const debrief = new FormData(e.target).get('debrief');
-    const { error } = await supabase.from('matches').update({ debrief }).eq('id', m.id);
-    const msgEl = document.getElementById('debriefMsg');
-    if(error){ msgEl.style.color='var(--clay)'; msgEl.textContent = error.message; return; }
-    m.debrief = debrief;
-    msgEl.style.color='var(--accent)'; msgEl.textContent = 'Débrief enregistré.';
-  });
+  `, 'tournees');
 }
 
-window.startMatch = async () => {
-  const m = window._currentMatch;
-  m.statut = 'en_cours';
-  await supabase.from('matches').update({ statut:'en_cours', updated_at:new Date().toISOString() }).eq('id', m.id);
-  renderCoachMatch(m, window._n1, window._n2);
+window.createTournee = async () => {
+  const payload = {
+    nom:document.getElementById('tourneeNom').value.trim(),
+    lieu:document.getElementById('tourneeLieu').value.trim(),
+    date_debut:document.getElementById('tourneeDebut').value || null,
+    date_fin:document.getElementById('tourneeFin').value || null,
+    team_id:STATE.profile.team_id,
+    created_by:STATE.profile.id
+  };
+
+  if(!payload.nom) return alert('Nom obligatoire.');
+
+  const { error } = await supabase.from('tournees').insert(payload);
+
+  if(error) return alert(error.message);
+
+  viewTournees();
 };
-window.scorePoint = async (p) => {
-  const m = window._currentMatch;
-  STATE.history.push(JSON.parse(JSON.stringify(m.live_state)));
-  addPoint(m.live_state, p);
-  if(m.live_state.finished) m.statut = 'termine';
-  await saveMatch(m);
-};
-window.undoPoint = async () => {
-  const m = window._currentMatch;
-  if(STATE.history.length){
-    m.live_state = STATE.history.pop();
-    m.statut = m.live_state.finished ? 'termine' : 'en_cours';
-  }
-  await saveMatch(m);
-};
-window.resetMatch = async () => {
-  const m = window._currentMatch;
-  if(!confirm('Réinitialiser ce match à 0-0 ?')) return;
-  m.live_state = initLiveState(m.live_state.format);
-  m.statut = 'a_venir';
-  await saveMatch(m);
-};
-async function saveMatch(m){
-  const winner_id = m.live_state.finished ? (m.live_state.winner===0 ? m.joueur1_id : m.joueur2_id) : null;
-  await supabase.from('matches').update({
-    live_state: m.live_state, statut: m.statut, winner_id, updated_at: new Date().toISOString()
-  }).eq('id', m.id);
-  renderCoachMatch(m, window._n1, window._n2);
-}
 
-// ---------------------------------------------------------------
-// VUE : PARENT / ENFANT — SUIVI
-// ---------------------------------------------------------------
-async function viewSuivi(){
-  shell(`<div class="empty">Chargement…</div>`, 'home');
-  const uid = STATE.session.user.id;
+/* =========================
+   DETAIL TOURNÉE
+========================= */
 
-  // L'enfant peut "réclamer" sa fiche joueur via son code
-  let myPlayer = null;
-  if(STATE.profile.role === 'enfant'){
-    const { data } = await supabase.from('players').select('*').eq('profile_id', uid).maybeSingle();
-    myPlayer = data;
-  }
+async function viewTournee(id){
+  shell(`<div class="empty">Chargement...</div>`, 'tournees');
 
-  const { data: follows } = await supabase.from('follows').select('player_id, players(*)').eq('parent_id', uid);
-  const followedPlayers = (follows||[]).map(f=>f.players).filter(Boolean);
-  const allPlayerIds = [...followedPlayers.map(p=>p.id), ...(myPlayer ? [myPlayer.id] : [])];
+  const { data: tournee } = await supabase
+    .from('tournees')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
 
-  let matches = [];
-  if(allPlayerIds.length){
-    const { data } = await supabase.from('matches')
-      .select('*, tournaments(nom)')
-      .or(allPlayerIds.map(pid=>`joueur1_id.eq.${pid},joueur2_id.eq.${pid}`).join(','))
-      .order('updated_at',{ascending:false});
-    matches = data || [];
-  }
+  const { data: tournaments } = await supabase
+    .from('tournaments')
+    .select('*')
+    .eq('tournee_id', id)
+    .order('date_debut');
 
-  // Récup noms des joueurs présents dans les matchs
-  const idsNeeded = new Set();
-  matches.forEach(m=>{ idsNeeded.add(m.joueur1_id); idsNeeded.add(m.joueur2_id); });
-  let namesMap = {};
-  if(idsNeeded.size){
-    const { data: pls } = await supabase.from('players').select('id,nom,prenom').in('id', [...idsNeeded]);
-    (pls||[]).forEach(p=>namesMap[p.id]=fullName(p));
-  }
+  const { data: trainings } = await supabase
+    .from('trainings')
+    .select('*')
+    .eq('tournee_id', id)
+    .order('scheduled_at');
 
-  const order = { en_cours:0, a_venir:1, termine:2 };
-  matches.sort((a,b)=> (order[a.statut]??3) - (order[b.statut]??3));
+  const { data: playersLinks } = await supabase
+    .from('tournee_players')
+    .select('players(*)')
+    .eq('tournee_id', id);
 
-  const matchesHtml = matches.length ? matches.map(m => `
-    <div onclick="navigate('#/match/${m.id}')" style="cursor:pointer">
-      <p class="muted" style="margin:0 0 4px">${esc(m.tournaments?.nom||'')}</p>
-      ${scoreboardHTML(m, namesMap[m.joueur1_id]||'—', namesMap[m.joueur2_id]||'—')}
-    </div>`).join('') : `<div class="empty"><div class="big">🎾</div>Aucun match suivi pour l'instant.</div>`;
-
-  const claimBox = (STATE.profile.role==='enfant' && !myPlayer) ? `
-    <div class="card">
-      <h3>Relier ma fiche joueur</h3>
-      <p class="muted">Ton coach t'a donné un code à 5 caractères : entre-le ici pour voir automatiquement tes matchs.</p>
-      <form id="claimForm">
-        <input name="code" placeholder="CODE" style="text-transform:uppercase">
-        <button class="btn clay" type="submit">Relier mon profil</button>
-        <div class="error" id="claimErr"></div>
-      </form>
-    </div>` : '';
-
-  const followBox = `
-    <div class="card">
-      <h3>Suivre un joueur</h3>
-      <p class="muted">Entre le code donné par le coach pour suivre les matchs de cet enfant en direct.</p>
-      <form id="followForm">
-        <input name="code" placeholder="CODE" style="text-transform:uppercase">
-        <button class="btn clay" type="submit">Suivre</button>
-        <div class="error" id="followErr"></div>
-      </form>
-      ${followedPlayers.length ? `<p class="muted" style="margin-top:10px">Suivis : ${followedPlayers.map(p=>esc(fullName(p))).join(', ')}</p>` : ''}
-    </div>`;
+  const players = (playersLinks || []).map(x => x.players).filter(Boolean);
 
   shell(`
-    <h2 style="margin:4px 0 14px">Mes matchs</h2>
-    ${myPlayer ? `<p class="muted">Profil joueur lié : <strong>${esc(fullName(myPlayer))}</strong></p>` : ''}
-    ${claimBox}
-    ${followBox}
-    ${matchesHtml}
-  `, 'home');
+    <button class="btn2 small" onclick="go('#/tournees')">← Retour</button>
 
-  document.getElementById('followForm')?.addEventListener('submit', async e=>{
-    e.preventDefault();
-    const code = new FormData(e.target).get('code').trim().toUpperCase();
-    const { data: pl, error } = await supabase.from('players').select('*').eq('code', code).maybeSingle();
-    if(error || !pl){ document.getElementById('followErr').textContent='Code introuvable.'; return; }
-    const { error: fErr } = await supabase.from('follows').insert({ parent_id: uid, player_id: pl.id });
-    if(fErr && !fErr.message.includes('duplicate')){ document.getElementById('followErr').textContent=fErr.message; return; }
-    toast(`Tu suis maintenant ${fullName(pl)}`);
-    viewSuivi();
-  });
+    <h2>${esc(tournee?.nom)}</h2>
+    <p class="muted">${esc(tournee?.lieu || '')}</p>
 
-  document.getElementById('claimForm')?.addEventListener('submit', async e=>{
-    e.preventDefault();
-    const code = new FormData(e.target).get('code').trim().toUpperCase();
-    const { data: pl, error } = await supabase.from('players').select('*').eq('code', code).maybeSingle();
-    if(error || !pl){ document.getElementById('claimErr').textContent='Code introuvable.'; return; }
-    if(pl.profile_id){ document.getElementById('claimErr').textContent='Ce profil est déjà relié.'; return; }
-    const { error: uErr } = await supabase.from('players').update({ profile_id: uid }).eq('id', pl.id);
-    if(uErr){ document.getElementById('claimErr').textContent=uErr.message; return; }
-    toast('Profil relié !');
-    viewSuivi();
-  });
+    <div class="card">
+      <h3>Pyramide de la tournée</h3>
+      <p>🎾 ${tournaments?.length || 0} tournoi(s)</p>
+      <p>🏋️ ${trainings?.length || 0} entraînement(s)</p>
+      <p>👥 ${players.length} joueur(s)</p>
+    </div>
+
+    <div class="card">
+      <h3>Joueurs de la tournée</h3>
+      ${players.map(p => `
+        <div class="row between" style="border-bottom:1px solid var(--line);padding:8px 0">
+          <span>${esc(fullName(p))}</span>
+          <span class="code">${esc(p.code)}</span>
+        </div>
+      `).join('') || `<p class="muted">Aucun joueur affecté.</p>`}
+    </div>
+
+    <div class="card">
+      <h3>Tournois / étapes</h3>
+      ${(tournaments || []).map(t => `
+        <div class="card card2" onclick="go('#/tournoi/${t.id}')">
+          <strong>${esc(t.nom)}</strong>
+          <p class="muted">${esc(t.lieu || '')}</p>
+          <p class="muted">${esc(t.date_debut || '')} → ${esc(t.date_fin || '')}</p>
+        </div>
+      `).join('') || `<p class="muted">Aucun tournoi.</p>`}
+    </div>
+
+    <div class="card">
+      <h3>Entraînements</h3>
+      ${(trainings || []).map(t => `
+        <div class="card card2">
+          <strong>${esc(t.titre)}</strong>
+          <p class="muted">${t.scheduled_at ? formatDate(t.scheduled_at) + ' · ' + formatTime(t.scheduled_at) : 'Non planifié'}</p>
+          <p class="muted">${esc(t.lieu || '')}</p>
+        </div>
+      `).join('') || `<p class="muted">Aucun entraînement.</p>`}
+    </div>
+
+    ${STATE.profile.role === 'admin' || STATE.profile.superviseur ? renderTourneeAdminForms(id) : ''}
+  `, 'tournees');
 }
 
-// ---------------------------------------------------------------
-// VUE : MATCH PUBLIC (live, lecture seule, niveau "jeu" + points en tie-break)
-// ---------------------------------------------------------------
-let liveChannel = null;
-async function viewMatchPublic(id){
-  shell(`<div class="empty">Chargement…</div>`, 'home');
-  const { data: m } = await supabase.from('matches').select('*, tournaments(nom)').eq('id', id).single();
-  if(!m){ shell(`<div class="empty">Match introuvable.</div>`,'home'); return; }
-  const { data: p1 } = await supabase.from('players').select('nom,prenom').eq('id', m.joueur1_id).single();
-  const { data: p2 } = await supabase.from('players').select('nom,prenom').eq('id', m.joueur2_id).single();
-  renderPublicMatch(m, fullName(p1), fullName(p2));
+function renderTourneeAdminForms(tourneeId){
+  return `
+    <div class="card">
+      <h3>Ajouter un tournoi</h3>
 
-  if(liveChannel) supabase.removeChannel(liveChannel);
-  liveChannel = supabase.channel('match-'+id)
-    .on('postgres_changes', { event:'UPDATE', schema:'public', table:'matches', filter:`id=eq.${id}` }, payload => {
-      renderPublicMatch(payload.new, fullName(p1), fullName(p2));
-    }).subscribe();
+      <label>Nom du tournoi</label>
+      <input id="tournamentNom" placeholder="Ex : Tournoi de Rennes">
+
+      <label>Lieu</label>
+      <input id="tournamentLieu">
+
+      <div class="grid2">
+        <div>
+          <label>Début</label>
+          <input id="tournamentDebut" type="date">
+        </div>
+        <div>
+          <label>Fin</label>
+          <input id="tournamentFin" type="date">
+        </div>
+      </div>
+
+      <button class="btn" onclick="createTournament('${tourneeId}')">Ajouter tournoi</button>
+    </div>
+
+    <div class="card">
+      <h3>Ajouter un entraînement</h3>
+
+      <label>Titre</label>
+      <input id="trainingTitre" placeholder="Ex : Entraînement service + retour">
+
+      <label>Date / heure</label>
+      <input id="trainingDate" type="datetime-local">
+
+      <label>Lieu</label>
+      <input id="trainingLieu">
+
+      <label>Description</label>
+      <textarea id="trainingDesc"></textarea>
+
+      <button class="btn" onclick="createTraining('${tourneeId}')">Ajouter entraînement</button>
+    </div>
+  `;
 }
-function renderPublicMatch(m, n1, n2){
-  const backRoute = (STATE.profile?.role === 'coach' || STATE.profile?.role === 'admin') ? '#/coach' : '#/suivi';
+
+window.createTournament = async tourneeId => {
+  const payload = {
+    tournee_id:tourneeId,
+    nom:document.getElementById('tournamentNom').value.trim(),
+    lieu:document.getElementById('tournamentLieu').value.trim(),
+    date_debut:document.getElementById('tournamentDebut').value || null,
+    date_fin:document.getElementById('tournamentFin').value || null
+  };
+
+  if(!payload.nom) return alert('Nom obligatoire.');
+
+  const { error } = await supabase.from('tournaments').insert(payload);
+
+  if(error) return alert(error.message);
+
+  viewTournee(tourneeId);
+};
+
+window.createTraining = async tourneeId => {
+  const payload = {
+    tournee_id:tourneeId,
+    titre:document.getElementById('trainingTitre').value.trim(),
+    scheduled_at:document.getElementById('trainingDate').value || null,
+    lieu:document.getElementById('trainingLieu').value.trim(),
+    description:document.getElementById('trainingDesc').value.trim()
+  };
+
+  if(!payload.titre) return alert('Titre obligatoire.');
+
+  const { error } = await supabase.from('trainings').insert(payload);
+
+  if(error) return alert(error.message);
+
+  viewTournee(tourneeId);
+};
+
+/* =========================
+   JOUEURS
+========================= */
+
+async function viewJoueurs(){
+  shell(`<div class="empty">Chargement...</div>`, 'joueurs');
+
+  const { data: players } = await supabase
+    .from('players')
+    .select('*')
+    .eq('team_id', STATE.profile.team_id)
+    .order('nom');
+
   shell(`
-    <button class="btn ghost" onclick="navigate('${backRoute}')">← Retour</button>
-    <p class="muted" style="margin:4px 0">${esc(m.tournaments?.nom||'')}</p>
-    ${scoreboardHTML(m, n1, n2)}
-    <p class="muted" style="text-align:center">Score mis à jour en direct par le coach.</p>
-  `, 'home');
+    <h2>Joueurs</h2>
+
+    ${(players || []).map(p => `
+      <div class="card">
+        <div class="row between">
+          <strong>${esc(fullName(p))}</strong>
+          <span class="code">${esc(p.code)}</span>
+        </div>
+      </div>
+    `).join('') || `<div class="empty">Aucun joueur.</div>`}
+
+    ${STATE.profile.role === 'admin' || STATE.profile.superviseur ? `
+      <div class="card">
+        <h3>Ajouter joueur</h3>
+
+        <label>Prénom</label>
+        <input id="playerPrenom">
+
+        <label>Nom</label>
+        <input id="playerNom">
+
+        <button class="btn" onclick="createPlayer()">Ajouter</button>
+      </div>
+    ` : ''}
+  `, 'joueurs');
 }
 
-// ---------------------------------------------------------------
-// ROUTAGE
-// ---------------------------------------------------------------
-function setLoadingStatus(text){
-  const el = document.getElementById('boot-status');
-  if(el) el.textContent = text;
+window.createPlayer = async () => {
+  const payload = {
+    prenom:document.getElementById('playerPrenom').value.trim(),
+    nom:document.getElementById('playerNom').value.trim(),
+    team_id:STATE.profile.team_id,
+    code:genCode()
+  };
+
+  if(!payload.nom) return alert('Nom obligatoire.');
+
+  const { error } = await supabase.from('players').insert(payload);
+
+  if(error) return alert(error.message);
+
+  viewJoueurs();
+};
+
+/* =========================
+   MATCH
+========================= */
+
+async function viewMatch(id){
+  shell(`<div class="empty">Chargement match...</div>`, 'planning');
+
+  const { data: match } = await supabase
+    .from('matches')
+    .select('*, tournaments(nom)')
+    .eq('id', id)
+    .maybeSingle();
+
+  const { data: players } = await supabase
+    .from('players')
+    .select('*')
+    .in('id', [match.joueur1_id, match.joueur2_id]);
+
+  const p1 = players.find(p => p.id === match.joueur1_id);
+  const p2 = players.find(p => p.id === match.joueur2_id);
+
+  shell(`
+    <button class="btn2 small" onclick="go('#/planning')">← Retour</button>
+
+    <div class="card">
+      <h3>${esc(match.tournaments?.nom || 'Match')}</h3>
+
+      <p><strong>${esc(fullName(p1))}</strong> vs <strong>${esc(fullName(p2))}</strong></p>
+      <p class="muted">${match.scheduled_at ? formatDate(match.scheduled_at) + ' · ' + formatTime(match.scheduled_at) : 'Non planifié'}</p>
+
+      <label>Statut</label>
+      <select id="matchStatus">
+        <option value="a_venir" ${match.statut === 'a_venir' ? 'selected' : ''}>À venir</option>
+        <option value="en_cours" ${match.statut === 'en_cours' ? 'selected' : ''}>En cours</option>
+        <option value="termine" ${match.statut === 'termine' ? 'selected' : ''}>Terminé</option>
+      </select>
+
+      <label>Score</label>
+      <input id="matchScore" value="${esc(match.score || '')}" placeholder="Ex : 6/3 4/6 10/8">
+
+      <label>Débrief coach</label>
+      <textarea id="matchDebrief">${esc(match.debrief || '')}</textarea>
+
+      <button class="btn" onclick="saveMatch('${match.id}')">Enregistrer</button>
+    </div>
+  `, 'planning');
 }
-function withTimeout(promise, ms, label){
-  return Promise.race([
-    promise,
-    new Promise((_, rej) => setTimeout(() => rej(new Error(`Délai dépassé (${label})`)), ms))
-  ]);
+
+window.saveMatch = async id => {
+  const payload = {
+    statut:document.getElementById('matchStatus').value,
+    score:document.getElementById('matchScore').value.trim(),
+    debrief:document.getElementById('matchDebrief').value.trim()
+  };
+
+  const { error } = await supabase
+    .from('matches')
+    .update(payload)
+    .eq('id', id);
+
+  if(error) return alert(error.message);
+
+  alert('Match enregistré.');
+  go('#/planning');
+};
+
+/* =========================
+   PROFIL
+========================= */
+
+function viewProfil(){
+  shell(`
+    <div class="card">
+      <h3>Profil</h3>
+      <p>${esc(fullName(STATE.profile))}</p>
+      <p class="muted">Rôle : ${esc(STATE.profile.role)}</p>
+      ${STATE.profile.superviseur ? `<p class="pill done">Superviseur</p>` : ''}
+      <button class="btn btn-red" onclick="logout()">Déconnexion</button>
+    </div>
+  `, 'profil');
 }
-async function loadSession(){
-  setLoadingStatus('Connexion à Supabase…');
-  try{
-    const { data, error } = await withTimeout(supabase.auth.getSession(), 5000, 'session');
-    if(error) throw error;
-    STATE.session = data.session;
-  }catch(err){
-    console.warn('getSession a échoué/timeout', err);
-    setLoadingStatus('Erreur session : ' + (err?.message || err));
-    STATE.session = null;
-  }
-  if(STATE.session){
-    setLoadingStatus('Chargement du profil…');
-    try{
-      const { data: profile, error } = await withTimeout(
-        supabase.from('profiles').select('*').eq('id', STATE.session.user.id).maybeSingle(),
-        5000, 'profil'
-      );
-      if(error) throw error;
-      STATE.profile = profile;
-    }catch(err){
-      console.warn('chargement du profil a échoué/timeout', err);
-      setLoadingStatus('Erreur profil : ' + (err?.message || err));
-      STATE.profile = null;
-    }
-  } else {
-    STATE.profile = null;
-  }
-  setLoadingStatus('Affichage…');
-  router();
-}
-function router(){
+
+/* =========================
+   ROUTER
+========================= */
+
+async function router(){
   const hash = location.hash || '#/';
-  if(liveChannel && !location.hash.startsWith('#/match/')){ supabase.removeChannel(liveChannel); liveChannel=null; }
 
-  // Accès public par code joueur (aucun compte requis)
-  let mCode;
-  if((mCode = hash.match(/^#\/j\/(.+)$/))) return viewPlayerCode(mCode[1].toUpperCase());
-
-  if(!STATE.session){
-    if(hash === '#/coach-login') return viewAuth();
-    return viewLanding();
-  }
-  if(!STATE.profile){ shell(`<div class="empty">Profil introuvable. Reconnecte-toi.</div><button class="btn secondary" onclick="logout()">Déconnexion</button>`); return; }
-
-  if(STATE.profile.must_change_password) return viewChangePassword();
-
-  const role = STATE.profile.role;
-
-  // Un coach doit appartenir à une équipe avant d'accéder au reste de l'app
-  if(role === 'coach' && !STATE.profile.team_id && hash !== '#/equipe' && hash !== '#/profil'){
-    navigate('#/equipe'); return;
-  }
-  // Un coach adjoint qui vient de rejoindre une équipe attend la validation du coach principal
-  if(role === 'coach' && STATE.profile.team_id && STATE.profile.statut === 'en_attente' && hash !== '#/profil'){
-    return viewWaitingValidation();
+  if(hash === '#/'){
+    viewLogin();
+    return;
   }
 
-  let mTour, mMatch;
-  if(hash === '#/' || hash === '#/login' || hash === '#/coach-login'){
-    navigate((role==='coach'||role==='admin') ? '#/coach' : '#/suivi'); return;
+  if(hash.startsWith('#/parent/')){
+    const code = hash.split('/')[2];
+    viewParentPlanning(code);
+    return;
   }
+
+  if(!STATE.session || !STATE.profile){
+    viewLogin();
+    return;
+  }
+
+  if(hash === '#/planning') return viewPlanning();
+  if(hash === '#/tournees') return viewTournees();
+  if(hash.startsWith('#/tournee/')) return viewTournee(hash.split('/')[2]);
+  if(hash === '#/joueurs') return viewJoueurs();
+  if(hash.startsWith('#/match/')) return viewMatch(hash.split('/')[2]);
   if(hash === '#/profil') return viewProfil();
-  if(hash === '#/equipe') return viewTeamSetup();
-  if(hash === '#/coach') return role==='admin' ? viewAdminHome() : viewCoachHome();
-  if(hash === '#/mon-equipe') return STATE.profile.team_id ? viewCoachHome() : (navigate('#/coach'), undefined);
-  if(hash === '#/coach/planning') return STATE.profile.team_id ? viewMyPlanning() : (navigate('#/coach'), undefined);
-  if(hash === '#/admin/utilisateurs') return role==='admin' ? viewAdminUsers() : (navigate('#/coach'), undefined);
-  if(hash === '#/suivi') return viewSuivi();
-  if((mTour = hash.match(/^#\/coach\/tournee\/(.+)$/))) return viewCoachTournee(mTour[1]);
-  if((mTour = hash.match(/^#\/coach\/tournoi\/(.+)$/))) return viewCoachTournament(mTour[1]);
-  if((mMatch = hash.match(/^#\/coach\/match\/(.+)$/))) return viewCoachMatch(mMatch[1]);
-  if((mMatch = hash.match(/^#\/match\/(.+)$/))) return viewMatchPublic(mMatch[1]);
-  navigate((role==='coach'||role==='admin') ? '#/coach' : '#/suivi');
+
+  viewPlanning();
 }
-window.navigate = navigate;
+
 window.addEventListener('hashchange', router);
 
-supabase.auth.onAuthStateChange((_event, session) => {
-  STATE.session = session;
-  if(!session){ STATE.profile=null; navigate('#/'); router(); }
-});
-
-loadSession().catch(showFatalError);
-
-// PWA : service worker
-if('serviceWorker' in navigator){
-  window.addEventListener('load', ()=> navigator.serviceWorker.register('sw.js').catch(()=>{}));
-}
+loadSession();
 </script>
 </body>
 </html>
