@@ -151,10 +151,14 @@ a.link{color:var(--accent); font-weight:600; text-decoration:none;}
 </style>
 </head>
 <body>
-<div id="app"></div>
+<div id="app">
+  <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0C0C0C;color:#D7E552;font-family:'Barlow Condensed',sans-serif;font-size:14px;letter-spacing:2px;text-transform:uppercase;">
+    Chargement…
+  </div>
+</div>
 
 <script type="module">
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+import { createClient } from './supabase.bundle.js';
 
 // ====================== CONFIGURATION ======================
 // Remplace par les valeurs de ton projet Supabase (Project Settings > API)
@@ -162,10 +166,31 @@ const SUPABASE_URL = 'https://oijaymahnevydzfgqlhi.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_49oduZZ5jt9TOo1p4oTbpw_LwpbWUXV';
 // =============================================================
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
 const app = document.getElementById('app');
 const STATE = { session:null, profile:null, route:'#/login', cache:{}, history:[] };
+
+// Affiche toute erreur fatale au lieu de laisser un écran noir silencieux
+function showFatalError(err){
+  console.error(err);
+  app.innerHTML = `
+    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:#0C0C0C;">
+      <div style="max-width:400px;text-align:center;color:#fff;font-family:'Inter',sans-serif;">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;color:#C1573A;text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;">Erreur de chargement</div>
+        <p style="color:#CCC;font-size:14px;line-height:1.6;margin-bottom:10px;">${(err && (err.message||err.toString())) || 'Erreur inconnue'}</p>
+        <p style="color:#777;font-size:12px;">Vérifie ta connexion internet, puis recharge la page.</p>
+      </div>
+    </div>`;
+}
+window.addEventListener('error', e => showFatalError(e.error || e.message));
+window.addEventListener('unhandledrejection', e => showFatalError(e.reason));
+
+let supabase;
+try{
+  supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+}catch(err){
+  showFatalError(err);
+  throw err;
+}
 
 // ---------------------------------------------------------------
 // HELPERS
