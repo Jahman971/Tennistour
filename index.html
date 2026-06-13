@@ -371,9 +371,12 @@ function shell(content, navActive){
   const role = STATE.profile?.role;
   let nav = '';
   if(role === 'admin'){
+    const hasTeam = !!STATE.profile.team_id;
     nav = `
       <div class="tab-bar">
-        <button class="${navActive==='home'?'active':''}" onclick="navigate('#/coach')">🛠️<span class="label">Équipes</span></button>
+        <button class="${navActive==='admin'?'active':''}" onclick="navigate('#/coach')">🛠️<span class="label">Équipes</span></button>
+        ${hasTeam ? `<button class="${navActive==='home'?'active':''}" onclick="navigate('#/mon-equipe')">🏟️<span class="label">Ma tournée</span></button>` : ''}
+        ${hasTeam ? `<button class="${navActive==='planning'?'active':''}" onclick="navigate('#/coach/planning')">📅<span class="label">Planning</span></button>` : ''}
         <button class="${navActive==='profile'?'active':''}" onclick="navigate('#/profil')">👤<span class="label">Profil</span></button>
       </div>`;
   } else if(role === 'coach'){
@@ -776,7 +779,7 @@ window.refreshValidation = async () => {
 // VUE : ADMIN — VUE GLOBALE DE TOUTES LES ÉQUIPES
 // ---------------------------------------------------------------
 async function viewAdminHome(){
-  shell(`<div class="empty">Chargement…</div>`, 'home');
+  shell(`<div class="empty">Chargement…</div>`, 'admin');
   const { data: teams } = await supabase.from('teams').select('*').order('created_at',{ascending:false});
   const { data: tournees } = await supabase.from('tournees').select('*').order('date_debut',{ascending:false});
   const { data: coaches } = await supabase.from('profiles').select('id, nom, team_id').eq('role','coach');
@@ -809,14 +812,14 @@ async function viewAdminHome(){
     <p class="muted" style="margin-top:-10px">Vue administrateur — accès à toutes les tournées et matchs.</p>
     <button class="btn secondary" onclick="navigate('#/admin/utilisateurs')">👥 Gestion des utilisateurs</button>
     ${teamsHtml}
-  `, 'home');
+  `, 'admin');
 }
 
 // ---------------------------------------------------------------
 // VUE : ADMIN — GESTION DES UTILISATEURS
 // ---------------------------------------------------------------
 async function viewAdminUsers(){
-  shell(`<div class="empty">Chargement…</div>`, 'home');
+  shell(`<div class="empty">Chargement…</div>`, 'admin');
   const { data: profiles } = await supabase.from('profiles').select('*').order('created_at',{ascending:false});
   const { data: teams } = await supabase.from('teams').select('id, nom');
   const teamName = tid => (teams||[]).find(t=>t.id===tid)?.nom || '—';
@@ -1212,7 +1215,7 @@ async function viewCoachTournee(id){
   }).join('') : `<div class="empty">Rien de programmé pour l'instant.</div>`;
 
   shell(`
-    <button class="btn ghost" onclick="navigate('#/coach')">← Toutes les tournées</button>
+    <button class="btn ghost" onclick="navigate('${tournee.team_id===STATE.profile.team_id ? '#/mon-equipe' : '#/coach'}')">← Toutes les tournées</button>
     <h2 style="margin:8px 0 2px">${esc(tournee.nom)}</h2>
     <p class="muted" style="margin-top:0">${esc(tournee.lieu||'')} ${tournee.date_debut?'· '+tournee.date_debut+(tournee.date_fin?(' → '+tournee.date_fin):''):''}</p>
 
@@ -1812,7 +1815,8 @@ function router(){
   if(hash === '#/profil') return viewProfil();
   if(hash === '#/equipe') return viewTeamSetup();
   if(hash === '#/coach') return role==='admin' ? viewAdminHome() : viewCoachHome();
-  if(hash === '#/coach/planning') return role==='coach' ? viewMyPlanning() : (navigate('#/coach'), undefined);
+  if(hash === '#/mon-equipe') return STATE.profile.team_id ? viewCoachHome() : (navigate('#/coach'), undefined);
+  if(hash === '#/coach/planning') return STATE.profile.team_id ? viewMyPlanning() : (navigate('#/coach'), undefined);
   if(hash === '#/admin/utilisateurs') return role==='admin' ? viewAdminUsers() : (navigate('#/coach'), undefined);
   if(hash === '#/suivi') return viewSuivi();
   if((mTour = hash.match(/^#\/coach\/tournee\/(.+)$/))) return viewCoachTournee(mTour[1]);
