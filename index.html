@@ -349,7 +349,7 @@ function scoreboardHTML(m, p1Name, p2Name, opts={}){
   return `
   <div class="board">
     ${liveTag}
-    <div class="tour-name">${esc(m.tour || 'Match')}${m.court ? ' · '+esc(m.court) : ''}</div>
+    <div class="tour-name">${m.scheduled_at ? '🕐 '+new Intl.DateTimeFormat('fr-FR',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}).format(new Date(m.scheduled_at))+' · ' : ''}${esc(m.tour || 'Match')}${m.court ? ' · '+esc(m.court) : ''}</div>
     <div class="player-row">
       <div class="player-name">${esc(p1Name)}${(st && st.finished && st.winner===0) ? ' 🏆' : ''}</div>
       <div class="sets">${colsP1.join('') || '<span class="muted">—</span>'}</div>
@@ -855,21 +855,38 @@ async function viewCoachTournament(id){
   const rosterAvailable = (roster||[]).filter(p=>!playerIds.has(p.id));
 
   const { data: matches } = await supabase.from('matches')
-    .select('*').eq('tournament_id', id).order('updated_at',{ascending:false});
+    .select('*').eq('tournament_id', id).order('scheduled_at',{ascending:true, nullsFirst:false});
 
   const playerName = pid => (players.find(p=>p.id===pid)?.nom) || '—';
 
-  const matchesHtml = (matches||[]).length ? matches.map(m=>{
+  // Planning : regroupement des matchs par jour
+  const dateFmt = new Intl.DateTimeFormat('fr-FR', { weekday:'long', day:'numeric', month:'long' });
+  const timeFmt = new Intl.DateTimeFormat('fr-FR', { hour:'2-digit', minute:'2-digit' });
+  const groups = new Map(); // key: 'YYYY-MM-DD' or 'none' -> matches[]
+  (matches||[]).forEach(m=>{
+    const key = m.scheduled_at ? m.scheduled_at.slice(0,10) : 'none';
+    if(!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(m);
+  });
+  const sortedKeys = [...groups.keys()].sort((a,b)=> a==='none'?1 : b==='none'?-1 : a.localeCompare(b));
+
+  const matchCard = m => {
     const statusPill = m.statut==='en_cours' ? '<span class="pill live">Live</span>'
       : m.statut==='termine' ? '<span class="pill done">Terminé</span>'
       : '<span class="pill upcoming">À venir</span>';
+    const time = m.scheduled_at ? timeFmt.format(new Date(m.scheduled_at)) : null;
     return `<div class="card" onclick="navigate('#/coach/match/${m.id}')" style="cursor:pointer">
       <div class="row between">
         <div><strong>${esc(playerName(m.joueur1_id))}</strong> vs <strong>${esc(playerName(m.joueur2_id))}</strong></div>
         ${statusPill}
       </div>
-      <p class="muted">${esc(m.tour||'')} ${m.court?'· '+esc(m.court):''}</p>
+      <p class="muted">${time ? `🕐 ${time} · ` : ''}${esc(m.tour||'')}${m.court?' · '+esc(m.court):''}</p>
     </div>`;
+  };
+
+  const matchesHtml = (matches||[]).length ? sortedKeys.map(key=>{
+    const label = key==='none' ? 'Non planifié' : (dateFmt.format(new Date(key+'T00:00:00')));
+    return `<h3 style="margin:18px 0 8px; text-transform:capitalize;">${esc(label)}</h3>${groups.get(key).map(matchCard).join('')}`;
   }).join('') : `<div class="empty">Aucun match créé pour ce tournoi.</div>`;
 
   const playersHtml = players.length ? players.map(p=>`
@@ -906,13 +923,15 @@ async function viewCoachTournament(id){
       </form>
     </div>
 
-    <h3 style="margin:18px 0 8px">Matchs</h3>
+    <h3 style="margin:18px 0 8px">+ Programmer un match</h3>
     <div class="card">
       <form id="matchForm">
         <label>Joueur 1</label>
         <select name="j1">${players.map(p=>`<option value="${p.id}">${esc(p.nom)}</option>`).join('')}</select>
         <label>Joueur 2</label>
         <select name="j2">${players.map(p=>`<option value="${p.id}">${esc(p.nom)}</option>`).join('')}</select>
+        <label>Date et heure (optionnel)</label>
+        <input type="datetime-local" name="scheduled_at">
         <label>Tour / phase (optionnel)</label>
         <input name="tour" placeholder="Ex: Demi-finale">
         <label>Court (optionnel)</label>
@@ -921,6 +940,7 @@ async function viewCoachTournament(id){
         <div class="error" id="matchErr"></div>
       </form>
     </div>
+    <h3 style="margin:18px 0 8px">Planning</h3>
     ${matchesHtml}
   `, 'home');
 
@@ -951,9 +971,11 @@ async function viewCoachTournament(id){
     const j1=f.get('j1'), j2=f.get('j2');
     if(!j1 || !j2 || j1===j2){ document.getElementById('matchErr').textContent='Choisis deux joueurs différents.'; return; }
     const live_state = initLiveState(t.formats);
+    const scheduledAt = f.get('scheduled_at');
     const { data, error } = await supabase.from('matches').insert({
       tournament_id: id, joueur1_id:j1, joueur2_id:j2,
       tour: f.get('tour')||null, court: f.get('court')||null,
+      scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : null,
       live_state
     }).select().single();
     if(error){ document.getElementById('matchErr').textContent = error.message; return; }
