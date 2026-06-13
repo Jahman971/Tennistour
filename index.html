@@ -946,6 +946,11 @@ async function viewCoachTournee(id){
 
   const { data: roster } = await supabase.from('players').select('*').eq('team_id', tournee.team_id).order('nom');
 
+  const { data: tnp } = await supabase.from('tournee_players').select('player_id, players(*)').eq('tournee_id', id);
+  const tourneePlayers = (tnp||[]).map(r=>r.players).filter(Boolean);
+  const tourneePlayerIds = new Set(tourneePlayers.map(p=>p.id));
+  const rosterAvailable = (roster||[]).filter(p=>!tourneePlayerIds.has(p.id));
+
   const { data: trainings } = await supabase.from('trainings').select('*, training_players(player_id)').eq('tournee_id', id).order('scheduled_at');
 
   let matches = [];
@@ -957,6 +962,13 @@ async function viewCoachTournee(id){
   const playerName = pid => (roster||[]).find(p=>p.id===pid)?.nom || '—';
 
   const { data: formats } = await supabase.from('formats').select('*').order('id');
+
+  // --- Joueurs de la tournée ---
+  const tourneePlayersHtml = tourneePlayers.length ? tourneePlayers.map(p=>`
+    <div class="row between" style="padding:8px 0; border-bottom:1px solid var(--brd)">
+      <div>${esc(p.nom)}</div>
+      <div class="code-badge" style="font-size:14px; padding:4px 8px;">${esc(p.code)}</div>
+    </div>`).join('') : `<p class="muted">Aucun joueur inscrit à cette tournée.</p>`;
 
   // --- Étapes ---
   const etapesHtml = (etapes||[]).length ? etapes.map(e=>`
@@ -1021,6 +1033,29 @@ async function viewCoachTournee(id){
     <h2 style="margin:8px 0 2px">${esc(tournee.nom)}</h2>
     <p class="muted" style="margin-top:0">${esc(tournee.lieu||'')} ${tournee.date_debut?'· '+tournee.date_debut+(tournee.date_fin?(' → '+tournee.date_fin):''):''}</p>
 
+    <h3 style="margin:18px 0 8px">Joueurs de la tournée</h3>
+    <div class="card">
+      ${tourneePlayersHtml}
+      ${rosterAvailable.length ? `
+      <form id="addTourneePlayerForm" style="margin-top:10px">
+        <label>Inscrire depuis l'effectif de l'équipe</label>
+        <div class="row">
+          <select name="player_id" style="flex:1">
+            ${rosterAvailable.map(p=>`<option value="${p.id}">${esc(p.nom)} (${esc(p.code)})</option>`).join('')}
+          </select>
+          <button class="btn small" type="submit" style="width:auto">Ajouter</button>
+        </div>
+      </form>` : ''}
+      <form id="newTourneePlayerForm" style="margin-top:10px">
+        <label>Nouveau joueur (pas encore dans l'effectif)</label>
+        <div class="row">
+          <input name="nom" placeholder="Ex: Lucas Petit" style="flex:1">
+          <button class="btn small" type="submit" style="width:auto">Créer</button>
+        </div>
+        <p class="muted" style="margin-top:8px">Un code à 5 caractères est généré pour chaque joueur : les parents s'en servent pour suivre ses matchs et son planning en direct.</p>
+      </form>
+    </div>
+
     <h3 style="margin:18px 0 8px">Étapes (tournois)</h3>
     ${etapesHtml}
     <div class="card">
@@ -1059,8 +1094,8 @@ async function viewCoachTournee(id){
         <label>Durée (minutes, optionnel)</label>
         <input type="number" name="duration_minutes" placeholder="Ex: 60">
         <label>Joueurs concernés</label>
-        <select name="player_ids" multiple style="height:${Math.min(160, 36+((roster||[]).length*22))}px">
-          ${(roster||[]).map(p=>`<option value="${p.id}">${esc(p.nom)}</option>`).join('')}
+        <select name="player_ids" multiple style="height:${Math.min(160, 36+(tourneePlayers.length*22))}px">
+          ${tourneePlayers.map(p=>`<option value="${p.id}">${esc(p.nom)}</option>`).join('')}
         </select>
         <p class="muted" style="margin-top:6px">Maintiens (ou Ctrl/Cmd + clic) pour sélectionner plusieurs joueurs. Laisse vide pour toute l'équipe.</p>
         <button class="btn clay" type="submit">Programmer l'entraînement</button>
@@ -1071,6 +1106,27 @@ async function viewCoachTournee(id){
     <h3 style="margin:18px 0 8px">Planning de la tournée</h3>
     ${planningHtml}
   `, 'home');
+
+  document.getElementById('addTourneePlayerForm')?.addEventListener('submit', async e=>{
+    e.preventDefault();
+    const playerId = new FormData(e.target).get('player_id');
+    const { error } = await supabase.from('tournee_players').insert({ tournee_id: id, player_id: playerId });
+    if(error){ toast(error.message, true); return; }
+    toast('Joueur inscrit à la tournée');
+    viewCoachTournee(id);
+  });
+
+  document.getElementById('newTourneePlayerForm').addEventListener('submit', async e=>{
+    e.preventDefault();
+    const nom = new FormData(e.target).get('nom').trim();
+    if(!nom) return;
+    const code = genCode();
+    const { data: pl, error } = await supabase.from('players').insert({ nom, code, team_id: tournee.team_id, created_by: STATE.session.user.id }).select().single();
+    if(error){ toast(error.message, true); return; }
+    await supabase.from('tournee_players').insert({ tournee_id: id, player_id: pl.id });
+    toast(`${nom} inscrit à la tournée · code ${code}`);
+    viewCoachTournee(id);
+  });
 
   document.getElementById('etapeForm').addEventListener('submit', async e=>{
     e.preventDefault();
@@ -1119,9 +1175,10 @@ async function viewCoachTournament(id){
   const players = (tp||[]).map(r=>r.players).filter(Boolean);
   const playerIds = new Set(players.map(p=>p.id));
 
-  // Effectif de l'équipe non encore inscrit à ce tournoi
-  const { data: roster } = await supabase.from('players').select('*').eq('team_id', t.team_id).order('nom');
-  const rosterAvailable = (roster||[]).filter(p=>!playerIds.has(p.id));
+  // Joueurs de la tournée non encore inscrits à cette étape
+  const { data: tnp } = await supabase.from('tournee_players').select('player_id, players(*)').eq('tournee_id', t.tournee_id);
+  const tourneeRoster = (tnp||[]).map(r=>r.players).filter(Boolean);
+  const rosterAvailable = tourneeRoster.filter(p=>!playerIds.has(p.id));
 
   const { data: matches } = await supabase.from('matches')
     .select('*').eq('tournament_id', id).order('scheduled_at',{ascending:true, nullsFirst:false});
@@ -1174,22 +1231,14 @@ async function viewCoachTournament(id){
       ${playersHtml}
       ${rosterAvailable.length ? `
       <form id="rosterForm" style="margin-top:10px">
-        <label>Inscrire depuis l'effectif de l'équipe</label>
+        <label>Inscrire depuis les joueurs de la tournée</label>
         <div class="row">
           <select name="player_id" style="flex:1">
             ${rosterAvailable.map(p=>`<option value="${p.id}">${esc(p.nom)} (${esc(p.code)})</option>`).join('')}
           </select>
           <button class="btn small" type="submit" style="width:auto">Ajouter</button>
         </div>
-      </form>` : ''}
-      <form id="addPlayerForm" style="margin-top:10px">
-        <label>Nouveau joueur (pas encore dans l'effectif)</label>
-        <div class="row">
-          <input name="nom" placeholder="Ex: Lucas Petit" style="flex:1">
-          <button class="btn small" type="submit" style="width:auto">Créer</button>
-        </div>
-        <p class="muted" style="margin-top:8px">Un code à 5 caractères est généré pour chaque joueur : les parents s'en servent pour suivre ses matchs en direct.</p>
-      </form>
+      </form>` : `<p class="muted" style="margin-top:10px">Tous les joueurs de la tournée sont déjà inscrits à cette étape. Pour ajouter un nouveau joueur, fais-le depuis la page de la tournée.</p>`}
     </div>
 
     <h3 style="margin:18px 0 8px">+ Programmer un match</h3>
@@ -1219,18 +1268,6 @@ async function viewCoachTournament(id){
     const { error } = await supabase.from('tournament_players').insert({ tournament_id: id, player_id: playerId });
     if(error){ toast(error.message, true); return; }
     toast('Joueur inscrit au tournoi');
-    viewCoachTournament(id);
-  });
-
-  document.getElementById('addPlayerForm').addEventListener('submit', async e=>{
-    e.preventDefault();
-    const nom = new FormData(e.target).get('nom').trim();
-    if(!nom) return;
-    const code = genCode();
-    const { data: pl, error } = await supabase.from('players').insert({ nom, code, team_id: t.team_id, created_by: STATE.session.user.id }).select().single();
-    if(error){ toast(error.message, true); return; }
-    await supabase.from('tournament_players').insert({ tournament_id: id, player_id: pl.id });
-    toast(`${nom} ajouté à l'effectif · code ${code}`);
     viewCoachTournament(id);
   });
 
