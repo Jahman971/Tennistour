@@ -5,168 +5,63 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#0C0C0C" />
 <title>SetPoint — Programmation de tournée</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{
-  --bg:#0C0C0C;--s1:#141414;--s2:#1C1C1C;--s3:#262626;--brd:#3A3A3A;
-  --accent:#D7E552;--accent2:rgba(215,229,82,.13);--red:#D94A35;--green:#22C55E;--blue:#60A5FA;--yellow:#F59E0B;
-  --white:#FFF;--light:#D4D4D4;--gray:#A3A3A3;--dim:#737373;
-  --head:'Barlow Condensed',sans-serif;--body:'Inter',sans-serif;--r:12px;--safe:env(safe-area-inset-bottom,0px)
-}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;height:100%;background:var(--bg);color:var(--white);font-family:var(--body)}
-button,input,select,textarea{font-family:inherit}button{cursor:pointer}.hide{display:none!important}
+:root{--bg:#0C0C0C;--s1:#141414;--s2:#1C1C1C;--s3:#262626;--brd:#3A3A3A;--accent:#D7E552;--accent2:rgba(215,229,82,.13);--red:#D94A35;--green:#22C55E;--blue:#60A5FA;--yellow:#F59E0B;--white:#FFF;--light:#D4D4D4;--gray:#A3A3A3;--dim:#737373;--head:'Barlow Condensed',sans-serif;--body:'Inter',sans-serif;--r:12px;--safe:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;height:100%;background:var(--bg);color:var(--white);font-family:var(--body)}button,input,select,textarea{font-family:inherit}button{cursor:pointer}.hide{display:none!important}
 #app{max-width:560px;margin:0 auto;min-height:100vh;background:var(--bg);position:relative;overflow:hidden}.screen{display:none;min-height:100vh}.screen.active{display:flex;flex-direction:column}
-.top{position:sticky;top:0;z-index:5;background:var(--s1);border-bottom:1px solid var(--brd);padding:14px 16px 10px;padding-top:calc(14px + env(safe-area-inset-top,0px));display:flex;align-items:center;justify-content:space-between;gap:12px}
-.brand{font-family:var(--head);font-size:22px;font-weight:900;letter-spacing:2px;text-transform:uppercase;color:var(--accent);line-height:1}.subbrand{font-size:11px;color:var(--gray);letter-spacing:.5px;margin-top:2px}.role-pill{font-family:var(--head);font-size:12px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;border:1px solid var(--brd);border-radius:999px;padding:7px 10px;background:var(--s2);color:var(--light);white-space:nowrap}
+.top{position:sticky;top:0;z-index:5;background:var(--s1);border-bottom:1px solid var(--brd);padding:14px 16px 10px;padding-top:calc(14px + env(safe-area-inset-top,0px));display:flex;align-items:center;justify-content:space-between;gap:12px}.brand{font-family:var(--head);font-size:22px;font-weight:900;letter-spacing:2px;text-transform:uppercase;color:var(--accent);line-height:1}.subbrand{font-size:11px;color:var(--gray);letter-spacing:.5px;margin-top:2px}.role-pill{font-family:var(--head);font-size:12px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;border:1px solid var(--brd);border-radius:999px;padding:7px 10px;background:var(--s2);color:var(--light);white-space:nowrap}
 .main{flex:1;overflow-y:auto;padding:16px;padding-bottom:calc(84px + var(--safe))}.bottom{position:fixed;bottom:0;left:0;right:0;max-width:560px;margin:0 auto;background:var(--s1);border-top:1px solid var(--brd);display:flex;padding:6px 4px calc(6px + var(--safe));z-index:10}.navbtn{flex:1;border:0;background:transparent;color:var(--gray);padding:8px 3px;border-radius:10px}.navbtn.active{color:#0C0C0C;background:var(--accent)}.ico{font-size:19px;display:block}.lbl{font-family:var(--head);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;display:block;margin-top:2px}
 .card{background:var(--s2);border:1px solid var(--brd);border-radius:16px;padding:14px;margin-bottom:12px}.card.accent{background:linear-gradient(135deg,rgba(215,229,82,.14),rgba(255,255,255,.03));border-color:rgba(215,229,82,.35)}.card.red{background:rgba(217,74,53,.08);border-color:rgba(217,74,53,.35)}.title{font-family:var(--head);font-size:24px;font-weight:900;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px}.card-title{font-family:var(--head);font-size:17px;font-weight:900;text-transform:uppercase;letter-spacing:1px;margin:0 0 10px}.muted{color:var(--gray);font-size:13px;line-height:1.5}.tiny{color:var(--gray);font-size:11px}.row{display:flex;gap:10px;align-items:center}.between{justify-content:space-between}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.stat{background:var(--s3);border:1px solid var(--brd);border-radius:12px;padding:12px;text-align:center}.stat .num{font-family:var(--head);font-size:30px;font-weight:900;line-height:1;color:var(--accent)}.stat .txt{font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--gray);margin-top:3px}.pill{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:4px 9px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;border:1px solid var(--brd);color:var(--light);background:var(--s3)}.pill.green{color:var(--green);border-color:rgba(34,197,94,.35);background:rgba(34,197,94,.08)}.pill.blue{color:var(--blue);border-color:rgba(96,165,250,.35);background:rgba(96,165,250,.08)}.pill.red{color:var(--red);border-color:rgba(217,74,53,.35);background:rgba(217,74,53,.08)}.pill.yellow{color:var(--yellow);border-color:rgba(245,158,11,.35);background:rgba(245,158,11,.08)}
 .btn{width:100%;border:0;border-radius:12px;padding:13px 14px;background:var(--accent);color:#0C0C0C;font-family:var(--head);font-size:15px;font-weight:900;text-transform:uppercase;letter-spacing:1.5px;margin-top:10px}.btn.secondary{background:var(--s3);color:var(--white);border:1px solid var(--brd)}.btn.small{width:auto;margin:0;padding:9px 12px;font-size:12px}.btn.danger{background:var(--red);color:white}.field{margin-bottom:11px}label{display:block;margin:0 0 6px;color:var(--gray);font-size:10px;text-transform:uppercase;letter-spacing:1px;font-weight:800}input,select,textarea{width:100%;background:var(--s3);color:var(--white);border:1px solid var(--brd);border-radius:12px;padding:12px;font-size:15px;outline:none}textarea{min-height:84px;resize:vertical}input:focus,select:focus,textarea:focus{border-color:var(--accent)}
 .login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}.login-box{width:100%;max-width:390px}.login-logo{font-family:var(--head);font-size:44px;font-weight:900;text-transform:uppercase;letter-spacing:2px;color:var(--accent);line-height:1;text-align:center}.login-sub{text-align:center;color:var(--gray);font-size:12px;text-transform:uppercase;letter-spacing:2px;margin:8px 0 26px}.login-card{background:var(--s2);border:1px solid var(--brd);border-radius:20px;padding:18px}.profile-quick{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px}.profile-quick button{background:var(--s3);border:1px solid var(--brd);color:var(--white);border-radius:12px;padding:11px 8px;font-family:var(--head);font-weight:900;text-transform:uppercase;letter-spacing:1px}.profile-quick button.active{background:var(--accent);color:#0C0C0C;border-color:var(--accent)}
-.day{background:var(--s2);border:1px solid var(--brd);border-radius:16px;margin-bottom:12px;overflow:hidden}.day-head{padding:12px 14px;background:var(--s3);border-bottom:1px solid var(--brd);display:flex;justify-content:space-between;align-items:center}.day-title{font-family:var(--head);font-size:19px;font-weight:900;text-transform:uppercase}.event{padding:12px 14px;border-bottom:1px solid var(--brd)}.event:last-child{border-bottom:0}.event-time{font-family:var(--head);font-weight:900;color:var(--accent);font-size:18px;min-width:58px}.event-main{flex:1}.event-name{font-weight:800;font-size:14px}.event-meta{font-size:12px;color:var(--gray);margin-top:3px;line-height:1.45}.chipline{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.avatar{width:34px;height:34px;border-radius:50%;background:var(--accent);color:#0C0C0C;display:flex;align-items:center;justify-content:center;font-family:var(--head);font-weight:900}.player{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--brd);border-radius:12px;background:var(--s3);margin-bottom:8px}.player-info{flex:1}.player-name{font-weight:800}.player-meta{font-size:12px;color:var(--gray);margin-top:2px}.modal{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:50;display:none;align-items:flex-end}.modal.open{display:flex}.sheet{width:100%;max-width:560px;margin:0 auto;background:var(--s1);border-top:1px solid var(--brd);border-radius:20px 20px 0 0;padding:18px 16px calc(18px + var(--safe));max-height:86vh;overflow-y:auto}.sheet-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}.x{background:transparent;border:0;color:var(--gray);font-size:28px;line-height:1}.empty{text-align:center;color:var(--gray);padding:36px 12px}.toast{position:fixed;left:50%;bottom:calc(84px + var(--safe));transform:translateX(-50%);background:var(--s1);border:1px solid var(--accent);color:var(--white);padding:10px 14px;border-radius:999px;z-index:80;font-size:13px;display:none;max-width:90%;text-align:center}.toast.on{display:block}
+.day{background:var(--s2);border:1px solid var(--brd);border-radius:16px;margin-bottom:12px;overflow:hidden}.day-head{padding:12px 14px;background:var(--s3);border-bottom:1px solid var(--brd);display:flex;justify-content:space-between;align-items:center}.day-title{font-family:var(--head);font-size:19px;font-weight:900;text-transform:uppercase}.event{padding:12px 14px;border-bottom:1px solid var(--brd)}.event:last-child{border-bottom:0}.event-time{font-family:var(--head);font-weight:900;color:var(--accent);font-size:18px;min-width:58px}.event-main{flex:1}.event-name{font-weight:800;font-size:14px}.event-meta{font-size:12px;color:var(--gray);margin-top:3px;line-height:1.45}.chipline{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.avatar{width:34px;height:34px;border-radius:50%;background:var(--accent);color:#0C0C0C;display:flex;align-items:center;justify-content:center;font-family:var(--head);font-weight:900}.player{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--brd);border-radius:12px;background:var(--s3);margin-bottom:8px}.player-info{flex:1}.player-name{font-weight:800}.player-meta{font-size:12px;color:var(--gray);margin-top:2px}.select-list{display:grid;grid-template-columns:1fr 1fr;gap:8px}.pick{border:1px solid var(--brd);border-radius:12px;padding:10px;background:var(--s3);font-size:13px}.pick input{width:auto;margin-right:7px}.modal{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:50;display:none;align-items:flex-end}.modal.open{display:flex}.sheet{width:100%;max-width:560px;margin:0 auto;background:var(--s1);border-top:1px solid var(--brd);border-radius:20px 20px 0 0;padding:18px 16px calc(18px + var(--safe));max-height:86vh;overflow-y:auto}.sheet-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}.x{background:transparent;border:0;color:var(--gray);font-size:28px;line-height:1}.empty{text-align:center;color:var(--gray);padding:36px 12px}.toast{position:fixed;left:50%;bottom:calc(84px + var(--safe));transform:translateX(-50%);background:var(--s1);border:1px solid var(--accent);color:var(--white);padding:10px 14px;border-radius:999px;z-index:80;font-size:13px;display:none;max-width:90%;text-align:center}.toast.on{display:block}
 @media(max-width:370px){.brand{font-size:19px}.lbl{font-size:9px}.login-logo{font-size:38px}.title{font-size:21px}}
 </style>
 </head>
 <body>
 <div id="app">
   <section id="loginScreen" class="screen active">
-    <div class="login">
-      <div class="login-box">
-        <div class="login-logo">SetPoint</div>
-        <div class="login-sub">Programmation de tournée tennis</div>
-        <div class="login-card">
-          <div class="card-title">Connexion unique</div>
-          <div class="muted">Une seule entrée. Le menu change selon ton profil.</div>
-          <div class="field" style="margin-top:14px"><label>Email</label><input id="email" value="admin@setpoint.fr" /></div>
-          <div class="field"><label>Mot de passe</label><input id="password" type="password" value="demo" /></div>
-          <label>Profil de test</label>
-          <div class="profile-quick">
-            <button class="active" data-role="admin">Admin</button>
-            <button data-role="coach">Coach</button>
-            <button data-role="parent">Parent</button>
-          </div>
-          <button class="btn" onclick="login()">Entrer</button>
-          <button class="btn secondary" onclick="toast('Supabase prêt à brancher : remplace login() par supabase.auth.signInWithPassword')">Info Supabase</button>
-        </div>
-      </div>
-    </div>
+    <div class="login"><div class="login-box"><div class="login-logo">SetPoint</div><div class="login-sub">Programmation de tournée tennis</div><div class="login-card"><div class="card-title">Connexion unique</div><div class="muted">Une seule entrée. Le menu change selon le profil connecté.</div><div class="field" style="margin-top:14px"><label>Email</label><input id="email" value="admin@setpoint.fr" /></div><div class="field"><label>Mot de passe</label><input id="password" type="password" value="demo" /></div><label>Profil de test</label><div class="profile-quick"><button class="active" data-role="admin">Admin</button><button data-role="coach_principal">Principal</button><button data-role="parent">Parent</button></div><button class="btn" onclick="login()">Entrer</button><button class="btn secondary" onclick="toast('Supabase prêt : auth + tables + RLS dans schema.sql')">Info Supabase</button></div></div></div>
   </section>
-
-  <section id="appScreen" class="screen">
-    <header class="top">
-      <div><div class="brand">SetPoint</div><div id="tourneeLabel" class="subbrand">Tournée Été 2027</div></div>
-      <button class="role-pill" onclick="logout()" id="roleLabel">Admin</button>
-    </header>
-    <main class="main" id="main"></main>
-    <nav class="bottom" id="bottomNav"></nav>
-  </section>
+  <section id="appScreen" class="screen"><header class="top"><div><div class="brand">SetPoint</div><div id="tourneeLabel" class="subbrand">Tournée Été 2027</div></div><button class="role-pill" onclick="logout()" id="roleLabel">Admin</button></header><main class="main" id="main"></main><nav class="bottom" id="bottomNav"></nav></section>
 </div>
-
-<div class="modal" id="modal"><div class="sheet"><div class="sheet-head"><div class="card-title" id="modalTitle">Ajouter</div><button class="x" onclick="closeModal()">×</button></div><div id="modalBody"></div></div></div>
-<div class="toast" id="toast"></div>
-
+<div class="modal" id="modal"><div class="sheet"><div class="sheet-head"><div class="card-title" id="modalTitle">Ajouter</div><button class="x" onclick="closeModal()">×</button></div><div id="modalBody"></div></div></div><div class="toast" id="toast"></div>
 <script>
-// ===================== SUPABASE =====================
-// Version Git autonome : données locales pour tester.
-// Pour brancher Supabase :
-// 1. Ajoute supabase-js dans le HTML.
-// 2. Remplace login() par supabase.auth.signInWithPassword().
-// 3. Charge les données depuis les tables tournees, users, joueurs, matchs, entrainements.
-// ====================================================
-
-const state = {
-  role:'admin',
-  tab:'dashboard',
-  tournee:{id:1, nom:'Tournée Été 2027', ville:'Tours / Blois', dates:'12 → 18 juillet'},
-  coaches:[
-    {id:1,nom:'Coach Principal',role:'principal'},
-    {id:2,nom:'Lohan',role:'coach'},
-    {id:3,nom:'Sarah',role:'coach'}
-  ],
-  players:[
-    {id:1,nom:'Maïwenn',cat:'13 ans',classement:'15/1',parent:'Parent Maïwenn'},
-    {id:2,nom:'Lucas',cat:'14 ans',classement:'15/2',parent:'Parent Lucas'},
-    {id:3,nom:'Emma',cat:'13 ans',classement:'30',parent:'Parent Emma'},
-    {id:4,nom:'Nathan',cat:'15 ans',classement:'15/3',parent:'Parent Nathan'}
-  ],
-  events:[
-    {id:1,type:'match',day:'Lun 12 juillet',time:'09:30',player:'Maïwenn',coach:'Lohan',title:'Open de Tours — 1er tour',meta:'Court 4 · adversaire à confirmer',status:'à venir'},
-    {id:2,type:'training',day:'Lun 12 juillet',time:'11:30',players:['Lucas','Emma'],coach:'Sarah',title:'Entraînement retour/service',meta:'Terrain annexe · 1h15',status:'prévu'},
-    {id:3,type:'match',day:'Lun 12 juillet',time:'14:00',player:'Nathan',coach:'Coach Principal',title:'Open de Blois — qualif',meta:'Court central · adversaire Martin D.',status:'à venir'},
-    {id:4,type:'training',day:'Mar 13 juillet',time:'10:00',players:['Maïwenn','Nathan'],coach:'Coach Principal',title:'Entraînement tactique',meta:'Schémas de jeu + retour croisé · 1h',status:'prévu'},
-    {id:5,type:'match',day:'Mar 13 juillet',time:'15:30',player:'Lucas',coach:'Lohan',title:'Open de Tours — 1er tour',meta:'Court 2 · adversaire à confirmer',status:'à venir'}
-  ],
-  results:[
-    {player:'Maïwenn',tournoi:'Open de Tours',score:'6/4 6/3',result:'Victoire'},
-    {player:'Emma',tournoi:'Open de Blois',score:'3/6 6/2 8/10',result:'Défaite'}
-  ],
-  debriefs:[
-    {player:'Maïwenn',match:'Open de Tours',mental:4,service:4,retour:3,comment:'Bon match. Service solide. Retour à travailler demain.'}
-  ],
-  notifications:[
-    {role:'parent',txt:'Match de Maïwenn prévu lundi à 09h30.'},
-    {role:'coach',txt:'Debrief à compléter pour Emma.'},
-    {role:'admin',txt:'3 coachs et 4 joueurs affectés à la tournée.'}
-  ]
-};
-
-const tabs = {
-  admin:[['dashboard','🏠','Accueil'],['tournee','🧳','Tournée'],['planning','📅','Planning'],['users','👥','Utilisateurs'],['stats','📊','Stats']],
-  coach:[['dashboard','🏠','Accueil'],['planning','📅','Planning'],['players','🎾','Joueurs'],['debriefs','📝','Debriefs']],
-  parent:[['dashboard','🏠','Accueil'],['planning','📅','Planning'],['results','🎾','Résultats'],['tournee','🧳','Tournée']]
-};
-
-let selectedRole = 'admin';
-document.querySelectorAll('.profile-quick button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.profile-quick button').forEach(x=>x.classList.remove('active'));b.classList.add('active');selectedRole=b.dataset.role;document.getElementById('email').value=selectedRole+'@setpoint.fr'});
-function login(){ state.role=selectedRole; state.tab='dashboard'; document.getElementById('loginScreen').classList.remove('active'); document.getElementById('appScreen').classList.add('active'); render(); }
-function logout(){ document.getElementById('appScreen').classList.remove('active'); document.getElementById('loginScreen').classList.add('active'); }
-function roleName(){return state.role==='admin'?'Admin':state.role==='coach'?'Coach':'Parent'}
-function setTab(t){state.tab=t;render()}
-function render(){document.getElementById('roleLabel').textContent=roleName();document.getElementById('tourneeLabel').textContent=state.tournee.nom+' · '+state.tournee.dates;renderNav();renderMain()}
-function renderNav(){document.getElementById('bottomNav').innerHTML=tabs[state.role].map(t=>`<button class="navbtn ${state.tab===t[0]?'active':''}" onclick="setTab('${t[0]}')"><span class="ico">${t[1]}</span><span class="lbl">${t[2]}</span></button>`).join('')}
-function renderMain(){ const m=document.getElementById('main'); const r=state.role, t=state.tab; if(t==='dashboard') return m.innerHTML=viewDashboard(); if(t==='planning') return m.innerHTML=viewPlanning(); if(t==='tournee') return m.innerHTML=viewTournee(); if(t==='users') return m.innerHTML=viewUsers(); if(t==='players') return m.innerHTML=viewPlayers(); if(t==='debriefs') return m.innerHTML=viewDebriefs(); if(t==='results') return m.innerHTML=viewResults(); if(t==='stats') return m.innerHTML=viewStats(); }
-
-function viewDashboard(){
-  const notif = state.notifications.filter(n=>n.role===state.role).map(n=>`<div class="event"><div class="event-name">🔔 ${n.txt}</div></div>`).join('') || '<div class="empty">Aucune notification</div>';
-  const parentNote = state.role==='parent'?'<div class="card red"><div class="card-title">Accès parent</div><div class="muted">Tu vois uniquement le planning de match, les résultats et les infos de tournée de ton enfant. Pas d’entraînements, pas de debriefs coach.</div></div>':'';
-  const coachNote = state.role==='coach'?'<div class="card accent"><div class="card-title">Mission coach</div><div class="muted">Tu suis les matchs, les entraînements et les debriefs des joueurs affectés à ta tournée.</div></div>':'';
-  return `<h1 class="title">Accueil ${roleName()}</h1><p class="muted">Programmation de tournée : coachs, joueurs, matchs, entraînements et suivi terrain.</p>${parentNote}${coachNote}<div class="grid2"><div class="stat"><div class="num">${state.players.length}</div><div class="txt">Joueurs</div></div><div class="stat"><div class="num">${state.coaches.length}</div><div class="txt">Coachs</div></div><div class="stat"><div class="num">${state.events.filter(e=>e.type==='match').length}</div><div class="txt">Matchs</div></div><div class="stat"><div class="num">${state.events.filter(e=>e.type==='training').length}</div><div class="txt">Entraînements</div></div></div><div class="card"><div class="card-title">Notifications</div>${notif}</div>${state.role==='admin'?'<button class="btn" onclick="openAddEvent()">Programmer un créneau</button>':''}`
-}
-function viewPlanning(){
-  let events = state.events;
-  if(state.role==='parent') events = events.filter(e=>e.type==='match' && e.player==='Maïwenn');
-  const byDay = [...new Set(events.map(e=>e.day))];
-  return `<h1 class="title">Planning tournée</h1><p class="muted">${state.role==='parent'?'Planning des matchs de ton enfant.':'Vue jour par jour : matchs + entraînements + coachs affectés.'}</p>${state.role!=='parent'?'<button class="btn" onclick="openAddEvent()">Ajouter match / entraînement</button>':''}${byDay.map(day=>`<div class="day"><div class="day-head"><div class="day-title">${day}</div><span class="pill">${events.filter(e=>e.day===day).length} créneau(x)</span></div>${events.filter(e=>e.day===day).map(eventHtml).join('')}</div>`).join('') || '<div class="empty">Aucun créneau visible.</div>'}`;
-}
-function eventHtml(e){
-  const isMatch=e.type==='match'; const people=isMatch?[e.player]:(e.players||[]);
-  return `<div class="event"><div class="row"><div class="event-time">${e.time}</div><div class="event-main"><div class="event-name">${isMatch?'🎾':'🏃'} ${e.title}</div><div class="event-meta">Coach : ${e.coach}<br>${e.meta}</div><div class="chipline"><span class="pill ${isMatch?'blue':'green'}">${isMatch?'Match':'Entraînement'}</span>${people.map(p=>`<span class="pill">${p}</span>`).join('')}</div></div></div></div>`
-}
-function viewTournee(){return `<h1 class="title">${state.tournee.nom}</h1><div class="card accent"><div class="card-title">Infos tournée</div><div class="muted">Ville : ${state.tournee.ville}<br>Dates : ${state.tournee.dates}<br>Contact : Coach Principal</div></div><div class="card"><div class="card-title">Coachs affectés</div>${state.coaches.map(c=>`<div class="player"><div class="avatar">${c.nom[0]}</div><div class="player-info"><div class="player-name">${c.nom}</div><div class="player-meta">${c.role==='principal'?'Coach principal':'Coach'}</div></div></div>`).join('')}</div>${state.role!=='parent'?`<div class="card"><div class="card-title">Joueurs en tournée</div>${playersList()}</div>`:''}`}
-function viewUsers(){return `<h1 class="title">Utilisateurs</h1><p class="muted">C’est ici que l’admin crée les coachs, joueurs et parents, puis affecte les joueurs aux tournées.</p><button class="btn" onclick="toast('Démo : création utilisateur à brancher sur Supabase')">Créer un utilisateur</button><div class="card"><div class="card-title">Coachs</div>${state.coaches.map(c=>`<div class="player"><div class="avatar">${c.nom[0]}</div><div class="player-info"><div class="player-name">${c.nom}</div><div class="player-meta">${c.role}</div></div></div>`).join('')}</div><div class="card"><div class="card-title">Joueurs / Parents</div>${playersList(true)}</div>`}
-function viewPlayers(){return `<h1 class="title">Joueurs</h1><p class="muted">Liste des joueurs suivis sur la tournée.</p><div class="card">${playersList()}</div>`}
-function playersList(withParent=false){return state.players.map(p=>`<div class="player"><div class="avatar">${p.nom[0]}</div><div class="player-info"><div class="player-name">${p.nom}</div><div class="player-meta">${p.cat} · ${p.classement}${withParent?' · Parent : '+p.parent:''}</div></div><span class="pill green">Actif</span></div>`).join('')}
-function viewResults(){return `<h1 class="title">Résultats</h1><p class="muted">Résultats visibles pour le parent.</p><div class="card">${state.results.filter(r=>state.role!=='parent'||r.player==='Maïwenn').map(r=>`<div class="event"><div class="event-name">${r.result==='Victoire'?'✅':'❌'} ${r.player} — ${r.result}</div><div class="event-meta">${r.tournoi} · ${r.score}</div></div>`).join('')}</div>`}
+const state={role:'admin',tab:'dashboard',activePlayer:'Maïwenn',tournee:{id:1,nom:'Tournée Été 2027',ville:'Tours / Blois',dates:'12 → 18 juillet'},coaches:[{id:1,nom:'Jimmy',role:'coach principal'},{id:2,nom:'Lohan',role:'coach'},{id:3,nom:'Sarah',role:'coach'}],players:[{id:1,nom:'Maïwenn',cat:'13 ans',classement:'15/1',parent:'Parent Maïwenn'},{id:2,nom:'Lucas',cat:'14 ans',classement:'15/2',parent:'Parent Lucas'},{id:3,nom:'Emma',cat:'13 ans',classement:'30',parent:'Parent Emma'},{id:4,nom:'Nathan',cat:'15 ans',classement:'15/3',parent:'Parent Nathan'}],events:[{id:1,type:'match',day:'Lun 12 juillet',time:'09:30',players:['Maïwenn'],coach:'Lohan',title:'Open de Tours — 1er tour',meta:'Court 4 · adversaire à confirmer',status:'à venir'},{id:2,type:'training',day:'Lun 12 juillet',time:'11:30',players:['Lucas','Emma'],coach:'Sarah',title:'Entraînement retour/service',meta:'Terrain annexe · 1h15',status:'prévu'},{id:3,type:'match',day:'Lun 12 juillet',time:'14:00',players:['Nathan'],coach:'Jimmy',title:'Open de Blois — qualif',meta:'Court central · adversaire Martin D.',status:'à venir'},{id:4,type:'training',day:'Mar 13 juillet',time:'10:00',players:['Maïwenn','Nathan'],coach:'Jimmy',title:'Entraînement tactique',meta:'Schémas de jeu + retour croisé · 1h',status:'prévu'},{id:5,type:'training',day:'Mar 13 juillet',time:'12:00',players:['Maïwenn','Lucas','Emma'],coach:'Lohan',title:'Panier service + points joués',meta:'3 joueurs · rotation 20 min',status:'prévu'},{id:6,type:'match',day:'Mar 13 juillet',time:'15:30',players:['Lucas'],coach:'Lohan',title:'Open de Tours — 1er tour',meta:'Court 2 · adversaire à confirmer',status:'à venir'}],results:[{player:'Maïwenn',tournoi:'Open de Tours',score:'6/4 6/3',result:'Victoire'},{player:'Nathan',tournoi:'Open de Blois',score:'4/6 6/2 10/7',result:'Victoire'}],debriefs:[{player:'Maïwenn',match:'Open de Tours',mental:4,service:4,retour:3,comment:'Très bon engagement. Retour à travailler demain.'}]};
+const navs={admin:[['dashboard','🏠','Dashboard'],['planning','📅','Planning'],['players','👥','Joueurs'],['matches','🎾','Matchs'],['settings','⚙️','Réglages']],coach_principal:[['dashboard','🏠','Tournée'],['planning','📅','Planning'],['players','👥','Joueurs'],['matches','🎾','Matchs'],['debriefs','📝','Debriefs']],parent:[['dashboard','🏠','Accueil'],['matches','🎾','Matchs'],['tournee','🧳','Tournée'],['settings','👤','Profil']]};
+document.querySelectorAll('.profile-quick button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.profile-quick button').forEach(x=>x.classList.remove('active'));b.classList.add('active');state.role=b.dataset.role});
+function login(){state.role=document.querySelector('.profile-quick button.active').dataset.role;state.tab='dashboard';loginScreen.classList.remove('active');appScreen.classList.add('active');render();}
+function logout(){appScreen.classList.remove('active');loginScreen.classList.add('active')}
+function roleName(){return state.role==='coach_principal'?'Coach principal':state.role==='parent'?'Parent':'Admin'}
+function render(){roleLabel.textContent=roleName();tourneeLabel.textContent=state.tournee.nom+' · '+state.tournee.dates;renderNav();const views={dashboard:viewDashboard,planning:viewPlanning,players:viewPlayers,matches:viewMatches,debriefs:viewDebriefs,tournee:viewTournee,settings:viewSettings};main.innerHTML=(views[state.tab]||viewDashboard)();}
+function renderNav(){bottomNav.innerHTML=navs[state.role].map(n=>`<button class="navbtn ${state.tab===n[0]?'active':''}" onclick="go('${n[0]}')"><span class="ico">${n[1]}</span><span class="lbl">${n[2]}</span></button>`).join('')}
+function go(tab){state.tab=tab;render()}
+function canPlan(){return state.role==='admin'||state.role==='coach_principal'}
+function visibleEvents(){if(state.role==='parent')return state.events.filter(e=>e.type==='match'&&e.players.includes(state.activePlayer));return state.events}
+function eventIcon(e){return e.type==='training'?'🏋️':'🎾'}
+function eventClass(e){return e.type==='training'?'blue':'yellow'}
+function eventLine(e){return `<div class="event"><div class="row"><div class="event-time">${e.time}</div><div class="event-main"><div class="event-name">${eventIcon(e)} ${e.title}</div><div class="event-meta">Coach : ${e.coach}<br>${e.meta}</div><div class="chipline"><span class="pill ${eventClass(e)}">${e.type==='training'?'Entraînement':'Match'}</span>${e.players.map(p=>`<span class="pill">${p}</span>`).join('')}<span class="pill green">${e.status}</span></div></div></div></div>`}
+function groupedEvents(list){const days=[...new Set(list.map(e=>e.day))];return days.map(d=>`<div class="day"><div class="day-head"><div class="day-title">${d}</div><span class="pill">${list.filter(e=>e.day===d).length} créneau(x)</span></div>${list.filter(e=>e.day===d).sort((a,b)=>a.time.localeCompare(b.time)).map(eventLine).join('')}</div>`).join('')||'<div class="empty">Aucun créneau.</div>'}
+function viewDashboard(){if(state.role==='parent')return `<h1 class="title">Accueil parent</h1><p class="muted">Vue limitée à ${state.activePlayer} : matchs, résultats et infos tournée. Pas d'entraînements ni de debriefs coach.</p><div class="card accent"><div class="card-title">Prochain match</div>${groupedEvents(visibleEvents().slice(0,1))}</div><div class="card"><div class="card-title">Derniers résultats</div>${viewResults(true)}</div>`;return `<h1 class="title">Programmation tournée</h1><p class="muted">Le coach principal programme la tournée : coachs, joueurs, matchs et entraînements. Un entraînement peut regrouper plusieurs joueurs.</p><div class="grid2"><div class="stat"><div class="num">${state.players.length}</div><div class="txt">Joueurs</div></div><div class="stat"><div class="num">${state.coaches.length}</div><div class="txt">Coachs</div></div><div class="stat"><div class="num">${state.events.filter(e=>e.type==='match').length}</div><div class="txt">Matchs</div></div><div class="stat"><div class="num">${state.events.filter(e=>e.type==='training').length}</div><div class="txt">Entraînements</div></div></div><div class="card accent"><div class="card-title">Coach principal</div><div class="muted">Responsable du suivi global : il affecte les coachs aux créneaux et peut mettre plusieurs joueurs sur un même entraînement.</div>${canPlan()?'<button class="btn" onclick="openAddEvent()">Programmer un créneau</button>':''}</div>`}
+function viewPlanning(){return `<div class="row between"><div><h1 class="title">Planning</h1><p class="muted">Vue jour par jour : matchs + entraînements.</p></div>${canPlan()?'<button class="btn small" onclick="openAddEvent()">+ Créneau</button>':''}</div>${groupedEvents(visibleEvents())}`}
+function viewPlayers(){return `<h1 class="title">Joueurs tournée</h1><p class="muted">Un joueur ne peut appartenir qu'à une seule tournée active.</p>${state.players.map(p=>`<div class="player"><div class="avatar">${p.nom[0]}</div><div class="player-info"><div class="player-name">${p.nom}</div><div class="player-meta">${p.cat} · ${p.classement} · ${p.parent}</div></div><span class="pill green">actif</span></div>`).join('')}`}
+function viewResults(inner=false){const rows=state.results.filter(r=>state.role!=='parent'||r.player===state.activePlayer).map(r=>`<div class="event"><div class="event-name">${r.result==='Victoire'?'✅':'❌'} ${r.player} — ${r.tournoi}</div><div class="event-meta">Score : ${r.score}</div></div>`).join('')||'<div class="empty">Aucun résultat.</div>';return inner?rows:`<h1 class="title">Matchs & résultats</h1><p class="muted">${state.role==='parent'?'Résultats de ton enfant uniquement.':'Suivi des matchs de la tournée.'}</p><div class="card">${rows}</div>`}
+function viewMatches(){return `<div class="row between"><div><h1 class="title">Matchs</h1><p class="muted">Programmation et résultats.</p></div>${canPlan()?'<button class="btn small" onclick="openAddMatch()">+ Match</button>':''}</div>${groupedEvents(visibleEvents().filter(e=>e.type==='match'))}<div class="card"><div class="card-title">Résultats</div>${viewResults(true)}</div>`}
 function viewDebriefs(){return `<h1 class="title">Debriefs coach</h1><p class="muted">Non visible par les parents.</p><button class="btn" onclick="openDebrief()">Ajouter un debrief</button><div class="card">${state.debriefs.map(d=>`<div class="event"><div class="event-name">📝 ${d.player} — ${d.match}</div><div class="event-meta">Mental ${d.mental}/5 · Service ${d.service}/5 · Retour ${d.retour}/5<br>${d.comment}</div></div>`).join('')}</div>`}
-function viewStats(){return `<h1 class="title">Statistiques</h1><div class="grid2"><div class="stat"><div class="num">2</div><div class="txt">Victoires</div></div><div class="stat"><div class="num">1</div><div class="txt">Défaites</div></div><div class="stat"><div class="num">67%</div><div class="txt">Réussite</div></div><div class="stat"><div class="num">1</div><div class="txt">Debrief manquant</div></div></div><div class="card"><div class="card-title">Lecture admin</div><div class="muted">Cette zone servira à suivre la charge de tournée : matchs, entraînements, disponibilité coachs, résultats et debriefs.</div></div>`}
-
-function openAddEvent(){
-  document.getElementById('modalTitle').textContent='Programmer un créneau';
-  document.getElementById('modalBody').innerHTML=`<div class="grid2"><div class="field"><label>Type</label><select id="evType"><option value="match">Match</option><option value="training">Entraînement</option></select></div><div class="field"><label>Jour</label><input id="evDay" value="Mer 14 juillet"></div></div><div class="grid2"><div class="field"><label>Heure</label><input id="evTime" value="10:00"></div><div class="field"><label>Coach</label><select id="evCoach">${state.coaches.map(c=>`<option>${c.nom}</option>`).join('')}</select></div></div><div class="field"><label>Joueur principal</label><select id="evPlayer">${state.players.map(p=>`<option>${p.nom}</option>`).join('')}</select></div><div class="field"><label>Titre</label><input id="evTitle" value="Open de Tours — match à programmer"></div><div class="field"><label>Détail</label><textarea id="evMeta">Court à confirmer · adversaire à confirmer</textarea></div><button class="btn" onclick="saveEvent()">Enregistrer</button>`;
-  document.getElementById('modal').classList.add('open');
-}
-function saveEvent(){
-  const type=document.getElementById('evType').value, player=document.getElementById('evPlayer').value;
-  state.events.push({id:Date.now(),type,day:evDay.value,time:evTime.value,player,players:[player],coach:evCoach.value,title:evTitle.value,meta:evMeta.value,status:'prévu'});
-  closeModal(); render(); toast('Créneau ajouté à la programmation');
-}
-function openDebrief(){
-  document.getElementById('modalTitle').textContent='Ajouter un debrief';
-  document.getElementById('modalBody').innerHTML=`<div class="field"><label>Joueur</label><select id="dbPlayer">${state.players.map(p=>`<option>${p.nom}</option>`).join('')}</select></div><div class="grid2"><div class="field"><label>Mental /5</label><input id="dbMental" type="number" min="1" max="5" value="4"></div><div class="field"><label>Service /5</label><input id="dbService" type="number" min="1" max="5" value="4"></div></div><div class="field"><label>Commentaire coach</label><textarea id="dbComment">Bon engagement. Axe de travail à programmer au prochain entraînement.</textarea></div><button class="btn" onclick="saveDebrief()">Enregistrer le debrief</button>`;
-  document.getElementById('modal').classList.add('open');
-}
+function viewTournee(){return `<h1 class="title">Infos tournée</h1><div class="card accent"><div class="card-title">${state.tournee.nom}</div><div class="muted">${state.tournee.ville}<br>${state.tournee.dates}</div></div><div class="card"><div class="card-title">Contact</div><div class="muted">Coach principal : Jimmy<br>Infos visibles par les parents : lieu, dates, rendez-vous, résultats.</div></div>`}
+function viewSettings(){return `<h1 class="title">Profil</h1><div class="card"><div class="card-title">Session</div><div class="muted">Profil connecté : ${roleName()}<br>Mode Git/Vercel. Supabase prêt via schema.sql.</div><button class="btn secondary" onclick="logout()">Se déconnecter</button></div>`}
+function playerChecks(selected=[]){return `<div class="select-list">${state.players.map(p=>`<label class="pick"><input type="checkbox" name="evPlayers" value="${p.nom}" ${selected.includes(p.nom)?'checked':''}>${p.nom}</label>`).join('')}</div>`}
+function openAddEvent(defaultType='training'){modalTitle.textContent=defaultType==='match'?'Programmer un match':'Programmer un entraînement';modalBody.innerHTML=`<div class="grid2"><div class="field"><label>Type</label><select id="evType" onchange="toggleEventForm()"><option value="training" ${defaultType==='training'?'selected':''}>Entraînement</option><option value="match" ${defaultType==='match'?'selected':''}>Match</option></select></div><div class="field"><label>Jour</label><input id="evDay" value="Mer 14 juillet"></div></div><div class="grid2"><div class="field"><label>Heure</label><input id="evTime" value="10:00"></div><div class="field"><label>Coach</label><select id="evCoach">${state.coaches.map(c=>`<option>${c.nom}</option>`).join('')}</select></div></div><div id="playersZone" class="field"><label>Joueurs concernés</label>${playerChecks(['Maïwenn','Lucas'])}</div><div class="field"><label>Titre</label><input id="evTitle" value="Entraînement service / retour"></div><div class="field"><label>Détail</label><textarea id="evMeta">Terrain annexe · 1h15 · groupe de joueurs</textarea></div><button class="btn" onclick="saveEvent()">Enregistrer</button>`;modal.classList.add('open');toggleEventForm()}
+function openAddMatch(){openAddEvent('match')}
+function toggleEventForm(){if(evType.value==='match'){evTitle.value='Open de Tours — match à programmer';evMeta.value='Court à confirmer · adversaire à confirmer';}else{evTitle.value='Entraînement service / retour';evMeta.value='Terrain annexe · 1h15 · groupe de joueurs';}}
+function saveEvent(){let players=[...document.querySelectorAll('input[name="evPlayers"]:checked')].map(x=>x.value);if(evType.value==='match'&&players.length>1)players=[players[0]];if(!players.length){toast('Sélectionne au moins un joueur');return}state.events.push({id:Date.now(),type:evType.value,day:evDay.value,time:evTime.value,players,coach:evCoach.value,title:evTitle.value,meta:evMeta.value,status:'prévu'});closeModal();render();toast(evType.value==='training'?'Entraînement multi-joueurs ajouté':'Match ajouté')}
+function openDebrief(){modalTitle.textContent='Ajouter un debrief';modalBody.innerHTML=`<div class="field"><label>Joueur</label><select id="dbPlayer">${state.players.map(p=>`<option>${p.nom}</option>`).join('')}</select></div><div class="grid2"><div class="field"><label>Mental /5</label><input id="dbMental" type="number" min="1" max="5" value="4"></div><div class="field"><label>Service /5</label><input id="dbService" type="number" min="1" max="5" value="4"></div></div><div class="field"><label>Commentaire coach</label><textarea id="dbComment">Bon engagement. Axe de travail à programmer au prochain entraînement.</textarea></div><button class="btn" onclick="saveDebrief()">Enregistrer le debrief</button>`;modal.classList.add('open')}
 function saveDebrief(){state.debriefs.push({player:dbPlayer.value,match:'Match de tournée',mental:+dbMental.value,service:+dbService.value,retour:3,comment:dbComment.value});closeModal();render();toast('Debrief enregistré')}
-function closeModal(){document.getElementById('modal').classList.remove('open')}
+function closeModal(){modal.classList.remove('open')}
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('on');clearTimeout(t._tm);t._tm=setTimeout(()=>t.classList.remove('on'),2400)}
 </script>
 </body>
