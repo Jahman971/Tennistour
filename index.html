@@ -131,14 +131,18 @@ textarea{resize:vertical; min-height:90px;}
 .board .tiebreak-banner .tb-label{font-size:10px; text-transform:uppercase; letter-spacing:1.5px; align-self:center; color:var(--light); font-weight:700;}
 
 /* Coach scoring controls */
-.point-display{
-  display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; text-align:center;
+.live-board{
+  background:var(--s1); border:1px solid var(--brd); border-radius:var(--rL);
+  padding:16px 10px; margin-bottom:14px;
 }
-.point-display .pt{
-  background:var(--s2); border:1px solid var(--brd); border-radius:var(--r); padding:12px 0;
-}
-.point-display .pt .val{font-family:var(--fnt-head); font-size:38px; font-weight:900; line-height:1; color:var(--accent);}
-.point-display .pt .name{font-size:11px; color:var(--gray); margin-top:4px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700;}
+.live-row{display:flex; align-items:center; justify-content:space-between; gap:6px;}
+.live-player{flex:1; text-align:center; padding:10px 4px; border-radius:var(--r); transition:background .2s, box-shadow .2s;}
+.live-player.serving{background:var(--accent3); box-shadow:inset 0 0 0 1px var(--accent2);}
+.live-name{font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; min-height:16px; color:var(--white); word-break:break-word;}
+.live-big{font-family:var(--fnt-head); font-size:52px; font-weight:900; color:var(--accent); line-height:1;}
+.live-vs{flex:0 0 auto; text-align:center; padding:0 6px; min-width:64px;}
+.live-mode{font-size:10px; text-transform:uppercase; letter-spacing:2px; color:var(--live); font-weight:700;}
+.live-sets{font-size:13px; color:var(--light); margin-top:6px; font-weight:700;}
 .score-btns{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
 .score-btns .btn{margin-top:0; padding:20px 10px; font-size:14px;}
 .code-badge{
@@ -220,7 +224,8 @@ function initLiveState(format){
     format,
     sets: [],            // [{games:[g1,g2], tb:[t1,t2]|null, superTb:bool}]
     games: [0,0],
-    points: [0,0],
+    points: [0,0],       // utilisé uniquement en tie-break / super tie-break
+    serve: 0,            // 0 ou 1 : index du joueur au service
     inTiebreak: false,
     inSuperTb: false,
     finished: false,
@@ -246,8 +251,10 @@ function afterSetPush(state){
   }
   if(sw[0] === f.nb_sets_gagnants - 1 && sw[1] === f.nb_sets_gagnants - 1 && f.super_tb_set_final){
     state.inSuperTb = true; // le set décisif se joue directement en super tie-break
+    state.points=[0,0];
   }
 }
+// Ajoute 1 jeu (mode normal) ou 1 point (tie-break / super tie-break) au joueur p
 function addPoint(state, p){
   if(state.finished) return state;
   const o = p===0?1:0, f = state.format;
@@ -260,53 +267,34 @@ function addPoint(state, p){
       state.sets.push({games:gset, tb:[...state.points], superTb: state.inSuperTb});
       state.games=[0,0]; state.points=[0,0];
       state.inTiebreak=false; state.inSuperTb=false;
+      state.serve = o;
       afterSetPush(state);
     }
     return state;
   }
 
-  state.points[p]++;
-  const a=state.points[p], b=state.points[o];
-  let gameWon=false;
-  if(f.no_ad){ if(a>=4 && a>b) gameWon=true; }
-  else { if(a>=4 && (a-b)>=2) gameWon=true; }
-
-  if(gameWon){
-    state.games[p]++;
+  // Mode normal : +1 jeu directement
+  state.games[p]++;
+  const g=state.games;
+  if(g[p] >= f.jeux_par_set && (g[p]-g[o]) >= 2){
+    state.sets.push({games:[...g], tb:null, superTb:false});
+    state.games=[0,0];
+    state.serve = o;
+    afterSetPush(state);
+  } else if(g[0]===f.seuil_tiebreak && g[1]===f.seuil_tiebreak){
+    state.inTiebreak = true;
     state.points=[0,0];
-    const g=state.games;
-    if(g[p] >= f.jeux_par_set && (g[p]-g[o]) >= 2){
-      state.sets.push({games:[...g], tb:null, superTb:false});
-      state.games=[0,0];
-      afterSetPush(state);
-    } else if(g[0]===f.seuil_tiebreak && g[1]===f.seuil_tiebreak){
-      state.inTiebreak = true;
-    }
+  } else {
+    state.serve = o; // alternance du service à chaque jeu
   }
   return state;
 }
-function removePoint(state, p){
-  // Annulation simple : retire 1 point au dernier joueur marqué (pas de retour en arrière sur un set déjà clos)
-  const o = p===0?1:0;
-  if(state.inTiebreak || state.inSuperTb){
-    if(state.points[p] > 0) state.points[p]--;
-  } else if(state.points[p] > 0){
-    state.points[p]--;
-  } else if(state.games[p] > 0){
-    state.games[p]--;
-  }
-  return state;
-}
-function pointLabel(state){
-  if(state.inTiebreak || state.inSuperTb) return [String(state.points[0]), String(state.points[1])];
-  const labels=['0','15','30','40'];
-  const a=state.points[0], b=state.points[1];
-  if(a>=3 && b>=3){
-    if(a===b) return ['40','40'];
-    return a>b ? ['Av','40'] : ['40','Av'];
-  }
-  return [labels[a]||'0', labels[b]||'0'];
-}
+window.toggleServe = async () => {
+  const m = window._currentMatch;
+  STATE.history.push(JSON.parse(JSON.stringify(m.live_state)));
+  m.live_state.serve = m.live_state.serve === 0 ? 1 : 0;
+  await saveMatch(m);
+};
 
 // ---------------------------------------------------------------
 // SCOREBOARD HTML (réutilisé côté coach et côté spectateur)
@@ -353,11 +341,11 @@ function scoreboardHTML(m, p1Name, p2Name, opts={}){
     ${liveTag}
     <div class="tour-name">${m.scheduled_at ? '🕐 '+new Intl.DateTimeFormat('fr-FR',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}).format(new Date(m.scheduled_at))+' · ' : ''}${esc(m.tour || 'Match')}${m.court ? ' · '+esc(m.court) : ''}</div>
     <div class="player-row">
-      <div class="player-name">${esc(p1Name)}${(st && st.finished && st.winner===0) ? ' 🏆' : ''}</div>
+      <div class="player-name">${esc(p1Name)}${(st && st.finished && st.winner===0) ? ' 🏆' : ''}${(isLive && st && st.serve===0) ? ' 🎾' : ''}</div>
       <div class="sets">${colsP1.join('') || '<span class="muted">—</span>'}</div>
     </div>
     <div class="player-row">
-      <div class="player-name">${esc(p2Name)}${(st && st.finished && st.winner===1) ? ' 🏆' : ''}</div>
+      <div class="player-name">${esc(p2Name)}${(st && st.finished && st.winner===1) ? ' 🏆' : ''}${(isLive && st && st.serve===1) ? ' 🎾' : ''}</div>
       <div class="sets">${colsP2.join('') || '<span class="muted">—</span>'}</div>
     </div>
     ${tieHtml}
@@ -1529,15 +1517,17 @@ async function viewCoachMatch(id){
 
 function renderCoachMatch(m, n1, n2){
   const st = m.live_state;
-  const labels = pointLabel(st);
   const tbActive = st.inTiebreak || st.inSuperTb;
+  const modeLabel = st.inSuperTb ? 'Super tie-break' : (st.inTiebreak ? 'Jeu décisif' : 'Standard');
+  const unit = tbActive ? 'point' : 'jeu';
+  const sw = setsWon(st);
+  const disp1 = tbActive ? st.points[0] : st.games[0];
+  const disp2 = tbActive ? st.points[1] : st.games[1];
 
   let actionBtn = '';
   if(m.statut === 'a_venir'){
     actionBtn = `<button class="btn clay" onclick="startMatch()">Démarrer le match</button>`;
-  } else if(m.statut === 'en_cours'){
-    actionBtn = `<button class="btn secondary" onclick="undoPoint()">↺ Annuler le dernier point</button>`;
-  } else {
+  } else if(m.statut === 'termine'){
     actionBtn = `<div class="card" style="text-align:center"><strong>Match terminé</strong><br><span class="muted">Vainqueur : ${esc(st.winner===0?n1:n2)}</span></div>
     <div class="card">
       <h3>Débrief du coach</h3>
@@ -1555,14 +1545,29 @@ function renderCoachMatch(m, n1, n2){
     <button class="btn ghost" onclick="navigate('#/coach/tournoi/${m.tournament_id}')">← Retour au tournoi</button>
     ${scoreboardHTML(m, n1, n2)}
     ${m.statut==='en_cours' ? `
-      <div class="point-display">
-        <div class="pt"><div class="val">${esc(labels[0])}</div><div class="name">${esc(n1)}</div></div>
-        <div class="pt"><div class="val">${esc(labels[1])}</div><div class="name">${esc(n2)}</div></div>
+      <div class="live-board">
+        <div class="live-row">
+          <div class="live-player ${st.serve===0?'serving':''}">
+            <div class="live-name">${esc(n1)}${st.serve===0?' 🎾':''}</div>
+            <div class="live-big">${disp1}</div>
+          </div>
+          <div class="live-vs">
+            <div class="live-mode">${esc(modeLabel)}</div>
+            <div class="live-sets">Sets ${sw[0]} – ${sw[1]}</div>
+          </div>
+          <div class="live-player ${st.serve===1?'serving':''}">
+            <div class="live-name">${esc(n2)}${st.serve===1?' 🎾':''}</div>
+            <div class="live-big">${disp2}</div>
+          </div>
+        </div>
       </div>
-      ${tbActive ? `<p class="muted" style="text-align:center;margin-top:-8px">${st.inSuperTb?'Super tie-break':'Jeu décisif'} en cours</p>` : ''}
       <div class="score-btns">
-        <button class="btn" onclick="scorePoint(0)">+1 ${esc(n1)}</button>
-        <button class="btn" onclick="scorePoint(1)">+1 ${esc(n2)}</button>
+        <button class="btn" onclick="scorePoint(0)">+1 ${unit} — ${esc(n1)}</button>
+        <button class="btn" onclick="scorePoint(1)">+1 ${unit} — ${esc(n2)}</button>
+      </div>
+      <div class="row" style="gap:8px; margin-top:8px">
+        <button class="btn secondary" style="flex:1" onclick="toggleServe()">🎾 Changer le service</button>
+        <button class="btn secondary" style="flex:1" onclick="undoPoint()">↺ Annuler</button>
       </div>
     ` : ''}
     ${actionBtn}
