@@ -840,6 +840,7 @@ async function viewAdminUsers(){
         ${p.role==='coach' && p.statut==='actif' ? `<button class="btn small secondary" onclick="adminSetStatut('${p.id}','en_attente')">Mettre en attente</button>` : ''}
         ${p.role==='coach' ? `<button class="btn small secondary" onclick="adminSetRole('${p.id}','admin')">Promouvoir admin</button>` : ''}
         ${p.role==='admin' && !isMe ? `<button class="btn small secondary" onclick="adminSetRole('${p.id}','coach')">Rétrograder coach</button>` : ''}
+        ${!isMe ? `<button class="btn small clay" onclick="adminDeleteUser('${p.id}','${esc(fullName(p)).replace(/'/g,"\\\\'")}')">Supprimer</button>` : ''}
       </div>
     </div>`;
   }).join('') : `<div class="empty">Aucun utilisateur.</div>`;
@@ -910,6 +911,13 @@ window.adminSetRole = async (profileId, role) => {
   const { error } = await supabase.from('profiles').update(payload).eq('id', profileId);
   if(error){ toast(error.message, true); return; }
   toast('Rôle mis à jour');
+  viewAdminUsers();
+};
+window.adminDeleteUser = async (profileId, nom) => {
+  if(!confirm(`Supprimer définitivement le compte de ${nom} ? Cette action est irréversible.`)) return;
+  const { data, error } = await supabase.functions.invoke('admin-delete-user', { body: { profile_id: profileId } });
+  if(error || data?.error){ toast(data?.error || error.message, true); return; }
+  toast('Compte supprimé');
   viewAdminUsers();
 };
 
