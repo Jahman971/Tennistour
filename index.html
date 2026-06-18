@@ -1015,7 +1015,7 @@ function buildPlanningHtml(items, playerName, canScoreMatch){
             : m.statut==='termine' ? '<span class="pill done">Terminé</span>' : '<span class="pill upcoming">À venir</span>';
           const clickable = canScoreMatch ? `onclick="navigate('#/coach/match/${m.id}')" style="cursor:pointer"` : `onclick="navigate('#/match/${m.id}')" style="cursor:pointer"`;
           return `<div class="card" ${clickable}>
-            <div class="row between"><div>🎾 <strong>${esc(playerName(m.joueur1_id))}</strong> vs <strong>${esc(playerName(m.joueur2_id))}</strong></div>${statusPill}</div>
+            <div class="row between"><div>🎾 <strong>${esc(playerName(m.joueur1_id))}</strong> vs <strong>${esc((m.joueur_ext_nom || playerName(m.joueur2_id)))}</strong></div>${statusPill}</div>
             <p class="muted">${time?`🕐 ${time} · `:''}${esc(m.etapeNom||m.tournaments?.nom||'')}${m.court?' · Court '+esc(m.court):''}</p>
           </div>`;
         } else {
@@ -1228,7 +1228,7 @@ async function viewTourneePlanning(tourneeId, weekOffset=0, viewMode='joueurs'){
               return `<div class="week-match ${cls}" onclick="navigate('${route}')">
                 <div class="wm-time">🕐 ${esc(time)}</div>
                 <div class="wm-players">${esc(playerName(m.joueur1_id))}</div>
-                <div class="wm-players" style="color:var(--dim)">vs ${esc(playerName(m.joueur2_id))}</div>
+                <div class="wm-players" style="color:var(--dim)">vs ${esc((m.joueur_ext_nom || playerName(m.joueur2_id)))}</div>
                 <div class="wm-sub">${esc(etapeNom(m.tournament_id))}${m.court?' C.'+esc(m.court):''}</div>
               </div>`;
             }).join('') || '';
@@ -1258,14 +1258,24 @@ async function viewTourneePlanning(tourneeId, weekOffset=0, viewMode='joueurs'){
     <h3 style="margin:20px 0 8px">+ Programmer un match</h3>
     <div class="card">
       <form id="quickMatchForm">
-        <label>Joueur</label>
+        <label>Joueur de la tournée</label>
         <select name="j1" required>
           ${(allPlayers||[]).map(p=>`<option value="${p.id}">${p.genre==='F'?'👧':'👦'} ${esc(fullName(p))}</option>`).join('')}
         </select>
         <label>Adversaire</label>
-        <select name="j2" required>
-          ${(allPlayers||[]).map(p=>`<option value="${p.id}">${p.genre==='F'?'👧':'👦'} ${esc(fullName(p))}</option>`).join('')}
-        </select>
+        <div class="tabs" style="margin-bottom:8px">
+          <button type="button" class="active" onclick="setAdvMode(this,'interne')">Joueur de la tournée</button>
+          <button type="button" onclick="setAdvMode(this,'externe')">Joueur externe</button>
+        </div>
+        <div id="advInterne">
+          <select name="j2">
+            ${(allPlayers||[]).map(p=>`<option value="${p.id}">${p.genre==='F'?'👧':'👦'} ${esc(fullName(p))}</option>`).join('')}
+          </select>
+        </div>
+        <div id="advExterne" style="display:none">
+          <input name="joueur_ext_nom" placeholder="Prénom Nom de l'adversaire (ex: Lucas Martin)">
+          <p class="muted" style="margin-top:4px">Joueur hors tournée (adversaire FFT, autre club…)</p>
+        </div>
         <label>Date et heure</label>
         <input type="datetime-local" name="scheduled_at" required>
         <label>Étape</label>
@@ -1289,14 +1299,26 @@ async function viewTourneePlanning(tourneeId, weekOffset=0, viewMode='joueurs'){
     ${formHtml}
   `, 'planning');
 
+  window.setAdvMode = (btn, mode) => {
+    btn.closest('.tabs').querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('advInterne').style.display = mode==='interne' ? '' : 'none';
+    document.getElementById('advExterne').style.display = mode==='externe' ? '' : 'none';
+  };
+
   document.getElementById('quickMatchForm')?.addEventListener('submit', async e=>{
     e.preventDefault();
     const f = new FormData(e.target);
-    const j1=f.get('j1'), j2=f.get('j2'), tid=f.get('tournament_id');
-    if(j1===j2){ document.getElementById('quickMatchErr').textContent='Deux joueurs différents requis.'; return; }
+    const j1 = f.get('j1'), tid = f.get('tournament_id');
+    const extNom = f.get('joueur_ext_nom')?.trim();
+    const isExt = document.getElementById('advExterne')?.style.display !== 'none';
+    const j2 = isExt ? null : f.get('j2');
+    if(!isExt && j1===j2){ document.getElementById('quickMatchErr').textContent='Deux joueurs différents requis.'; return; }
+    if(isExt && !extNom){ document.getElementById('quickMatchErr').textContent='Saisis le nom de l\'adversaire externe.'; return; }
     const { data: etape } = await supabase.from('tournaments').select('*, formats(*)').eq('id', tid).single();
     const { error } = await supabase.from('matches').insert({
-      tournament_id: tid, joueur1_id:j1, joueur2_id:j2,
+      tournament_id: tid, joueur1_id:j1, joueur2_id:j2||null,
+      joueur_ext_nom: isExt ? extNom : null,
       scheduled_at: new Date(f.get('scheduled_at')).toISOString(),
       court: f.get('court')||null, tour: f.get('tour')||null,
       live_state: initLiveState(etape.formats)
@@ -1515,7 +1537,7 @@ async function viewCoachTournee(id){
         const statusPill = m.statut==='en_cours' ? '<span class="pill live">Live</span>'
           : m.statut==='termine' ? '<span class="pill done">Terminé</span>' : '<span class="pill upcoming">À venir</span>';
         return `<div class="card" onclick="navigate('#/coach/match/${m.id}')" style="cursor:pointer">
-          <div class="row between"><div>🎾 <strong>${esc(playerName(m.joueur1_id))}</strong> vs <strong>${esc(playerName(m.joueur2_id))}</strong></div>${statusPill}</div>
+          <div class="row between"><div>🎾 <strong>${esc(playerName(m.joueur1_id))}</strong> vs <strong>${esc((m.joueur_ext_nom || playerName(m.joueur2_id)))}</strong></div>${statusPill}</div>
           <p class="muted">${time?`🕐 ${time} · `:''}${esc(m.tournaments?.nom||'')}${m.court?' · '+esc(m.court):''}</p>
         </div>`;
       } else {
@@ -1741,7 +1763,7 @@ async function viewCoachTournament(id){
     const time = m.scheduled_at ? timeFmt.format(new Date(m.scheduled_at)) : null;
     return `<div class="card" onclick="navigate('#/coach/match/${m.id}')" style="cursor:pointer">
       <div class="row between">
-        <div><strong>${esc(playerName(m.joueur1_id))}</strong> vs <strong>${esc(playerName(m.joueur2_id))}</strong></div>
+        <div><strong>${esc(playerName(m.joueur1_id))}</strong> vs <strong>${esc((m.joueur_ext_nom || playerName(m.joueur2_id)))}</strong></div>
         ${statusPill}
       </div>
       <p class="muted">${time ? `🕐 ${time} · ` : ''}${esc(m.tour||'')}${m.court?' · '+esc(m.court):''}</p>
@@ -1782,10 +1804,20 @@ async function viewCoachTournament(id){
     <h3 style="margin:18px 0 8px">+ Programmer un match</h3>
     <div class="card">
       <form id="matchForm">
-        <label>Joueur 1</label>
-        <select name="j1">${players.map(p=>`<option value="${p.id}">${esc(fullName(p))}</option>`).join('')}</select>
-        <label>Joueur 2</label>
-        <select name="j2">${players.map(p=>`<option value="${p.id}">${esc(fullName(p))}</option>`).join('')}</select>
+        <label>Joueur de la tournée</label>
+        <select name="j1">${players.map(p=>`<option value="${p.id}">${p.genre==='F'?'👧':'👦'} ${esc(fullName(p))}</option>`).join('')}</select>
+        <label>Adversaire</label>
+        <div class="tabs" style="margin-bottom:8px">
+          <button type="button" class="active" onclick="setMatchAdvMode(this,'interne')">Joueur de l'étape</button>
+          <button type="button" onclick="setMatchAdvMode(this,'externe')">Joueur externe</button>
+        </div>
+        <div id="matchAdvInterne">
+          <select name="j2">${players.map(p=>`<option value="${p.id}">${p.genre==='F'?'👧':'👦'} ${esc(fullName(p))}</option>`).join('')}</select>
+        </div>
+        <div id="matchAdvExterne" style="display:none">
+          <input name="joueur_ext_nom" placeholder="Prénom Nom de l'adversaire (ex: Lucas Martin)">
+          <p class="muted" style="margin-top:4px">Joueur hors tournée (adversaire FFT, autre club…)</p>
+        </div>
         <label>Date et heure (optionnel)</label>
         <input type="datetime-local" name="scheduled_at">
         <label>Tour / phase (optionnel)</label>
@@ -1800,6 +1832,13 @@ async function viewCoachTournament(id){
     ${matchesHtml}
   `, 'home');
 
+  window.setMatchAdvMode = (btn, mode) => {
+    btn.closest('.tabs').querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('matchAdvInterne').style.display = mode==='interne' ? '' : 'none';
+    document.getElementById('matchAdvExterne').style.display = mode==='externe' ? '' : 'none';
+  };
+
   document.getElementById('rosterForm')?.addEventListener('submit', async e=>{
     e.preventDefault();
     const playerId = new FormData(e.target).get('player_id');
@@ -1812,12 +1851,17 @@ async function viewCoachTournament(id){
   document.getElementById('matchForm').addEventListener('submit', async e=>{
     e.preventDefault();
     const f = new FormData(e.target);
-    const j1=f.get('j1'), j2=f.get('j2');
-    if(!j1 || !j2 || j1===j2){ document.getElementById('matchErr').textContent='Choisis deux joueurs différents.'; return; }
+    const j1 = f.get('j1');
+    const isExt = document.getElementById('matchAdvExterne')?.style.display !== 'none';
+    const j2 = isExt ? null : f.get('j2');
+    const extNom = f.get('joueur_ext_nom')?.trim();
+    if(!isExt && j1===j2){ document.getElementById('matchErr').textContent='Choisis deux joueurs différents.'; return; }
+    if(isExt && !extNom){ document.getElementById('matchErr').textContent="Saisis le nom de l'adversaire externe."; return; }
     const live_state = initLiveState(t.formats);
     const scheduledAt = f.get('scheduled_at');
     const { data, error } = await supabase.from('matches').insert({
-      tournament_id: id, joueur1_id:j1, joueur2_id:j2,
+      tournament_id: id, joueur1_id:j1, joueur2_id:j2||null,
+      joueur_ext_nom: isExt ? extNom : null,
       tour: f.get('tour')||null, court: f.get('court')||null,
       scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : null,
       live_state
@@ -1835,10 +1879,9 @@ async function viewCoachMatch(id){
   const { data: m } = await supabase.from('matches').select('*, tournaments(nom, format_id)').eq('id', id).single();
   if(!m){ shell(`<div class="empty">Match introuvable.</div>`,'home'); return; }
   const { data: p1 } = await supabase.from('players').select('nom,prenom').eq('id', m.joueur1_id).single();
-  const { data: p2 } = await supabase.from('players').select('nom,prenom').eq('id', m.joueur2_id).single();
-
+  const n2 = m.joueur_ext_nom || (m.joueur2_id ? await supabase.from('players').select('nom,prenom').eq('id', m.joueur2_id).single().then(r=>fullName(r.data)) : '—');
   STATE.history = [];
-  renderCoachMatch(m, fullName(p1), fullName(p2));
+  renderCoachMatch(m, fullName(p1), n2);
 }
 
 function lsSnack(msg){
