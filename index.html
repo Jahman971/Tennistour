@@ -1262,8 +1262,12 @@ async function viewMyPlanning(){
   const uid = STATE.session.user.id;
   const teamId = STATE.profile.team_id;
 
+  // Matchs assignés via etape_coaches OU match_coaches
   const { data: ec } = await supabase.from('etape_coaches').select('tournament_id').eq('profile_id', uid);
   const etapeIds = (ec||[]).map(r=>r.tournament_id);
+  const { data: mc } = await supabase.from('match_coaches').select('match_id').eq('profile_id', uid);
+  const matchCoachIds = (mc||[]).map(r=>r.match_id);
+
   const { data: tc } = await supabase.from('training_coaches').select('training_id').eq('profile_id', uid);
   const trainingIds = (tc||[]).map(r=>r.training_id);
 
@@ -1271,6 +1275,12 @@ async function viewMyPlanning(){
   if(etapeIds.length){
     const { data: m } = await supabase.from('matches').select('*, tournaments(nom)').in('tournament_id', etapeIds);
     matches = m || [];
+  }
+  // Ajouter les matchs assignés directement (match_coaches) non déjà inclus
+  if(matchCoachIds.length){
+    const existingIds = new Set(matches.map(m=>m.id));
+    const { data: m2 } = await supabase.from('matches').select('*, tournaments(nom)').in('id', matchCoachIds.filter(id=>!existingIds.has(id)));
+    matches = [...matches, ...(m2||[])];
   }
   if(trainingIds.length){
     const { data: t } = await supabase.from('trainings').select('*, training_players(player_id), tournees(nom)').in('id', trainingIds);
@@ -1280,6 +1290,21 @@ async function viewMyPlanning(){
   const { data: roster } = await supabase.from('players').select('id,nom,prenom,genre').eq('team_id', teamId);
   const playerName = pid => fullName((roster||[]).find(p=>p.id===pid));
 
+  // Matchs EN COURS — section prioritaire en haut
+  const liveMatches = matches.filter(m=>m.statut==='en_cours');
+  const liveHtml = liveMatches.length ? `
+    <div style="margin-bottom:14px">
+      <h3 style="color:var(--live); margin:0 0 8px; font-size:13px; text-transform:uppercase; letter-spacing:2px">🔴 Matchs en cours (${liveMatches.length})</h3>
+      ${liveMatches.map(m=>`
+        <div class="card" onclick="navigate('#/coach/match/${m.id}')" style="cursor:pointer; border-color:var(--live); background:rgba(255,60,0,.06)">
+          <div class="row between">
+            <div style="font-weight:700">🎾 ${esc(playerName(m.joueur1_id))} vs ${esc(m.joueur_ext_nom||playerName(m.joueur2_id))}</div>
+            <span class="pill live">Live</span>
+          </div>
+          <p class="muted">${esc(m.tournaments?.nom||'')}${m.court?' · Court '+esc(m.court):''}</p>
+        </div>`).join('')}
+    </div>` : '';
+
   const items = [];
   matches.forEach(m=> items.push({ type:'match', date:m.scheduled_at, data:m }));
   trainings.forEach(tr=> items.push({ type:'training', date:tr.scheduled_at, data:tr }));
@@ -1288,7 +1313,8 @@ async function viewMyPlanning(){
 
   shell(`
     <h2 style="margin:4px 0 14px">Mon planning</h2>
-    ${buildPlanningHtml(items, playerName, true /* coach peut scorer */)}
+    ${liveHtml}
+    ${buildPlanningHtml(items, playerName, true)}
     ${isSuperviseur ? `<button class="btn secondary" style="margin-top:10px" onclick="navigate('#/coach')">🏟️ Gérer les tournées</button>` : ''}
   `, 'planning');
 }
@@ -2332,19 +2358,19 @@ function renderCoachMatch(m, n1, n2){
     e.preventDefault();
     const debrief = new FormData(e.target).get('debrief');
     const { error } = await supabase.from('matches').update({ debrief }).eq('id', m.id);
-    const msgEl = document.getElementById('debriefMsg1');
-    if(error){ msgEl.style.color='var(--clay)'; msgEl.textContent = error.message; return; }
+    if(error){ document.getElementById('debriefMsg1').style.color='var(--clay)'; document.getElementById('debriefMsg1').textContent = error.message; return; }
     m.debrief = debrief;
-    msgEl.style.color='var(--accent)'; msgEl.textContent = '✅ Enregistré.';
+    toast('✅ Débrief enregistré');
+    navigate('#/coach/planning');
   });
   document.getElementById('debriefForm2')?.addEventListener('submit', async e=>{
     e.preventDefault();
     const debrief_j2 = new FormData(e.target).get('debrief');
     const { error } = await supabase.from('matches').update({ debrief_j2 }).eq('id', m.id);
-    const msgEl = document.getElementById('debriefMsg2');
-    if(error){ msgEl.style.color='var(--clay)'; msgEl.textContent = error.message; return; }
+    if(error){ document.getElementById('debriefMsg2').style.color='var(--clay)'; document.getElementById('debriefMsg2').textContent = error.message; return; }
     m.debrief_j2 = debrief_j2;
-    msgEl.style.color='var(--accent)'; msgEl.textContent = '✅ Enregistré.';
+    toast('✅ Débrief enregistré');
+    navigate('#/coach/planning');
   });
 }
 
