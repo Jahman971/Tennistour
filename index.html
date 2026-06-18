@@ -283,9 +283,15 @@ window.showPlayerCode = (code, nom) => {
   toast(`📋 ${nom} — Code : ${code}`);
   navigator.clipboard?.writeText(code).catch(()=>{});
 };
+window.deleteTraining = async (trainingId, tourneeId) => {
+  if(!confirm('Supprimer cet entraînement ?')) return;
+  const { error } = await supabase.from('trainings').delete().eq('id', trainingId);
+  if(error){ toast(error.message, true); return; }
+  toast('Entraînement supprimé');
+  viewCoachTournee(tourneeId);
+};
 window.deletePlayer = async (playerId, nom, tourneeId) => {
   if(!confirm(`Supprimer ${nom} ? Cette action supprime le joueur de toute l'application (matchs, entraînements, tournées).`)) return;
-  // Supprimer dans cet ordre : match_coaches/matches liés, tournament_players, training_players, tournee_players, puis le joueur
   const { error } = await supabase.from('players').delete().eq('id', playerId);
   if(error){ toast(error.message, true); return; }
   toast(`${nom} supprimé`);
@@ -1570,12 +1576,16 @@ async function viewCoachTournee(id){
   }).join('') : `<p class="muted">Aucune étape pour l'instant.</p>`;
 
   // --- Entraînements ---
+  const canManage = STATE.profile?.role==='admin' || STATE.profile?.superviseur;
   const trainingsHtml = (trainings||[]).length ? trainings.map(tr=>{
     const names = (tr.training_players||[]).map(tp=>playerName(tp.player_id)).join(', ');
     const when = tr.scheduled_at ? new Intl.DateTimeFormat('fr-FR',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}).format(new Date(tr.scheduled_at)) : 'Non planifié';
     const assigned = trainingCoachMap[tr.id] || [];
     return `<div class="card">
-      <div class="row between"><strong>${esc(tr.titre)}</strong><span class="muted">🕐 ${esc(when)}</span></div>
+      <div class="row between">
+        <div><strong>${esc(tr.titre)}</strong><span class="muted"> · 🕐 ${esc(when)}</span></div>
+        ${canManage ? `<button class="btn small clay" onclick="deleteTraining('${tr.id}','${id}')">🗑</button>` : ''}
+      </div>
       ${tr.lieu ? `<p class="muted" style="margin:4px 0 0">📍 ${esc(tr.lieu)}</p>` : ''}
       ${tr.description ? `<p class="muted" style="margin:4px 0 0">${esc(tr.description)}</p>` : ''}
       <p class="muted" style="margin:4px 0 0">👥 ${esc(names || 'Aucun joueur assigné')}</p>
@@ -1658,8 +1668,13 @@ async function viewCoachTournee(id){
             <option value="G">👦 Garçon</option>
             <option value="F">👧 Fille</option>
           </select>
-          <button class="btn small" type="submit" style="width:auto">Créer</button>
         </div>
+        ${(etapes||[]).length ? `
+        <label style="margin-top:8px">Inscrire à ces étapes</label>
+        <div class="chk-group">
+          ${(etapes||[]).map((e,i)=>`<div class="chk-item"><input type="checkbox" name="etape_ids" value="${e.id}" id="npe_${i}"><label for="npe_${i}">${esc(e.nom)}</label></div>`).join('')}
+        </div>` : ''}
+        <button class="btn small" type="submit" style="margin-top:6px">Créer le joueur</button>
       </form>
     </div>
 
@@ -1759,8 +1774,14 @@ async function viewCoachTournee(id){
     const genre = f.get('genre') || null;
     const { data: pl, error } = await supabase.from('players').insert({ prenom: prenom||null, nom, code, genre, team_id: tournee.team_id, created_by: STATE.session.user.id }).select().single();
     if(error){ toast(error.message, true); return; }
+    // Inscription à la tournée
     await supabase.from('tournee_players').insert({ tournee_id: id, player_id: pl.id });
-    toast(`${fullName(pl)} inscrit à la tournée · code ${code}`);
+    // Inscription aux étapes cochées
+    const etapeIds = [...e.target.querySelectorAll('input[name=etape_ids]:checked')].map(i=>i.value);
+    if(etapeIds.length){
+      await supabase.from('tournament_players').insert(etapeIds.map(eid=>({ tournament_id: eid, player_id: pl.id })));
+    }
+    toast(`${fullName(pl)} inscrit${etapeIds.length ? ` + ${etapeIds.length} étape(s)` : ''} · code ${code}`);
     viewCoachTournee(id);
   });
 
