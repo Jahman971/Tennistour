@@ -130,6 +130,11 @@ textarea{resize:vertical; min-height:90px;}
 .board .tiebreak-banner .tb-points{font-family:var(--fnt-head); font-size:24px; font-weight:900; color:var(--accent);}
 .board .tiebreak-banner .tb-label{font-size:10px; text-transform:uppercase; letter-spacing:1.5px; align-self:center; color:var(--light); font-weight:700;}
 
+/* Checkboxes groupées */
+.chk-group{display:flex; flex-direction:column; gap:6px; margin:6px 0 10px;}
+.chk-item{display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:var(--r); background:var(--s2); border:1px solid var(--brd); cursor:pointer; user-select:none;}
+.chk-item input[type=checkbox]{width:16px; height:16px; accent-color:var(--accent); cursor:pointer; flex-shrink:0;}
+.chk-item label{cursor:pointer; font-size:13px; flex:1;}
 /* Planning semaine tableau */
 .week-table{width:100%; border-collapse:collapse; table-layout:fixed; font-size:12px;}
 .week-table th{padding:6px 4px; text-align:center; font-size:10px; text-transform:uppercase; letter-spacing:1px; color:var(--light); border-bottom:2px solid var(--accent); background:var(--s1);}
@@ -1458,10 +1463,10 @@ async function viewCoachTournee(id){
       ${(teamCoaches||[]).length ? `
       <form class="etapeCoachForm" data-id="${e.id}" style="margin-top:6px">
         <label>Affecter des coachs à cette étape</label>
-        <select name="coach_ids" multiple style="height:${Math.min(120, 36+((teamCoaches||[]).length*22))}px">
-          ${(teamCoaches||[]).map(c=>`<option value="${c.id}" ${assigned.includes(c.id)?'selected':''}>${esc(fullName(c))}</option>`).join('')}
-        </select>
-        <button class="btn small secondary" type="submit" style="margin-top:6px">Enregistrer</button>
+        <div class="chk-group">
+          ${(teamCoaches||[]).map(c=>`<div class="chk-item"><input type="checkbox" name="coach_ids" value="${c.id}" id="ec_${e.id}_${c.id}" ${assigned.includes(c.id)?'checked':''}><label for="ec_${e.id}_${c.id}">${esc(fullName(c))}</label></div>`).join('')}
+        </div>
+        <button class="btn small secondary" type="submit">Enregistrer</button>
       </form>` : ''}
     </div>`;
   }).join('') : `<p class="muted">Aucune étape pour l'instant.</p>`;
@@ -1480,10 +1485,10 @@ async function viewCoachTournee(id){
       ${(teamCoaches||[]).length ? `
       <form class="trainingCoachForm" data-id="${tr.id}" style="margin-top:6px">
         <label>Affecter des coachs à cet entraînement</label>
-        <select name="coach_ids" multiple style="height:${Math.min(120, 36+((teamCoaches||[]).length*22))}px">
-          ${(teamCoaches||[]).map(c=>`<option value="${c.id}" ${assigned.includes(c.id)?'selected':''}>${esc(fullName(c))}</option>`).join('')}
-        </select>
-        <button class="btn small secondary" type="submit" style="margin-top:6px">Enregistrer</button>
+        <div class="chk-group">
+          ${(teamCoaches||[]).map(c=>`<div class="chk-item"><input type="checkbox" name="coach_ids" value="${c.id}" id="tc_${tr.id}_${c.id}" ${assigned.includes(c.id)?'checked':''}><label for="tc_${tr.id}_${c.id}">${esc(fullName(c))}</label></div>`).join('')}
+        </div>
+        <button class="btn small secondary" type="submit">Enregistrer</button>
       </form>` : ''}
     </div>`;
   }).join('') : `<p class="muted">Aucun entraînement programmé.</p>`;
@@ -1598,10 +1603,10 @@ async function viewCoachTournee(id){
         <label>Durée (minutes, optionnel)</label>
         <input type="number" name="duration_minutes" placeholder="Ex: 60">
         <label>Joueurs concernés</label>
-        <select name="player_ids" multiple style="height:${Math.min(160, 36+(tourneePlayers.length*22))}px">
-          ${tourneePlayers.map(p=>`<option value="${p.id}">${esc(fullName(p))}</option>`).join('')}
-        </select>
-        <p class="muted" style="margin-top:6px">Maintiens (ou Ctrl/Cmd + clic) pour sélectionner plusieurs joueurs. Laisse vide pour toute l'équipe.</p>
+        <div class="chk-group">
+          ${tourneePlayers.map((p,i)=>`<div class="chk-item"><input type="checkbox" name="player_ids" value="${p.id}" id="tp_${i}"><label for="tp_${i}">${p.genre==='F'?'👧':'👦'} ${esc(fullName(p))}</label></div>`).join('')}
+        </div>
+        <p class="muted">Laisse tout décoché pour toute l'équipe.</p>
         <button class="btn clay" type="submit">Programmer l'entraînement</button>
         <div class="error" id="trainingErr"></div>
       </form>
@@ -1615,7 +1620,7 @@ async function viewCoachTournee(id){
     form.addEventListener('submit', async e=>{
       e.preventDefault();
       const etapeId = form.dataset.id;
-      const selected = [...form.coach_ids.selectedOptions].map(o=>o.value);
+      const selected = [...form.querySelectorAll('input[name=coach_ids]:checked')].map(i=>i.value);
       await supabase.from('etape_coaches').delete().eq('tournament_id', etapeId);
       if(selected.length){
         await supabase.from('etape_coaches').insert(selected.map(pid=>({ tournament_id: etapeId, profile_id: pid })));
@@ -1628,7 +1633,7 @@ async function viewCoachTournee(id){
     form.addEventListener('submit', async e=>{
       e.preventDefault();
       const trainingId = form.dataset.id;
-      const selected = [...form.coach_ids.selectedOptions].map(o=>o.value);
+      const selected = [...form.querySelectorAll('input[name=coach_ids]:checked')].map(i=>i.value);
       await supabase.from('training_coaches').delete().eq('training_id', trainingId);
       if(selected.length){
         await supabase.from('training_coaches').insert(selected.map(pid=>({ training_id: trainingId, profile_id: pid })));
@@ -1685,7 +1690,7 @@ async function viewCoachTournee(id){
       created_by: STATE.session.user.id
     }).select().single();
     if(error){ document.getElementById('trainingErr').textContent = error.message; return; }
-    const selected = [...e.target.player_ids.selectedOptions].map(o=>o.value);
+    const selected = [...e.target.querySelectorAll('input[name=player_ids]:checked')].map(i=>i.value);
     if(selected.length){
       await supabase.from('training_players').insert(selected.map(pid=>({ training_id: tr.id, player_id: pid })));
     }
