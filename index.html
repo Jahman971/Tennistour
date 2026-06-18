@@ -130,6 +130,21 @@ textarea{resize:vertical; min-height:90px;}
 .board .tiebreak-banner .tb-points{font-family:var(--fnt-head); font-size:24px; font-weight:900; color:var(--accent);}
 .board .tiebreak-banner .tb-label{font-size:10px; text-transform:uppercase; letter-spacing:1.5px; align-self:center; color:var(--light); font-weight:700;}
 
+/* Planning semaine tableau */
+.week-table{width:100%; border-collapse:collapse; table-layout:fixed; font-size:12px;}
+.week-table th{padding:6px 4px; text-align:center; font-size:10px; text-transform:uppercase; letter-spacing:1px; color:var(--light); border-bottom:2px solid var(--accent); background:var(--s1);}
+.week-table th.today-col{color:var(--accent); border-bottom-color:var(--accent);}
+.week-table td{vertical-align:top; padding:4px 3px; border-right:1px solid var(--brd); min-height:40px;}
+.week-table td:last-child{border-right:none;}
+.week-match{background:var(--s2); border:1px solid var(--brd); border-radius:6px; padding:5px 6px; margin-bottom:4px; cursor:pointer; transition:background .15s;}
+.week-match:hover{background:var(--s3);}
+.week-match.live{border-color:var(--live); background:rgba(255,60,0,.08);}
+.week-match.done{opacity:.7;}
+.week-match .wm-time{font-size:10px; color:var(--accent2); font-weight:700; margin-bottom:2px;}
+.week-match .wm-players{font-weight:700; font-size:11px; line-height:1.3;}
+.week-match .wm-sub{font-size:10px; color:var(--dim); margin-top:2px;}
+.week-nav{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;}
+.week-nav h3{margin:0; font-size:14px;}
 /* Coach scoring controls */
 .live-board{
   background:var(--s1); border:1px solid var(--brd); border-radius:var(--rL);
@@ -984,6 +999,132 @@ async function viewMyPlanning(){
 }
 
 // ---------------------------------------------------------------
+// VUE : PLANNING SEMAINE (tournée — tout le monde)
+// ---------------------------------------------------------------
+async function viewTourneePlanning(tourneeId, weekOffset=0){
+  shell(`<div class="empty">Chargement…</div>`, 'planning');
+
+  const { data: tournee } = await supabase.from('tournees').select('*').eq('id', tourneeId).maybeSingle();
+  if(!tournee){ shell(`<div class="empty">Tournée introuvable.</div>`,'planning'); return; }
+
+  const { data: etapes } = await supabase.from('tournaments').select('id,nom').eq('tournee_id', tourneeId);
+  const etapeIds = (etapes||[]).map(e=>e.id);
+  const etapeNom = eid => (etapes||[]).find(e=>e.id===eid)?.nom || '';
+
+  let allMatches = [];
+  if(etapeIds.length){
+    const { data: m } = await supabase.from('matches').select('*').in('tournament_id', etapeIds).order('scheduled_at');
+    allMatches = m || [];
+  }
+
+  const { data: allPlayers } = await supabase.from('players').select('id,nom,prenom,genre').eq('team_id', tournee.team_id);
+  const playerName = pid => fullName((allPlayers||[]).find(p=>p.id===pid));
+
+  const now = new Date();
+  const todayStr = now.toISOString().slice(0,10);
+  const monday = new Date(now);
+  const day = now.getDay(); monday.setDate(now.getDate() - (day===0?6:day-1) + weekOffset*7);
+  monday.setHours(0,0,0,0);
+  const days = Array.from({length:7},(_,i)=>{ const d=new Date(monday); d.setDate(monday.getDate()+i); return d; });
+  const dayKeys = days.map(d=>d.toISOString().slice(0,10));
+  const dayNames = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+  const monthFmt = new Intl.DateTimeFormat('fr-FR',{day:'numeric',month:'short'});
+  const timeFmt = new Intl.DateTimeFormat('fr-FR',{hour:'2-digit',minute:'2-digit'});
+  const weekLabel = `${monthFmt.format(days[0])} – ${monthFmt.format(days[6])} ${days[0].getFullYear()}`;
+
+  const byDay = {};
+  dayKeys.forEach(k=>byDay[k]=[]);
+  allMatches.forEach(m=>{
+    if(!m.scheduled_at) return;
+    const k = m.scheduled_at.slice(0,10);
+    if(byDay[k]) byDay[k].push(m);
+  });
+
+  const isCoach = ['admin','coach'].includes(STATE.profile?.role);
+  const isSuperviseur = STATE.profile?.superviseur || STATE.profile?.role==='admin';
+
+  const cols = dayKeys.map((k,i)=>{
+    const isToday = k===todayStr;
+    const cells = byDay[k].sort((a,b)=>(a.scheduled_at||'').localeCompare(b.scheduled_at||'')).map(m=>{
+      const time = timeFmt.format(new Date(m.scheduled_at));
+      const cls = m.statut==='en_cours'?'live':m.statut==='termine'?'done':'';
+      const route = isCoach ? `#/coach/match/${m.id}` : `#/match/${m.id}`;
+      return `<div class="week-match ${cls}" onclick="navigate('${route}')">
+        <div class="wm-time">🕐 ${esc(time)}</div>
+        <div class="wm-players">${esc(playerName(m.joueur1_id))}</div>
+        <div class="wm-players" style="color:var(--dim)">vs ${esc(playerName(m.joueur2_id))}</div>
+        <div class="wm-sub">${esc(etapeNom(m.tournament_id))}${m.court?' · C.'+esc(m.court):''}</div>
+      </div>`;
+    }).join('') || '<div style="min-height:30px"></div>';
+    return { isToday, cells, dayName: dayNames[i], date: monthFmt.format(days[i]) };
+  });
+
+  shell(`
+    <button class="btn ghost" onclick="navigate('#/coach/tournee/${tourneeId}')">← ${esc(tournee.nom)}</button>
+    <div class="week-nav" style="margin-top:10px">
+      <button class="btn small secondary" onclick="viewTourneePlanning('${tourneeId}',${weekOffset-1})">← Préc.</button>
+      <h3>📆 ${esc(weekLabel)}</h3>
+      <button class="btn small secondary" onclick="viewTourneePlanning('${tourneeId}',${weekOffset+1})">Suiv. →</button>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="week-table">
+        <thead><tr>
+          ${cols.map(c=>`<th class="${c.isToday?'today-col':''}">${c.dayName}<br><span style="font-weight:400">${c.date}</span></th>`).join('')}
+        </tr></thead>
+        <tbody><tr>
+          ${cols.map(c=>`<td>${c.cells}</td>`).join('')}
+        </tr></tbody>
+      </table>
+    </div>
+    ${isSuperviseur ? `
+    <h3 style="margin:20px 0 8px">+ Programmer un match</h3>
+    <div class="card">
+      <form id="quickMatchForm">
+        <label>Joueur 1</label>
+        <select name="j1" required>
+          ${(allPlayers||[]).map(p=>`<option value="${p.id}">${p.genre==='F'?'👧':'👦'} ${esc(fullName(p))}</option>`).join('')}
+        </select>
+        <label>Joueur 2</label>
+        <select name="j2" required>
+          ${(allPlayers||[]).map(p=>`<option value="${p.id}">${p.genre==='F'?'👧':'👦'} ${esc(fullName(p))}</option>`).join('')}
+        </select>
+        <label>Date et heure</label>
+        <input type="datetime-local" name="scheduled_at" required>
+        <label>Étape</label>
+        <select name="tournament_id" required>
+          ${(etapes||[]).map(e=>`<option value="${e.id}">${esc(e.nom)}</option>`).join('')}
+        </select>
+        <label>Court (optionnel)</label>
+        <input name="court" placeholder="Ex: Court 3">
+        <label>Tour / phase (optionnel)</label>
+        <input name="tour" placeholder="Ex: 1er tour">
+        <button class="btn clay" type="submit">Programmer</button>
+        <div class="error" id="quickMatchErr"></div>
+      </form>
+    </div>` : ''}
+  `, 'planning');
+
+  document.getElementById('quickMatchForm')?.addEventListener('submit', async e=>{
+    e.preventDefault();
+    const f = new FormData(e.target);
+    const j1=f.get('j1'), j2=f.get('j2'), tid=f.get('tournament_id');
+    if(j1===j2){ document.getElementById('quickMatchErr').textContent='Deux joueurs différents requis.'; return; }
+    const { data: etape } = await supabase.from('tournaments').select('*, formats(*)').eq('id', tid).single();
+    const live_state = initLiveState(etape.formats);
+    const { error } = await supabase.from('matches').insert({
+      tournament_id: tid, joueur1_id:j1, joueur2_id:j2,
+      scheduled_at: new Date(f.get('scheduled_at')).toISOString(),
+      court: f.get('court')||null, tour: f.get('tour')||null,
+      live_state
+    });
+    if(error){ document.getElementById('quickMatchErr').textContent=error.message; return; }
+    toast('Match programmé ✅');
+    viewTourneePlanning(tourneeId, weekOffset);
+  });
+}
+window.viewTourneePlanning = viewTourneePlanning;
+
+// ---------------------------------------------------------------
 // VUE : COACH — Accueil selon rôle
 // ---------------------------------------------------------------
 async function viewCoachHome(){
@@ -1210,6 +1351,7 @@ async function viewCoachTournee(id){
     <button class="btn ghost" onclick="navigate('${tournee.team_id===STATE.profile.team_id ? '#/mon-equipe' : '#/coach'}')">← Toutes les tournées</button>
     <h2 style="margin:8px 0 2px">${esc(tournee.nom)}</h2>
     <p class="muted" style="margin-top:0">${esc(tournee.lieu||'')} ${tournee.date_debut?'· '+tournee.date_debut+(tournee.date_fin?(' → '+tournee.date_fin):''):''}</p>
+    <button class="btn secondary" style="margin-bottom:10px" onclick="viewTourneePlanning('${id}',0)">📆 Planning semaine</button>
 
     <h3 style="margin:18px 0 8px">Joueurs de la tournée</h3>
     <div class="card">
@@ -1833,6 +1975,7 @@ function router(){
   if(hash === '#/coach/planning') return STATE.profile.team_id ? viewMyPlanning() : (navigate('#/coach'), undefined);
   if(hash === '#/admin/utilisateurs') return role==='admin' ? viewAdminUsers() : (navigate('#/coach'), undefined);
   if(hash === '#/suivi') return viewSuivi();
+  if((mTour = hash.match(/^#\/planning\/tournee\/(.+)$/))) return viewTourneePlanning(mTour[1], 0);
   if((mTour = hash.match(/^#\/coach\/tournee\/(.+)$/))) return viewCoachTournee(mTour[1]);
   if((mTour = hash.match(/^#\/coach\/tournoi\/(.+)$/))) return viewCoachTournament(mTour[1]);
   if((mMatch = hash.match(/^#\/coach\/match\/(.+)$/))) return viewCoachMatch(mMatch[1]);
