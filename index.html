@@ -824,11 +824,25 @@ async function viewAdminUsers(){
           <option value="coach">Coach</option>
           <option value="admin">Admin</option>
         </select>
-        <label>Équipe (coach uniquement)</label>
-        <select name="team_id">
-          <option value="">— Aucune (à choisir à la connexion) —</option>
-          ${(teams||[]).map(t=>`<option value="${t.id}">${esc(t.nom)}</option>`).join('')}
+      <form id="createUserForm">
+        <label>Prénom</label>
+        <input name="prenom" placeholder="Ex: Lohan">
+        <label>Nom</label>
+        <input name="nom" required placeholder="Ex: Dupont">
+        <label>Identifiant</label>
+        <input name="login" required placeholder="Ex: lohan" autocapitalize="none" pattern="[A-Za-z0-9._-]+">
+        <label>Rôle</label>
+        <select name="role" id="createUserRole" onchange="document.getElementById('createUserTeamRow').style.display=this.value==='coach'?'block':'none'">
+          <option value="coach">Coach</option>
+          <option value="admin">Admin</option>
         </select>
+        <div id="createUserTeamRow">
+          <label>Équipe (coach uniquement)</label>
+          <select name="team_id">
+            <option value="">— Aucune (à choisir à la connexion) —</option>
+            ${(teams||[]).map(t=>`<option value="${t.id}">${esc(t.nom)}</option>`).join('')}
+          </select>
+        </div>
         <button class="btn clay" type="submit">Créer le compte</button>
         <div class="error" id="createUserErr"></div>
         <div id="createUserResult"></div>
@@ -836,7 +850,7 @@ async function viewAdminUsers(){
     </div>
 
     ${rows}
-  `, 'home');
+  `, 'admin');
 
   document.getElementById('createUserForm').addEventListener('submit', async e=>{
     e.preventDefault();
@@ -844,20 +858,24 @@ async function viewAdminUsers(){
     const errEl = document.getElementById('createUserErr');
     const resEl = document.getElementById('createUserResult');
     errEl.textContent = ''; resEl.innerHTML = '';
+    const role = f.get('role');
+    const teamId = role === 'coach' ? (f.get('team_id')||null) : null;
     const { data, error } = await supabase.functions.invoke('admin-create-user', {
-      body: { nom: f.get('nom'), prenom: f.get('prenom')||null, login: f.get('login'), role: f.get('role'), team_id: f.get('team_id')||null }
+      body: { nom: f.get('nom'), prenom: f.get('prenom')||null, login: f.get('login'), role, team_id: teamId }
     });
-    if(error || data?.error){ errEl.textContent = data?.error || error.message; return; }
+    if(error){ errEl.textContent = "Erreur réseau : " + error.message; return; }
+    if(data?.error){ errEl.textContent = data.error; return; }
     resEl.innerHTML = `
-      <div class="card" style="margin-top:10px; background:var(--accent3); border-color:var(--accent)">
-        <h3>Compte créé ✅</h3>
-        <p class="muted">Transmets ces informations à la personne — elle devra changer son mot de passe à la première connexion.</p>
+      <div class="card" style="margin-top:10px; border-color:var(--accent)">
+        <h3>✅ Compte créé</h3>
+        <p class="muted">Transmets ces infos — la personne devra changer son mot de passe à la première connexion.</p>
         <label>Identifiant</label>
-        <div class="code-badge">${esc(data.login)}</div>
+        <div class="code-badge" style="cursor:pointer" onclick="navigator.clipboard?.writeText('${esc(data.login)}')">${esc(data.login)} 📋</div>
         <label>Mot de passe provisoire</label>
-        <div class="code-badge">${esc(data.password)}</div>
+        <div class="code-badge" style="cursor:pointer" onclick="navigator.clipboard?.writeText('${esc(data.password)}')">${esc(data.password)} 📋</div>
       </div>`;
     e.target.reset();
+    document.getElementById('createUserTeamRow').style.display = 'block';
   });
 }
 window.adminSetStatut = async (profileId, statut) => {
