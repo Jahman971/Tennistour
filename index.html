@@ -153,62 +153,6 @@ textarea{resize:vertical; min-height:90px;}
 .empty .big{font-family:var(--fnt-head); font-size:40px; color:var(--brd); margin-bottom:10px;}
 a.link{color:var(--accent); font-weight:600; text-decoration:none;}
 
-/* Pyramide tournée */
-.pyramid{
-  background:linear-gradient(135deg,rgba(215,229,82,.10),rgba(255,255,255,.02));
-  border:1px solid rgba(215,229,82,.35);
-}
-.pyramid-grid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:8px;
-  margin-top:10px;
-}
-.pyramid-stat{
-  background:var(--s3);
-  border:1px solid var(--brd);
-  border-radius:var(--r);
-  padding:10px;
-}
-.pyramid-stat .num{
-  font-family:var(--fnt-head);
-  font-size:28px;
-  font-weight:900;
-  color:var(--accent);
-  line-height:1;
-}
-.pyramid-stat .label{
-  font-size:10px;
-  text-transform:uppercase;
-  letter-spacing:1.2px;
-  color:var(--gray);
-  margin-top:4px;
-}
-.event-kind{
-  display:inline-block;
-  font-size:9px;
-  text-transform:uppercase;
-  letter-spacing:1.3px;
-  padding:3px 8px;
-  border-radius:999px;
-  font-weight:700;
-  font-family:var(--fnt-head);
-  background:var(--accent3);
-  color:var(--accent);
-  border:1px solid rgba(215,229,82,.25);
-}
-.event-kind.training{
-  background:rgba(46,125,91,.12);
-  color:var(--court);
-  border-color:rgba(46,125,91,.3);
-}
-.event-kind.match{
-  background:var(--live2);
-  color:var(--live);
-  border-color:rgba(193,87,58,.35);
-}
-
-
 </style>
 </head>
 <body>
@@ -259,6 +203,10 @@ try{
 // ---------------------------------------------------------------
 const esc = s => (s ?? '').toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fullName = p => [p?.prenom, p?.nom].filter(Boolean).join(' ') || '—';
+window.showPlayerCode = (code, nom) => {
+  toast(`📋 ${nom} — Code : ${code}`);
+  navigator.clipboard?.writeText(code).catch(()=>{});
+};
 const genCode = () => Array.from({length:5}, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*32)]).join('');
 function navigate(hash){ location.hash = hash; }
 function toast(msg, isError){
@@ -459,17 +407,6 @@ function saveCode(code, nom){
   localStorage.setItem('setpoint_codes', JSON.stringify(list.slice(0,8)));
 }
 function viewLanding(){
-  const saved = getSavedCodes();
-  const savedHtml = saved.length ? `
-    <div class="card">
-      <h3>Suivis récents</h3>
-      ${saved.map(c=>`
-        <div class="row between" style="padding:6px 0; cursor:pointer" onclick="navigate('#/j/${esc(c.code)}')">
-          <div>${esc(c.nom)}</div>
-          <div class="code-badge" style="font-size:13px; padding:4px 8px;">${esc(c.code)}</div>
-        </div>`).join('')}
-    </div>` : '';
-
   app.innerHTML = `
     <main style="padding:16px;">
       <div style="text-align:center; padding:50px 10px 10px;">
@@ -483,11 +420,9 @@ function viewLanding(){
           <input id="playerCodeInput" placeholder="CODE" maxlength="5" style="text-transform:uppercase; flex:1;" autocapitalize="characters" autocomplete="off">
           <button class="btn clay" style="width:auto; margin-top:0; padding:12px 18px;" onclick="goToPlayerCode()">→</button>
         </div>
-        <p class="muted" style="margin-top:8px;">Entre le code donné par le coach pour suivre les matchs en direct</p>
+        <p class="muted" style="margin-top:8px;">Entre le code fourni par ton coach ou ton club pour suivre les matchs en direct.</p>
         <div class="error" id="landingErr"></div>
       </div>
-
-      ${savedHtml}
 
       <button class="btn secondary" style="margin-top:18px;" onclick="navigate('#/coach-login')">🔑 Accès Coach</button>
     </main>`;
@@ -521,12 +456,12 @@ async function viewPlayerCode(code){
   saveCode(player.code, fullName(player));
 
   const { data: matches } = await supabase.from('matches')
-    .select('*, tournaments(nom, lieu, tournee_id, tournees(nom))')
+    .select('*, tournaments(nom)')
     .or(`joueur1_id.eq.${player.id},joueur2_id.eq.${player.id}`)
-    .order('scheduled_at',{ascending:true, nullsFirst:false});
+    .order('updated_at',{ascending:false});
 
   const { data: trainingLinks } = await supabase.from('training_players')
-    .select('trainings(*, tournees(nom))').eq('player_id', player.id);
+    .select('trainings(*)').eq('player_id', player.id);
   const trainings = (trainingLinks||[]).map(l=>l.trainings).filter(Boolean);
 
   const idsNeeded = new Set();
@@ -559,14 +494,14 @@ async function viewPlayerCode(code){
         const statusPill = m.statut==='en_cours' ? '<span class="pill live">Live</span>'
           : m.statut==='termine' ? '<span class="pill done">Terminé</span>' : '<span class="pill upcoming">À venir</span>';
         return `<div class="card" onclick="navigate('#/match/${m.id}')" style="cursor:pointer">
-          <div class="row between"><div><span class="event-kind match">Match</span> <strong>${esc(namesMap[m.joueur1_id]||'—')}</strong> vs <strong>${esc(namesMap[m.joueur2_id]||'—')}</strong></div>${statusPill}</div>
-          <p class="muted">${time?`🕐 ${time} · `:''}${esc(m.tournaments?.tournees?.nom||'Tournée')} · ${esc(m.tournaments?.nom||'Tournoi')}${m.court?' · '+esc(m.court):''}</p>
+          <div class="row between"><div>🎾 <strong>${esc(namesMap[m.joueur1_id]||'—')}</strong> vs <strong>${esc(namesMap[m.joueur2_id]||'—')}</strong></div>${statusPill}</div>
+          <p class="muted">${time?`🕐 ${time} · `:''}${esc(m.tournaments?.nom||'')}${m.court?' · '+esc(m.court):''}</p>
         </div>`;
       } else {
         const tr = it.data;
         return `<div class="card" style="background:var(--s3)">
-          <div><span class="event-kind training">Entraînement</span> <strong>${esc(tr.titre)}</strong></div>
-          <p class="muted">${time?`🕐 ${time} · `:''}${esc(tr.tournees?.nom||'Tournée')}${tr.lieu?' · 📍 '+esc(tr.lieu):''}</p>
+          <div>🏋️ <strong>${esc(tr.titre)}</strong></div>
+          <p class="muted">${time?`🕐 ${time}`:''}${tr.lieu?' · 📍 '+esc(tr.lieu):''}</p>
           ${tr.description ? `<p class="muted">${esc(tr.description)}</p>` : ''}
         </div>`;
       }
@@ -598,8 +533,7 @@ async function viewPlayerCode(code){
     <main>
       <h2 style="margin:4px 0 2px">${esc(fullName(player))}</h2>
       <p class="muted" style="margin-top:0">Code ${esc(player.code)}</p>
-      <h3 style="margin:18px 0 8px">Planning joueur</h3>
-      <p class="muted" style="margin-top:-4px">Vision issue de la pyramide : tournée → tournois / entraînements → joueurs → matchs.</p>
+      <h3 style="margin:18px 0 8px">Planning</h3>
       ${planningHtml}
       <h3 style="margin:18px 0 8px">Scores &amp; débriefs</h3>
       ${matchesHtml}
@@ -1028,14 +962,14 @@ async function viewMyPlanning(){
         const statusPill = m.statut==='en_cours' ? '<span class="pill live">Live</span>'
           : m.statut==='termine' ? '<span class="pill done">Terminé</span>' : '<span class="pill upcoming">À venir</span>';
         return `<div class="card" onclick="navigate('#/coach/match/${m.id}')" style="cursor:pointer">
-          <div class="row between"><div><span class="event-kind match">Match</span> <strong>${esc(playerName(m.joueur1_id))}</strong> vs <strong>${esc(playerName(m.joueur2_id))}</strong></div>${statusPill}</div>
+          <div class="row between"><div>🎾 <strong>${esc(playerName(m.joueur1_id))}</strong> vs <strong>${esc(playerName(m.joueur2_id))}</strong></div>${statusPill}</div>
           <p class="muted">${time?`🕐 ${time} · `:''}${esc(m.tournaments?.nom||'')}${m.court?' · '+esc(m.court):''}</p>
         </div>`;
       } else {
         const tr = it.data;
         const names = (tr.training_players||[]).map(tp=>playerName(tp.player_id)).join(', ');
         return `<div class="card" style="background:var(--s3)">
-          <div><span class="event-kind training">Entraînement</span> <strong>${esc(tr.titre)}</strong></div>
+          <div>🏋️ <strong>${esc(tr.titre)}</strong></div>
           <p class="muted">${time?`🕐 ${time}`:''}${tr.lieu?' · 📍 '+esc(tr.lieu):''} · ${esc(tr.tournees?.nom||'')}</p>
           <p class="muted">👥 ${esc(names || "Toute l'équipe")}</p>
         </div>`;
@@ -1045,16 +979,20 @@ async function viewMyPlanning(){
   }).join('') : `<div class="empty"><div class="big">📅</div>Aucun événement ne t'est encore affecté.<br>Le superviseur affecte les coachs depuis chaque tournée.</div>`;
 
   shell(`
-    <h2 style="margin:4px 0 14px">Mon planning coach</h2>
-    <div class="card pyramid"><h3>Vision coach</h3><p class="muted">Tu vois les matchs des tournois où tu es affecté et les entraînements où tu es affecté.</p></div>
+    <h2 style="margin:4px 0 14px">Mon planning</h2>
     ${planningHtml}
   `, 'planning');
 }
 
 // ---------------------------------------------------------------
-// VUE : COACH — LISTE DES TOURNÉES
+// VUE : COACH — Accueil selon rôle
 // ---------------------------------------------------------------
 async function viewCoachHome(){
+  // Coach simple → redirige vers son planning
+  if(!STATE.profile.superviseur){
+    return viewMyPlanning();
+  }
+  // Superviseur → liste des tournées + création
   shell(`<div class="empty">Chargement…</div>`, 'home');
   const teamId = STATE.profile.team_id;
   const { data: tournees, error } = await supabase
@@ -1074,7 +1012,7 @@ async function viewCoachHome(){
       </div>`).join('');
   }
 
-  // Le coach principal valide les coachs adjoints en attente
+  // Validation des coachs adjoints en attente
   let pendingHtml = '';
   const { data: team } = await supabase.from('teams').select('*').eq('id', teamId).maybeSingle();
   if(team && (team.created_by === STATE.session.user.id || STATE.profile.superviseur)){
@@ -1095,7 +1033,6 @@ async function viewCoachHome(){
 
   shell(`
     <h2 style="margin:4px 0 14px">Tournées de l'équipe</h2>
-    <div class="card pyramid"><h3>Logique de programmation</h3><p class="muted">Paramètre une tournée, ajoute ses tournois et entraînements, affecte les joueurs, puis l'application génère le planning semaine / jour par profil.</p></div>
     ${pendingHtml}
     ${list}
     <div class="card">
@@ -1180,23 +1117,12 @@ async function viewCoachTournee(id){
   const playerName = pid => fullName((roster||[]).find(p=>p.id===pid));
 
   const { data: formats } = await supabase.from('formats').select('*').order('id');
-  const pyramidHtml = `
-    <div class="card pyramid">
-      <h3>Structure de la tournée</h3>
-      <p class="muted">Une tournée contient 1 à N tournois, 1 à N entraînements, chaque événement contient 1 à N joueurs, et chaque joueur peut avoir 1 à N matchs.</p>
-      <div class="pyramid-grid">
-        <div class="pyramid-stat"><div class="num">${(etapes||[]).length}</div><div class="label">Tournois / étapes</div></div>
-        <div class="pyramid-stat"><div class="num">${(trainings||[]).length}</div><div class="label">Entraînements</div></div>
-        <div class="pyramid-stat"><div class="num">${tourneePlayers.length}</div><div class="label">Joueurs tournée</div></div>
-        <div class="pyramid-stat"><div class="num">${matches.length}</div><div class="label">Matchs programmés</div></div>
-      </div>
-    </div>`;
 
   // --- Joueurs de la tournée ---
   const tourneePlayersHtml = tourneePlayers.length ? tourneePlayers.map(p=>`
     <div class="row between" style="padding:8px 0; border-bottom:1px solid var(--brd)">
-      <div>${esc(fullName(p))}</div>
-      <div class="code-badge" style="font-size:14px; padding:4px 8px;">${esc(p.code)}</div>
+      <div>${p.genre==='F'?'👧 ':p.genre==='G'?'👦 ':''}${esc(fullName(p))}</div>
+      <button class="btn small secondary" onclick="showPlayerCode('${p.code}','${esc(fullName(p)).replace(/'/g,"\\\\'")}')">📋 Code</button>
     </div>`).join('') : `<p class="muted">Aucun joueur inscrit à cette tournée.</p>`;
 
   // --- Étapes ---
@@ -1265,14 +1191,14 @@ async function viewCoachTournee(id){
         const statusPill = m.statut==='en_cours' ? '<span class="pill live">Live</span>'
           : m.statut==='termine' ? '<span class="pill done">Terminé</span>' : '<span class="pill upcoming">À venir</span>';
         return `<div class="card" onclick="navigate('#/coach/match/${m.id}')" style="cursor:pointer">
-          <div class="row between"><div><span class="event-kind match">Match</span> <strong>${esc(playerName(m.joueur1_id))}</strong> vs <strong>${esc(playerName(m.joueur2_id))}</strong></div>${statusPill}</div>
+          <div class="row between"><div>🎾 <strong>${esc(playerName(m.joueur1_id))}</strong> vs <strong>${esc(playerName(m.joueur2_id))}</strong></div>${statusPill}</div>
           <p class="muted">${time?`🕐 ${time} · `:''}${esc(m.tournaments?.nom||'')}${m.court?' · '+esc(m.court):''}</p>
         </div>`;
       } else {
         const tr = it.data;
         const names = (tr.training_players||[]).map(tp=>playerName(tp.player_id)).join(', ');
         return `<div class="card" style="background:var(--s3)">
-          <div class="row between"><div><span class="event-kind training">Entraînement</span> <strong>${esc(tr.titre)}</strong></div></div>
+          <div class="row between"><div>🏋️ <strong>${esc(tr.titre)}</strong></div></div>
           <p class="muted">${time?`🕐 ${time}`:''}${tr.lieu?' · 📍 '+esc(tr.lieu):''}</p>
           <p class="muted">👥 ${esc(names||"Toute l'équipe")}</p>
         </div>`;
@@ -1286,8 +1212,6 @@ async function viewCoachTournee(id){
     <h2 style="margin:8px 0 2px">${esc(tournee.nom)}</h2>
     <p class="muted" style="margin-top:0">${esc(tournee.lieu||'')} ${tournee.date_debut?'· '+tournee.date_debut+(tournee.date_fin?(' → '+tournee.date_fin):''):''}</p>
 
-    ${pyramidHtml}
-
     <h3 style="margin:18px 0 8px">Joueurs de la tournée</h3>
     <div class="card">
       ${tourneePlayersHtml}
@@ -1296,19 +1220,23 @@ async function viewCoachTournee(id){
         <label>Inscrire depuis l'effectif de l'équipe</label>
         <div class="row">
           <select name="player_id" style="flex:1">
-            ${rosterAvailable.map(p=>`<option value="${p.id}">${esc(fullName(p))} (${esc(p.code)})</option>`).join('')}
+            ${rosterAvailable.map(p=>`<option value="${p.id}">${esc(fullName(p))} ${p.genre==='F'?'👧':p.genre==='G'?'👦':''}</option>`).join('')}
           </select>
           <button class="btn small" type="submit" style="width:auto">Ajouter</button>
         </div>
       </form>` : ''}
       <form id="newTourneePlayerForm" style="margin-top:10px">
-        <label>Nouveau joueur (pas encore dans l'effectif)</label>
+        <label>Nouveau joueur</label>
         <div class="row">
           <input name="prenom" placeholder="Prénom" style="flex:1">
           <input name="nom" placeholder="Nom" style="flex:1">
+          <select name="genre" style="width:auto">
+            <option value="">Genre</option>
+            <option value="G">👦 Garçon</option>
+            <option value="F">👧 Fille</option>
+          </select>
           <button class="btn small" type="submit" style="width:auto">Créer</button>
         </div>
-        <p class="muted" style="margin-top:8px">Un code à 5 caractères est généré pour chaque joueur : les parents s'en servent pour suivre ses matchs et son planning en direct.</p>
       </form>
     </div>
 
@@ -1405,7 +1333,8 @@ async function viewCoachTournee(id){
     const prenom = f.get('prenom').trim(), nom = f.get('nom').trim();
     if(!nom && !prenom) return;
     const code = genCode();
-    const { data: pl, error } = await supabase.from('players').insert({ prenom: prenom||null, nom, code, team_id: tournee.team_id, created_by: STATE.session.user.id }).select().single();
+    const genre = f.get('genre') || null;
+    const { data: pl, error } = await supabase.from('players').insert({ prenom: prenom||null, nom, code, genre, team_id: tournee.team_id, created_by: STATE.session.user.id }).select().single();
     if(error){ toast(error.message, true); return; }
     await supabase.from('tournee_players').insert({ tournee_id: id, player_id: pl.id });
     toast(`${fullName(pl)} inscrit à la tournée · code ${code}`);
