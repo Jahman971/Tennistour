@@ -460,9 +460,7 @@ async function viewPlayerCode(code){
     .or(`joueur1_id.eq.${player.id},joueur2_id.eq.${player.id}`)
     .order('updated_at',{ascending:false});
 
-  const { data: trainingLinks } = await supabase.from('training_players')
-    .select('trainings(*)').eq('player_id', player.id);
-  const trainings = (trainingLinks||[]).map(l=>l.trainings).filter(Boolean);
+  // Entraînements non affichés aux parents
 
   const idsNeeded = new Set();
   (matches||[]).forEach(m=>{ idsNeeded.add(m.joueur1_id); idsNeeded.add(m.joueur2_id); });
@@ -472,58 +470,23 @@ async function viewPlayerCode(code){
     (pls||[]).forEach(p=>namesMap[p.id]=fullName(p));
   }
 
-  // --- Planning combiné (matchs + entraînements), groupé par jour ---
-  const dateFmt = new Intl.DateTimeFormat('fr-FR', { weekday:'long', day:'numeric', month:'long' });
-  const timeFmt = new Intl.DateTimeFormat('fr-FR', { hour:'2-digit', minute:'2-digit' });
-  const items = [];
-  (matches||[]).forEach(m=> items.push({ type:'match', date:m.scheduled_at, data:m }));
-  trainings.forEach(tr=> items.push({ type:'training', date:tr.scheduled_at, data:tr }));
-  const groups = new Map();
-  items.forEach(it=>{
-    const key = it.date ? it.date.slice(0,10) : 'none';
-    if(!groups.has(key)) groups.set(key, []);
-    groups.get(key).push(it);
-  });
-  const sortedKeys = [...groups.keys()].sort((a,b)=> a==='none'?1 : b==='none'?-1 : a.localeCompare(b));
-  const planningHtml = items.length ? sortedKeys.map(key=>{
-    const label = key==='none' ? 'Non planifié' : dateFmt.format(new Date(key+'T00:00:00'));
-    const rows = groups.get(key).sort((a,b)=> (a.date||'').localeCompare(b.date||'')).map(it=>{
-      const time = it.date ? timeFmt.format(new Date(it.date)) : '';
-      if(it.type==='match'){
-        const m = it.data;
-        const statusPill = m.statut==='en_cours' ? '<span class="pill live">Live</span>'
-          : m.statut==='termine' ? '<span class="pill done">Terminé</span>' : '<span class="pill upcoming">À venir</span>';
-        return `<div class="card" onclick="navigate('#/match/${m.id}')" style="cursor:pointer">
-          <div class="row between"><div>🎾 <strong>${esc(namesMap[m.joueur1_id]||'—')}</strong> vs <strong>${esc(namesMap[m.joueur2_id]||'—')}</strong></div>${statusPill}</div>
-          <p class="muted">${time?`🕐 ${time} · `:''}${esc(m.tournaments?.nom||'')}${m.court?' · '+esc(m.court):''}</p>
-        </div>`;
-      } else {
-        const tr = it.data;
-        return `<div class="card" style="background:var(--s3)">
-          <div>🏋️ <strong>${esc(tr.titre)}</strong></div>
-          <p class="muted">${time?`🕐 ${time}`:''}${tr.lieu?' · 📍 '+esc(tr.lieu):''}</p>
-          ${tr.description ? `<p class="muted">${esc(tr.description)}</p>` : ''}
-        </div>`;
-      }
-    }).join('');
-    return `<h3 style="margin:18px 0 8px; text-transform:capitalize;">${esc(label)}</h3>${rows}`;
-  }).join('') : `<div class="empty">Rien de programmé pour l'instant.</div>`;
+  // Planning matchs uniquement (par semaine/jour)
+  const playerName2 = pid => namesMap[pid] || '—';
+  const items = (matches||[]).map(m=>({ type:'match', date:m.scheduled_at, data:m }));
+  const planningHtml = buildPlanningHtml(items, playerName2, false);
 
-  // --- Scores & débriefs ---
+  // Scores & débriefs
   const order = { en_cours:0, a_venir:1, termine:2 };
   const sorted = [...(matches||[])].sort((a,b)=> (order[a.statut]??3) - (order[b.statut]??3));
-
-  const matchesHtml = sorted.length ? sorted.map(m => `
-    <div onclick="navigate('#/match/${m.id}')" style="cursor:pointer">
-      <p class="muted" style="margin:0 0 4px">${esc(m.tournaments?.nom||'')}</p>
+  const matchesHtml = sorted.filter(m=>m.statut==='termine' && m.debrief).map(m => `
+    <div class="card">
+      <p class="muted" style="margin:0 0 6px">${esc(m.tournaments?.nom||'')} ${m.scheduled_at ? '· '+new Intl.DateTimeFormat('fr-FR',{day:'numeric',month:'short'}).format(new Date(m.scheduled_at)) : ''}</p>
       ${scoreboardHTML(m, namesMap[m.joueur1_id]||'—', namesMap[m.joueur2_id]||'—')}
-    </div>
-    ${m.statut==='termine' && m.debrief ? `
-      <div class="card" style="margin-top:-4px">
-        <h3>📝 Débrief du coach</h3>
-        <p class="muted" style="white-space:pre-wrap">${esc(m.debrief)}</p>
-      </div>` : ''}
-  `).join('') : `<div class="empty"><div class="big">🎾</div>Aucun match pour l'instant.</div>`;
+      <div style="margin-top:8px; padding-top:8px; border-top:1px solid var(--brd)">
+        <p class="muted" style="font-size:11px; text-transform:uppercase; letter-spacing:1.5px; margin-bottom:4px">📝 Débrief du coach</p>
+        <p style="white-space:pre-wrap; margin:0">${esc(m.debrief)}</p>
+      </div>
+    </div>`).join('');
 
   app.innerHTML = `
     <div class="topbar">
@@ -531,12 +494,10 @@ async function viewPlayerCode(code){
       <div class="who" onclick="navigate('#/')">Quitter</div>
     </div>
     <main>
-      <h2 style="margin:4px 0 2px">${esc(fullName(player))}</h2>
-      <p class="muted" style="margin-top:0">Code ${esc(player.code)}</p>
-      <h3 style="margin:18px 0 8px">Planning</h3>
+      <h2 style="margin:4px 0 2px">${player.genre==='F'?'👧 ':player.genre==='G'?'👦 ':''}${esc(fullName(player))}</h2>
+      <h3 style="margin:18px 0 8px">Planning des matchs</h3>
       ${planningHtml}
-      <h3 style="margin:18px 0 8px">Scores &amp; débriefs</h3>
-      ${matchesHtml}
+      ${matchesHtml ? `<h3 style="margin:18px 0 8px">Débriefs du coach</h3>${matchesHtml}` : ''}
     </main>`;
 }
 
@@ -913,7 +874,78 @@ window.adminDeleteUser = async (profileId, nom) => {
 };
 
 // ---------------------------------------------------------------
-// VUE : COACH — MON PLANNING (étapes/entraînements où je suis affecté)
+// HELPER : rendu planning semaine/jour (coach ou joueur)
+// ---------------------------------------------------------------
+function buildPlanningHtml(items, playerName, canScoreMatch){
+  if(!items.length) return `<div class="empty"><div class="big">📅</div>Aucun événement programmé.</div>`;
+
+  const dateFmt = new Intl.DateTimeFormat('fr-FR', { weekday:'long', day:'numeric', month:'long' });
+  const timeFmt = new Intl.DateTimeFormat('fr-FR', { hour:'2-digit', minute:'2-digit' });
+
+  const groups = new Map();
+  items.forEach(it=>{
+    const key = it.date ? it.date.slice(0,10) : 'none';
+    if(!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(it);
+  });
+  const sortedKeys = [...groups.keys()].sort((a,b)=> a==='none'?1 : b==='none'?-1 : a.localeCompare(b));
+
+  // semaines
+  const weekFmt = new Intl.DateTimeFormat('fr-FR', { day:'numeric', month:'short' });
+  const getWeekKey = dateStr => {
+    if(dateStr==='none') return 'none';
+    const d = new Date(dateStr+'T00:00:00');
+    const day = d.getDay();
+    const diff = (day===0?-6:1)-day;
+    const mon = new Date(d); mon.setDate(d.getDate()+diff);
+    const sun = new Date(mon); sun.setDate(mon.getDate()+6);
+    return `${mon.toISOString().slice(0,10)}__${weekFmt.format(mon)} – ${weekFmt.format(sun)}`;
+  };
+
+  const weeks = new Map();
+  sortedKeys.forEach(k=>{
+    const wk = getWeekKey(k);
+    if(!weeks.has(wk)) weeks.set(wk, []);
+    weeks.get(wk).push(k);
+  });
+
+  return [...weeks.entries()].map(([wk, keys])=>{
+    const [, weekLabel] = wk==='none' ? ['none','Non planifié'] : wk.split('__');
+    const daysHtml = keys.map(key=>{
+      const label = key==='none' ? '' : dateFmt.format(new Date(key+'T00:00:00'));
+      const rows = groups.get(key).sort((a,b)=>(a.date||'').localeCompare(b.date||'')).map(it=>{
+        const time = it.date ? timeFmt.format(new Date(it.date)) : '';
+        if(it.type==='match'){
+          const m = it.data;
+          const statusPill = m.statut==='en_cours' ? '<span class="pill live">Live</span>'
+            : m.statut==='termine' ? '<span class="pill done">Terminé</span>' : '<span class="pill upcoming">À venir</span>';
+          const clickable = canScoreMatch ? `onclick="navigate('#/coach/match/${m.id}')" style="cursor:pointer"` : `onclick="navigate('#/match/${m.id}')" style="cursor:pointer"`;
+          return `<div class="card" ${clickable}>
+            <div class="row between"><div>🎾 <strong>${esc(playerName(m.joueur1_id))}</strong> vs <strong>${esc(playerName(m.joueur2_id))}</strong></div>${statusPill}</div>
+            <p class="muted">${time?`🕐 ${time} · `:''}${esc(m.etapeNom||m.tournaments?.nom||'')}${m.court?' · Court '+esc(m.court):''}</p>
+          </div>`;
+        } else {
+          const tr = it.data;
+          const names = (tr.training_players||[]).map(tp=>playerName(tp.player_id)).filter(n=>n!=='—').join(', ');
+          return `<div class="card" style="background:var(--s3)">
+            <div class="row between"><div>🏋️ <strong>${esc(tr.titre)}</strong></div>${time?`<span class="muted">🕐 ${esc(time)}</span>`:''}</div>
+            ${tr.lieu?`<p class="muted">📍 ${esc(tr.lieu)}</p>`:''}
+            ${tr.description?`<p class="muted">${esc(tr.description)}</p>`:''}
+            ${names?`<p class="muted">👥 ${esc(names)}</p>`:''}
+          </div>`;
+        }
+      }).join('');
+      return label ? `<h4 style="margin:12px 0 6px; text-transform:capitalize; color:var(--accent2)">${esc(label)}</h4>${rows}` : rows;
+    }).join('');
+    return `<div class="card" style="padding:12px 14px; margin-bottom:10px;">
+      <h3 style="margin:0 0 8px; font-size:13px; text-transform:uppercase; letter-spacing:2px; color:var(--light)">📆 Semaine du ${esc(weekLabel)}</h3>
+      ${daysHtml}
+    </div>`;
+  }).join('');
+}
+
+// ---------------------------------------------------------------
+// VUE : COACH — MON PLANNING
 // ---------------------------------------------------------------
 async function viewMyPlanning(){
   shell(`<div class="empty">Chargement…</div>`, 'planning');
@@ -922,65 +954,32 @@ async function viewMyPlanning(){
 
   const { data: ec } = await supabase.from('etape_coaches').select('tournament_id').eq('profile_id', uid);
   const etapeIds = (ec||[]).map(r=>r.tournament_id);
-
   const { data: tc } = await supabase.from('training_coaches').select('training_id').eq('profile_id', uid);
   const trainingIds = (tc||[]).map(r=>r.training_id);
 
-  let etapes = [], matches = [], trainings = [];
+  let matches = [], trainings = [];
   if(etapeIds.length){
-    const { data } = await supabase.from('tournaments').select('*, tournees(nom)').in('id', etapeIds);
-    etapes = data || [];
     const { data: m } = await supabase.from('matches').select('*, tournaments(nom)').in('tournament_id', etapeIds);
     matches = m || [];
   }
   if(trainingIds.length){
-    const { data } = await supabase.from('trainings').select('*, training_players(player_id), tournees(nom)').in('id', trainingIds);
-    trainings = data || [];
+    const { data: t } = await supabase.from('trainings').select('*, training_players(player_id), tournees(nom)').in('id', trainingIds);
+    trainings = t || [];
   }
 
-  const { data: roster } = await supabase.from('players').select('*').eq('team_id', teamId);
+  const { data: roster } = await supabase.from('players').select('id,nom,prenom,genre').eq('team_id', teamId);
   const playerName = pid => fullName((roster||[]).find(p=>p.id===pid));
 
-  const dateFmt = new Intl.DateTimeFormat('fr-FR', { weekday:'long', day:'numeric', month:'long' });
-  const timeFmt = new Intl.DateTimeFormat('fr-FR', { hour:'2-digit', minute:'2-digit' });
   const items = [];
   matches.forEach(m=> items.push({ type:'match', date:m.scheduled_at, data:m }));
   trainings.forEach(tr=> items.push({ type:'training', date:tr.scheduled_at, data:tr }));
-  const groups = new Map();
-  items.forEach(it=>{
-    const key = it.date ? it.date.slice(0,10) : 'none';
-    if(!groups.has(key)) groups.set(key, []);
-    groups.get(key).push(it);
-  });
-  const sortedKeys = [...groups.keys()].sort((a,b)=> a==='none'?1 : b==='none'?-1 : a.localeCompare(b));
-  const planningHtml = items.length ? sortedKeys.map(key=>{
-    const label = key==='none' ? 'Non planifié' : dateFmt.format(new Date(key+'T00:00:00'));
-    const rowsHtml = groups.get(key).sort((a,b)=> (a.date||'').localeCompare(b.date||'')).map(it=>{
-      const time = it.date ? timeFmt.format(new Date(it.date)) : '';
-      if(it.type==='match'){
-        const m = it.data;
-        const statusPill = m.statut==='en_cours' ? '<span class="pill live">Live</span>'
-          : m.statut==='termine' ? '<span class="pill done">Terminé</span>' : '<span class="pill upcoming">À venir</span>';
-        return `<div class="card" onclick="navigate('#/coach/match/${m.id}')" style="cursor:pointer">
-          <div class="row between"><div>🎾 <strong>${esc(playerName(m.joueur1_id))}</strong> vs <strong>${esc(playerName(m.joueur2_id))}</strong></div>${statusPill}</div>
-          <p class="muted">${time?`🕐 ${time} · `:''}${esc(m.tournaments?.nom||'')}${m.court?' · '+esc(m.court):''}</p>
-        </div>`;
-      } else {
-        const tr = it.data;
-        const names = (tr.training_players||[]).map(tp=>playerName(tp.player_id)).join(', ');
-        return `<div class="card" style="background:var(--s3)">
-          <div>🏋️ <strong>${esc(tr.titre)}</strong></div>
-          <p class="muted">${time?`🕐 ${time}`:''}${tr.lieu?' · 📍 '+esc(tr.lieu):''} · ${esc(tr.tournees?.nom||'')}</p>
-          <p class="muted">👥 ${esc(names || "Toute l'équipe")}</p>
-        </div>`;
-      }
-    }).join('');
-    return `<h3 style="margin:18px 0 8px; text-transform:capitalize;">${esc(label)}</h3>${rowsHtml}`;
-  }).join('') : `<div class="empty"><div class="big">📅</div>Aucun événement ne t'est encore affecté.<br>Le superviseur affecte les coachs depuis chaque tournée.</div>`;
+
+  const isSuperviseur = STATE.profile.superviseur;
 
   shell(`
     <h2 style="margin:4px 0 14px">Mon planning</h2>
-    ${planningHtml}
+    ${buildPlanningHtml(items, playerName, true /* coach peut scorer */)}
+    ${isSuperviseur ? `<button class="btn secondary" style="margin-top:10px" onclick="navigate('#/coach')">🏟️ Gérer les tournées</button>` : ''}
   `, 'planning');
 }
 
