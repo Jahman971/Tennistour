@@ -283,6 +283,14 @@ window.showPlayerCode = (code, nom) => {
   toast(`📋 ${nom} — Code : ${code}`);
   navigator.clipboard?.writeText(code).catch(()=>{});
 };
+window.deletePlayer = async (playerId, nom, tourneeId) => {
+  if(!confirm(`Supprimer ${nom} ? Cette action supprime le joueur de toute l'application (matchs, entraînements, tournées).`)) return;
+  // Supprimer dans cet ordre : match_coaches/matches liés, tournament_players, training_players, tournee_players, puis le joueur
+  const { error } = await supabase.from('players').delete().eq('id', playerId);
+  if(error){ toast(error.message, true); return; }
+  toast(`${nom} supprimé`);
+  viewCoachTournee(tourneeId);
+};
 const genCode = () => Array.from({length:5}, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*32)]).join('');
 function navigate(hash){ location.hash = hash; }
 function toast(msg, isError){
@@ -1523,10 +1531,14 @@ async function viewCoachTournee(id){
   const { data: formats } = await supabase.from('formats').select('*').order('id');
 
   // --- Joueurs de la tournée ---
+  const canDeletePlayer = STATE.profile?.role==='admin' || STATE.profile?.superviseur;
   const tourneePlayersHtml = tourneePlayers.length ? tourneePlayers.map(p=>`
     <div class="row between" style="padding:8px 0; border-bottom:1px solid var(--brd)">
       <div>${p.genre==='F'?'👧 ':p.genre==='G'?'👦 ':''}${esc(fullName(p))}</div>
-      <button class="btn small secondary" onclick="showPlayerCode('${p.code}','${esc(fullName(p)).replace(/'/g,"\\\\'")}')">📋 Code</button>
+      <div class="row" style="gap:6px">
+        <button class="btn small secondary" onclick="showPlayerCode('${p.code}','${esc(fullName(p)).replace(/'/g,"\\\\'")}')">📋 Code</button>
+        ${canDeletePlayer ? `<button class="btn small clay" onclick="deletePlayer('${p.id}','${esc(fullName(p)).replace(/'/g,"\\\\'")}','${id}')">🗑</button>` : ''}
+      </div>
     </div>`).join('') : `<p class="muted">Aucun joueur inscrit à cette tournée.</p>`;
 
   // --- Étapes ---
