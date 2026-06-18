@@ -1967,11 +1967,21 @@ async function viewCoachTournament(id){
 // ---------------------------------------------------------------
 async function viewCoachMatch(id){
   shell(`<div class="empty">Chargement…</div>`, 'home');
-  const { data: m } = await supabase.from('matches').select('*, tournaments(nom, format_id), match_coaches(profile_id, profiles(nom,prenom))').eq('id', id).single();
+  const { data: m } = await supabase.from('matches').select('*, tournaments(nom, format_id, tournee_id), match_coaches(profile_id, profiles(nom,prenom))').eq('id', id).single();
   if(!m){ shell(`<div class="empty">Match introuvable.</div>`,'home'); return; }
   const { data: p1 } = await supabase.from('players').select('nom,prenom').eq('id', m.joueur1_id).single();
   const n2 = m.joueur_ext_nom || (m.joueur2_id ? await supabase.from('players').select('nom,prenom').eq('id', m.joueur2_id).single().then(r=>fullName(r.data)) : '—');
+  // Charger les coachs de l'équipe pour la section d'affectation
+  let teamCoaches = [];
+  if(m.tournaments?.tournee_id){
+    const { data: tournee } = await supabase.from('tournees').select('team_id').eq('id', m.tournaments.tournee_id).maybeSingle();
+    if(tournee){
+      const { data: coaches } = await supabase.from('profiles').select('id,nom,prenom').eq('team_id', tournee.team_id).eq('role','coach').eq('statut','actif');
+      teamCoaches = coaches || [];
+    }
+  }
   STATE.history = [];
+  STATE._matchTeamCoaches = teamCoaches;
   renderCoachMatch(m, fullName(p1), n2);
 }
 
@@ -2069,6 +2079,23 @@ function renderCoachMatch(m, n1, n2){
 
     ${m.statut==='a_venir' ? `<button class="btn clay" onclick="startMatch()">▶ Démarrer le match</button>` : ''}
 
+    <div class="card" style="margin-top:10px">
+      <h3>🧑‍🏫 Coachs accompagnants</h3>
+      ${(m.match_coaches||[]).length
+        ? `<p class="muted" style="margin:0 0 8px">${(m.match_coaches||[]).map(mc=>esc(fullName(mc.profiles))).filter(Boolean).join(', ')}</p>`
+        : `<p class="muted" style="margin:0 0 8px">Aucun coach affecté à ce match.</p>`}
+      ${(STATE._matchTeamCoaches||[]).length ? `
+      <form id="matchCoachForm">
+        <div class="chk-group">
+          ${(STATE._matchTeamCoaches||[]).map((c,i)=>{
+            const checked = (m.match_coaches||[]).some(mc=>mc.profile_id===c.id);
+            return `<div class="chk-item"><input type="checkbox" name="coach_ids" value="${c.id}" id="mca_${i}" ${checked?'checked':''}><label for="mca_${i}">${esc(fullName(c))}</label></div>`;
+          }).join('')}
+        </div>
+        <button class="btn small secondary" type="submit">Enregistrer</button>
+      </form>` : ''}
+    </div>
+
     ${isOver ? `
     <div class="card" style="text-align:center; margin-bottom:10px">
       <h3 style="margin:0 0 4px">🏆 Match terminé</h3>
@@ -2097,6 +2124,20 @@ function renderCoachMatch(m, n1, n2){
 
   window._currentMatch = m;
   window._n1 = n1; window._n2 = n2;
+
+  document.getElementById('matchCoachForm')?.addEventListener('submit', async e=>{
+    e.preventDefault();
+    const selected = [...e.target.querySelectorAll('input[name=coach_ids]:checked')].map(i=>i.value);
+    await supabase.from('match_coaches').delete().eq('match_id', m.id);
+    if(selected.length){
+      await supabase.from('match_coaches').insert(selected.map(pid=>({ match_id: m.id, profile_id: pid })));
+    }
+    // Recharger les match_coaches à jour
+    const { data: mc } = await supabase.from('match_coaches').select('profile_id, profiles(nom,prenom)').eq('match_id', m.id);
+    m.match_coaches = mc || [];
+    toast('Coachs mis à jour');
+    renderCoachMatch(m, n1, n2);
+  });
 
   document.getElementById('debriefForm1')?.addEventListener('submit', async e=>{
     e.preventDefault();
