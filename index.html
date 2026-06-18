@@ -1016,12 +1016,44 @@ function buildPlanningHtml(items, playerName, canScoreMatch){
         const time = it.date ? timeFmt.format(new Date(it.date)) : '';
         if(it.type==='match'){
           const m = it.data;
-          const statusPill = m.statut==='en_cours' ? '<span class="pill live">Live</span>'
-            : m.statut==='termine' ? '<span class="pill done">Terminé</span>' : '<span class="pill upcoming">À venir</span>';
+          const isLive = m.statut==='en_cours';
+          const isDone = m.statut==='termine';
+          const statusPill = isLive
+            ? '<span class="pill live" style="animation:pulse 1.2s infinite">🔴 Live</span>'
+            : isDone ? '<span class="pill done">Terminé</span>'
+            : '<span class="pill upcoming">À venir</span>';
           const clickable = canScoreMatch ? `onclick="navigate('#/coach/match/${m.id}')" style="cursor:pointer"` : `onclick="navigate('#/match/${m.id}')" style="cursor:pointer"`;
-          return `<div class="card" ${clickable}>
-            <div class="row between"><div>🎾 <strong>${esc(playerName(m.joueur1_id))}</strong> vs <strong>${esc((m.joueur_ext_nom || playerName(m.joueur2_id)))}</strong></div>${statusPill}</div>
-            <p class="muted">${time?`🕐 ${time} · `:''}${esc(m.etapeNom||m.tournaments?.nom||'')}${m.court?' · Court '+esc(m.court):''}</p>
+
+          // Score en cours (sets gagnés)
+          let scoreHtml = '';
+          const st = m.live_state;
+          if(st && (isLive || isDone) && st.sets){
+            const sw = [0,0];
+            st.sets.forEach(s=>{ const w = s.superTb?(s.tb[0]>s.tb[1]?0:1):(s.games[0]>s.games[1]?0:1); sw[w]++; });
+            const setsFmt = st.sets.map(s=>{
+              const tb = s.tb ? `<sup style="font-size:9px;opacity:.7">${s.tb[0]}-${s.tb[1]}</sup>` : '';
+              return `${s.games[0]}-${s.games[1]}${tb}`;
+            }).join('  ');
+            const curGames = st.games ? `${st.games[0]}-${st.games[1]}` : '';
+            const serveIcon = st.serve===0 ? '🎾' : '';
+            scoreHtml = `<div style="display:flex; align-items:center; gap:10px; margin-top:6px; font-family:var(--fnt-head)">
+              <span style="font-size:22px; font-weight:900; color:var(--accent)">${sw[0]}</span>
+              <span style="font-size:13px; color:var(--dim)">–</span>
+              <span style="font-size:22px; font-weight:900; color:var(--light)">${sw[1]}</span>
+              ${setsFmt ? `<span style="font-size:11px; color:var(--dim); margin-left:4px">${setsFmt}</span>` : ''}
+              ${isLive && curGames ? `<span class="pill" style="font-size:11px; margin-left:4px">Jeu : ${curGames}</span>` : ''}
+              ${isLive && (st.inTiebreak||st.inSuperTb) ? `<span class="pill live" style="font-size:10px">TB ${st.points[0]}-${st.points[1]}</span>` : ''}
+            </div>`;
+          }
+
+          return `<div class="card" ${clickable} style="border-color:${isLive?'var(--live)':'var(--brd)'}">
+            <div class="row between">
+              <div>🎾 <strong>${esc(playerName(m.joueur1_id))}</strong>${st?.serve===0&&isLive?' 🎾':''} vs <strong>${esc((m.joueur_ext_nom || playerName(m.joueur2_id)))}</strong>${st?.serve===1&&isLive?' 🎾':''}</div>
+              ${statusPill}
+            </div>
+            ${scoreHtml}
+            <p class="muted" style="margin-top:4px">${time?`🕐 ${time} · `:''}${esc(m.etapeNom||m.tournaments?.nom||'')}${m.court?' · Court '+esc(m.court):''}</p>
+            ${isLive||isDone ? `<p class="muted" style="font-size:11px; margin-top:2px">Appuie pour voir le score détaillé →</p>` : ''}
           </div>`;
         } else {
           const tr = it.data;
@@ -2300,6 +2332,12 @@ function router(){
   let mCode;
   if((mCode = hash.match(/^#\/j\/(.+)$/))) return viewPlayerCode(mCode[1].toUpperCase());
 
+  let mTour, mMatch;
+
+  // Routes publiques — accessibles sans compte
+  if((mMatch = hash.match(/^#\/match\/(.+)$/))) return viewMatchPublic(mMatch[1]);
+  if((mMatch = hash.match(/^#\/j\/(.+)$/))) return viewPlayerCode(mMatch[1]);
+
   if(!STATE.session){
     if(hash === '#/coach-login') return viewAuth();
     return viewLanding();
@@ -2319,7 +2357,6 @@ function router(){
     return viewWaitingValidation();
   }
 
-  let mTour, mMatch;
   if(hash === '#/' || hash === '#/login' || hash === '#/coach-login'){
     navigate((role==='coach'||role==='admin') ? '#/coach' : '#/suivi'); return;
   }
@@ -2334,7 +2371,6 @@ function router(){
   if((mTour = hash.match(/^#\/coach\/tournee\/(.+)$/))) return viewCoachTournee(mTour[1]);
   if((mTour = hash.match(/^#\/coach\/tournoi\/(.+)$/))) return viewCoachTournament(mTour[1]);
   if((mMatch = hash.match(/^#\/coach\/match\/(.+)$/))) return viewCoachMatch(mMatch[1]);
-  if((mMatch = hash.match(/^#\/match\/(.+)$/))) return viewMatchPublic(mMatch[1]);
   navigate((role==='coach'||role==='admin') ? '#/coach' : '#/suivi');
 }
 window.navigate = navigate;
