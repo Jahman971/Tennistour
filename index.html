@@ -1197,7 +1197,7 @@ async function viewTourneePlanning(tourneeId, weekOffset=0, viewMode='joueurs'){
         return `<div class="card" style="padding:10px 12px; margin-bottom:10px">
           <div style="font-weight:700; margin-bottom:8px; font-size:13px">
             ${player.genre==='F'?'👧':'👦'} ${esc(fullName(player))}
-            ${isSuperviseur ? `<button class="btn small secondary" style="float:right" onclick="viewPlanningJoueur('${player.id}','${tourneeId}',${weekOffset})">+ Match</button>` : ''}
+            ${isSuperviseur ? `<button class="btn small secondary" style="float:right" onclick="preselectPlayer('${player.id}')">+ Match</button>` : ''}
           </div>
           <div style="overflow-x:auto">
             <table class="week-table">
@@ -1347,6 +1347,13 @@ async function viewTourneePlanning(tourneeId, weekOffset=0, viewMode='joueurs'){
     viewTourneePlanning(tourneeId, weekOffset, viewMode);
   });
 }
+window.preselectPlayer = (playerId) => {
+  const form = document.getElementById('quickMatchForm');
+  if(!form) return;
+  const j1 = form.querySelector('[name=j1]');
+  if(j1){ j1.value = playerId; }
+  form.scrollIntoView({ behavior:'smooth', block:'start' });
+};
 window.viewTourneePlanning = viewTourneePlanning;
 
 // ---------------------------------------------------------------
