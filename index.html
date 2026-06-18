@@ -1113,6 +1113,9 @@ async function viewTourneePlanning(tourneeId, weekOffset=0, viewMode='joueurs'){
   const playerName = pid => fullName((allPlayers||[]).find(p=>p.id===pid));
   const playerObj = pid => (allPlayers||[]).find(p=>p.id===pid);
 
+  const { data: teamCoaches } = await supabase.from('profiles')
+    .select('id,nom,prenom').eq('team_id', tournee.team_id).eq('role','coach').eq('statut','actif');
+
   // Semaine
   const now = new Date();
   const todayStr = now.toISOString().slice(0,10);
@@ -1291,6 +1294,11 @@ async function viewTourneePlanning(tourneeId, weekOffset=0, viewMode='joueurs'){
         <input name="court" placeholder="Ex: Court 3">
         <label>Tour / phase (optionnel)</label>
         <input name="tour" placeholder="Ex: 1er tour">
+        <label>Coach accompagnant (optionnel)</label>
+        <div class="chk-group">
+          ${(allPlayers||[]).length === 0 ? '<p class="muted">Aucun coach disponible</p>' : ''}
+          ${(teamCoaches||[]).map((c,i)=>`<div class="chk-item"><input type="checkbox" name="match_coach_ids" value="${c.id}" id="qmc_${i}"><label for="qmc_${i}">${esc(fullName(c))}</label></div>`).join('')}
+        </div>
         <button class="btn clay" type="submit">Programmer</button>
         <div class="error" id="quickMatchErr"></div>
       </form>
@@ -1329,6 +1337,12 @@ async function viewTourneePlanning(tourneeId, weekOffset=0, viewMode='joueurs'){
       live_state: initLiveState(etape.formats)
     });
     if(error){ document.getElementById('quickMatchErr').textContent=error.message; return; }
+    // Affecter les coachs accompagnants
+    const { data: newMatch } = await supabase.from('matches').select('id').eq('tournament_id', tid).eq('joueur1_id', j1).order('created_at', {ascending:false}).limit(1).single();
+    const coachIds = [...(document.querySelectorAll('#quickMatchForm input[name=match_coach_ids]:checked'))].map(i=>i.value);
+    if(newMatch && coachIds.length){
+      await supabase.from('match_coaches').insert(coachIds.map(pid=>({ match_id: newMatch.id, profile_id: pid })));
+    }
     toast('Match programmé ✅');
     viewTourneePlanning(tourneeId, weekOffset, viewMode);
   });
@@ -1746,7 +1760,12 @@ async function viewCoachTournament(id){
   const rosterAvailable = tourneeRoster.filter(p=>!playerIds.has(p.id));
 
   const { data: matches } = await supabase.from('matches')
-    .select('*').eq('tournament_id', id).order('scheduled_at',{ascending:true, nullsFirst:false});
+    .select('*, match_coaches(profile_id)').eq('tournament_id', id).order('scheduled_at',{ascending:true, nullsFirst:false});
+
+  // Coachs de l'équipe
+  const { data: etapeTeam } = await supabase.from('tournees').select('team_id').eq('id', t.tournee_id).maybeSingle();
+  const { data: teamCoaches } = etapeTeam ? await supabase.from('profiles').select('id,nom,prenom').eq('team_id', etapeTeam.team_id).eq('role','coach').eq('statut','actif') : { data: [] };
+  const coachName = cid => fullName((teamCoaches||[]).find(c=>c.id===cid));
 
   const playerName = pid => fullName(players.find(p=>p.id===pid));
 
@@ -1766,12 +1785,13 @@ async function viewCoachTournament(id){
       : m.statut==='termine' ? '<span class="pill done">Terminé</span>'
       : '<span class="pill upcoming">À venir</span>';
     const time = m.scheduled_at ? timeFmt.format(new Date(m.scheduled_at)) : null;
+    const coaches = (m.match_coaches||[]).map(mc=>coachName(mc.profile_id)).filter(Boolean);
     return `<div class="card" onclick="navigate('#/coach/match/${m.id}')" style="cursor:pointer">
       <div class="row between">
         <div><strong>${esc(playerName(m.joueur1_id))}</strong> vs <strong>${esc((m.joueur_ext_nom || playerName(m.joueur2_id)))}</strong></div>
         ${statusPill}
       </div>
-      <p class="muted">${time ? `🕐 ${time} · ` : ''}${esc(m.tour||'')}${m.court?' · '+esc(m.court):''}</p>
+      <p class="muted">${time ? `🕐 ${time} · ` : ''}${esc(m.tour||'')}${m.court?' · '+esc(m.court):''}${coaches.length?' · 🧑‍🏫 '+coaches.map(esc).join(', '):''}</p>
     </div>`;
   };
 
@@ -1829,6 +1849,10 @@ async function viewCoachTournament(id){
         <input name="tour" placeholder="Ex: Demi-finale">
         <label>Court (optionnel)</label>
         <input name="court" placeholder="Ex: Court 2">
+        <label>Coach accompagnant (optionnel)</label>
+        <div class="chk-group">
+          ${(teamCoaches||[]).map((c,i)=>`<div class="chk-item"><input type="checkbox" name="match_coach_ids" value="${c.id}" id="mc_${i}"><label for="mc_${i}">${esc(fullName(c))}</label></div>`).join('') || '<p class="muted">Aucun coach disponible</p>'}
+        </div>
         <button class="btn clay" type="submit">+ Créer le match</button>
         <div class="error" id="matchErr"></div>
       </form>
@@ -1872,6 +1896,10 @@ async function viewCoachTournament(id){
       live_state
     }).select().single();
     if(error){ document.getElementById('matchErr').textContent = error.message; return; }
+    const coachIds = [...document.querySelectorAll('#matchForm input[name=match_coach_ids]:checked')].map(i=>i.value);
+    if(coachIds.length){
+      await supabase.from('match_coaches').insert(coachIds.map(pid=>({ match_id: data.id, profile_id: pid })));
+    }
     navigate('#/coach/match/'+data.id);
   });
 }
@@ -1881,7 +1909,7 @@ async function viewCoachTournament(id){
 // ---------------------------------------------------------------
 async function viewCoachMatch(id){
   shell(`<div class="empty">Chargement…</div>`, 'home');
-  const { data: m } = await supabase.from('matches').select('*, tournaments(nom, format_id)').eq('id', id).single();
+  const { data: m } = await supabase.from('matches').select('*, tournaments(nom, format_id), match_coaches(profile_id, profiles(nom,prenom))').eq('id', id).single();
   if(!m){ shell(`<div class="empty">Match introuvable.</div>`,'home'); return; }
   const { data: p1 } = await supabase.from('players').select('nom,prenom').eq('id', m.joueur1_id).single();
   const n2 = m.joueur_ext_nom || (m.joueur2_id ? await supabase.from('players').select('nom,prenom').eq('id', m.joueur2_id).single().then(r=>fullName(r.data)) : '—');
@@ -1929,7 +1957,7 @@ function renderCoachMatch(m, n1, n2){
     <div class="lsBoard">
       <div class="lsHeader">
         <span>🔴 Live — ${esc(modeLabel)}</span>
-        <span>${setsHtml}</span>
+        <span>${(m.match_coaches||[]).map(mc=>esc(fullName(mc.profiles))).filter(Boolean).map(n=>`🧑‍🏫 ${n}`).join(' ')||''} ${setsHtml}</span>
       </div>
       <div class="lsScoreRow">
         <div class="lsPlayer ${st.serve===0?'serving':''}">
