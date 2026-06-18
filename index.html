@@ -145,19 +145,75 @@ textarea{resize:vertical; min-height:90px;}
 .week-match .wm-sub{font-size:10px; color:var(--dim); margin-top:2px;}
 .week-nav{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;}
 .week-nav h3{margin:0; font-size:14px;}
-/* Coach scoring controls */
-.live-board{
-  background:var(--s1); border:1px solid var(--brd); border-radius:var(--rL);
-  padding:16px 10px; margin-bottom:14px;
+/* ── Live scoring ── */
+.lsBoard{
+  border:1px solid var(--brd); border-radius:var(--rL);
+  background:var(--s1); overflow:hidden; margin-bottom:12px;
 }
-.live-row{display:flex; align-items:center; justify-content:space-between; gap:6px;}
-.live-player{flex:1; text-align:center; padding:10px 4px; border-radius:var(--r); transition:background .2s, box-shadow .2s;}
-.live-player.serving{background:var(--accent3); box-shadow:inset 0 0 0 1px var(--accent2);}
-.live-name{font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; min-height:16px; color:var(--white); word-break:break-word;}
-.live-big{font-family:var(--fnt-head); font-size:52px; font-weight:900; color:var(--accent); line-height:1;}
-.live-vs{flex:0 0 auto; text-align:center; padding:0 6px; min-width:64px;}
-.live-mode{font-size:10px; text-transform:uppercase; letter-spacing:2px; color:var(--live); font-weight:700;}
-.live-sets{font-size:13px; color:var(--light); margin-top:6px; font-weight:700;}
+.lsHeader{
+  padding:8px 14px; font-size:10px; text-transform:uppercase; letter-spacing:2px;
+  color:var(--accent2); font-weight:700; border-bottom:1px solid var(--brd);
+  display:flex; align-items:center; justify-content:space-between;
+}
+.lsScoreRow{
+  display:grid; grid-template-columns:1fr 80px 1fr; gap:8px;
+  padding:12px 10px; align-items:stretch;
+}
+.lsPlayer{
+  border:1px solid var(--brd); border-radius:var(--r);
+  background:var(--s2); padding:10px 12px;
+  display:flex; flex-direction:column; gap:6px;
+}
+.lsPlayer.serving{ border-color:var(--accent); background:rgba(255,90,0,.08); }
+.lsPlayerName{
+  font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.8px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.lsServeIcon{ font-size:14px; }
+.lsBig{ font-family:var(--fnt-head); font-size:44px; font-weight:900; line-height:1; color:var(--accent); }
+.lsMini{ display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:4px; }
+.lsMiniBox{
+  border:1px solid var(--brd); border-radius:8px; padding:6px; text-align:center;
+  background:var(--s1);
+}
+.lsMiniBox .k{ font-size:10px; color:var(--dim); display:block; }
+.lsMiniBox .v{ font-size:16px; font-weight:900; display:block; margin-top:1px; }
+.lsVs{
+  border:1px dashed var(--brd); border-radius:var(--r); background:var(--s1);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  text-align:center; padding:8px 4px; gap:4px;
+}
+.lsVs .lsMode{ font-size:9px; text-transform:uppercase; letter-spacing:1.5px; color:var(--live); font-weight:700; }
+.lsVs .lsSets{ font-size:20px; font-weight:900; font-family:var(--fnt-head); }
+.lsVs .lsSetsSub{ font-size:10px; color:var(--dim); }
+.pointZone{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px; }
+.pointBtn{
+  border:none; border-radius:var(--rL); padding:0 14px;
+  min-height:130px; display:flex; flex-direction:column;
+  justify-content:center; align-items:flex-start; gap:6px;
+  cursor:pointer; -webkit-tap-highlight-color:transparent;
+  border:1px solid var(--brd); background:var(--s2);
+  box-shadow:0 8px 24px rgba(0,0,0,.2);
+  transition:transform .06s ease; user-select:none;
+}
+.pointBtn:active{ transform:scale(.985); }
+.pointBtn.primary{ background:linear-gradient(135deg,rgba(25,118,210,.9),rgba(255,90,0,.4)); border-color:rgba(255,255,255,.2); }
+.pointBtn:disabled{ opacity:.4; cursor:not-allowed; transform:none; }
+.pointBtn .pbWho{ font-weight:900; font-size:14px; letter-spacing:.2px; }
+.pointBtn .pbUnit{ font-size:11px; color:rgba(255,255,255,.7); margin-top:2px; }
+.pointBtn .pbPlus{ font-size:36px; font-weight:900; line-height:1; }
+.lsActions{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:10px; }
+.lsSnack{
+  position:fixed; left:12px; right:12px; bottom:calc(72px + env(safe-area-inset-bottom));
+  background:rgba(10,10,10,.88); border:1px solid var(--brd);
+  border-radius:var(--r); padding:10px 14px;
+  font-size:13px; font-weight:700; color:var(--white);
+  backdrop-filter:blur(10px); z-index:99;
+  transform:translateY(12px); opacity:0;
+  transition:opacity .15s, transform .15s;
+  pointer-events:none;
+}
+.lsSnack.show{ opacity:1; transform:translateY(0); }
 .score-btns{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
 .score-btns .btn{margin-top:0; padding:20px 10px; font-size:14px;}
 .code-badge{
@@ -1780,62 +1836,116 @@ async function viewCoachMatch(id){
   renderCoachMatch(m, fullName(p1), fullName(p2));
 }
 
+function lsSnack(msg){
+  let el = document.getElementById('lsSnackEl');
+  if(!el){ el=document.createElement('div'); el.id='lsSnackEl'; el.className='lsSnack'; document.body.appendChild(el); }
+  el.innerHTML = msg;
+  el.classList.add('show');
+  clearTimeout(window._lsSnackT);
+  window._lsSnackT = setTimeout(()=>el.classList.remove('show'), 2200);
+}
+
 function renderCoachMatch(m, n1, n2){
   const st = m.live_state;
   const tbActive = st.inTiebreak || st.inSuperTb;
-  const modeLabel = st.inSuperTb ? 'Super tie-break' : (st.inTiebreak ? 'Jeu décisif' : 'Standard');
-  const unit = tbActive ? 'point' : 'jeu';
+  const modeLabel = st.inSuperTb ? 'Super TB' : (st.inTiebreak ? 'Tie-break' : 'Standard');
   const sw = setsWon(st);
   const disp1 = tbActive ? st.points[0] : st.games[0];
   const disp2 = tbActive ? st.points[1] : st.games[1];
+  const ptLabel = ['0','15','30','40'];
+  const ptDisp = (i) => {
+    if(tbActive) return st.points[i];
+    return ptLabel[Math.min(st.points?.[i]||0, 3)] || '0';
+  };
+  const isOver = m.statut === 'termine';
+  const isLive = m.statut === 'en_cours';
+  const unit = tbActive ? 'point' : 'jeu';
 
-  let actionBtn = '';
-  if(m.statut === 'a_venir'){
-    actionBtn = `<button class="btn clay" onclick="startMatch()">Démarrer le match</button>`;
-  } else if(m.statut === 'termine'){
-    actionBtn = `<div class="card" style="text-align:center"><strong>Match terminé</strong><br><span class="muted">Vainqueur : ${esc(st.winner===0?n1:n2)}</span></div>
+  // Sets précédents
+  const setsHtml = (st.sets||[]).map((s,i)=>{
+    const tbNote = s.tb ? `<sup class="board .tb-note">(${s.tb[0]}-${s.tb[1]})</sup>` : '';
+    const w = s.superTb ? (s.tb[0]>s.tb[1]?0:1) : (s.games[0]>s.games[1]?0:1);
+    return `<span style="font-size:11px; color:var(--dim)">S${i+1}: <b style="color:${w===0?'var(--accent)':'var(--light)'}">${s.games[0]}</b>-<b style="color:${w===1?'var(--accent)':'var(--light)'}">${s.games[1]}</b>${tbNote}</span>`;
+  }).join(' &nbsp;');
+
+  shell(`
+    <button class="btn ghost" onclick="navigate('#/coach/tournoi/${m.tournament_id}')">← Tournoi</button>
+    ${scoreboardHTML(m, n1, n2)}
+
+    ${isLive ? `
+    <div class="lsBoard">
+      <div class="lsHeader">
+        <span>🔴 Live — ${esc(modeLabel)}</span>
+        <span>${setsHtml}</span>
+      </div>
+      <div class="lsScoreRow">
+        <div class="lsPlayer ${st.serve===0?'serving':''}">
+          <div class="lsPlayerName">
+            <span>${esc(n1)}</span>
+            <span class="lsServeIcon" style="opacity:${st.serve===0?1:.2}">🎾</span>
+          </div>
+          <div class="lsBig">${disp1}</div>
+          ${tbActive ? '' : `<div class="lsMini">
+            <div class="lsMiniBox"><span class="k">Points</span><span class="v">${ptDisp(0)}</span></div>
+            <div class="lsMiniBox"><span class="k">Sets</span><span class="v">${sw[0]}</span></div>
+          </div>`}
+        </div>
+        <div class="lsVs">
+          <span class="lsMode">${esc(modeLabel)}</span>
+          <span class="lsSets">${sw[0]}-${sw[1]}</span>
+          <span class="lsSetsSub">Sets</span>
+        </div>
+        <div class="lsPlayer ${st.serve===1?'serving':''}">
+          <div class="lsPlayerName">
+            <span class="lsServeIcon" style="opacity:${st.serve===1?1:.2}">🎾</span>
+            <span>${esc(n2)}</span>
+          </div>
+          <div class="lsBig">${disp2}</div>
+          ${tbActive ? '' : `<div class="lsMini">
+            <div class="lsMiniBox"><span class="k">Points</span><span class="v">${ptDisp(1)}</span></div>
+            <div class="lsMiniBox"><span class="k">Sets</span><span class="v">${sw[1]}</span></div>
+          </div>`}
+        </div>
+      </div>
+    </div>
+
+    <div class="pointZone">
+      <button class="pointBtn primary" onclick="scorePoint(0)">
+        <span class="pbWho">${esc(n1)}</span>
+        <span class="pbPlus">+1</span>
+        <span class="pbUnit">+1 ${unit}</span>
+      </button>
+      <button class="pointBtn" onclick="scorePoint(1)">
+        <span class="pbWho">${esc(n2)}</span>
+        <span class="pbPlus">+1</span>
+        <span class="pbUnit">+1 ${unit}</span>
+      </button>
+    </div>
+    <div class="lsActions">
+      <button class="btn secondary" onclick="toggleServe()">🎾 Service</button>
+      <button class="btn secondary" onclick="undoPoint()">↺ Annuler</button>
+      <button class="btn secondary" onclick="resetMatch()">⟳ Reset</button>
+    </div>
+    ` : ''}
+
+    ${m.statut==='a_venir' ? `<button class="btn clay" onclick="startMatch()">▶ Démarrer le match</button>` : ''}
+
+    ${isOver ? `
+    <div class="card" style="text-align:center; margin-bottom:10px">
+      <h3 style="margin:0 0 4px">🏆 Match terminé</h3>
+      <p class="muted">Vainqueur : <strong>${esc(st.winner===0?n1:n2)}</strong></p>
+    </div>
     <div class="card">
-      <h3>Débrief du coach</h3>
-      <p class="muted">Visible par les parents du joueur.</p>
+      <h3>📝 Débrief du coach</h3>
+      <p class="muted" style="margin-top:0">Visible par les parents du joueur.</p>
       <form id="debriefForm">
-        <textarea name="debrief" rows="4" placeholder="Ex: Bon match, sers ta deuxième balle plus haute, travailler le revers en montée de balle...">${esc(m.debrief||'')}</textarea>
+        <textarea name="debrief" rows="5" placeholder="Ex: Bon match, travaille la première balle, revers en montée...">${esc(m.debrief||'')}</textarea>
         <button class="btn clay" type="submit">Enregistrer le débrief</button>
         <div class="error" id="debriefMsg"></div>
       </form>
     </div>
-    <button class="btn secondary" onclick="resetMatch()">Réinitialiser le match</button>`;
-  }
-
-  shell(`
-    <button class="btn ghost" onclick="navigate('#/coach/tournoi/${m.tournament_id}')">← Retour au tournoi</button>
-    ${scoreboardHTML(m, n1, n2)}
-    ${m.statut==='en_cours' ? `
-      <div class="live-board">
-        <div class="live-row">
-          <div class="live-player ${st.serve===0?'serving':''}">
-            <div class="live-name">${esc(n1)}${st.serve===0?' 🎾':''}</div>
-            <div class="live-big">${disp1}</div>
-          </div>
-          <div class="live-vs">
-            <div class="live-mode">${esc(modeLabel)}</div>
-            <div class="live-sets">Sets ${sw[0]} – ${sw[1]}</div>
-          </div>
-          <div class="live-player ${st.serve===1?'serving':''}">
-            <div class="live-name">${esc(n2)}${st.serve===1?' 🎾':''}</div>
-            <div class="live-big">${disp2}</div>
-          </div>
-        </div>
-      </div>
-      <div class="score-btns">
-        <button class="btn" onclick="scorePoint(0)">+1 ${unit} — ${esc(n1)}</button>
-        <button class="btn" onclick="scorePoint(1)">+1 ${unit} — ${esc(n2)}</button>
-      </div>
-      <div class="row" style="gap:8px; margin-top:8px">
-        <button class="btn secondary" style="flex:1" onclick="toggleServe()">🎾 Changer le service</button>
-        <button class="btn secondary" style="flex:1" onclick="undoPoint()">↺ Annuler</button>
-      </div>
+    <button class="btn secondary" style="margin-top:8px" onclick="resetMatch()">⟳ Réinitialiser le match</button>
     ` : ''}
-    ${actionBtn}
   `, 'home');
 
   window._currentMatch = m;
@@ -1848,7 +1958,7 @@ function renderCoachMatch(m, n1, n2){
     const msgEl = document.getElementById('debriefMsg');
     if(error){ msgEl.style.color='var(--clay)'; msgEl.textContent = error.message; return; }
     m.debrief = debrief;
-    msgEl.style.color='var(--accent)'; msgEl.textContent = 'Débrief enregistré.';
+    msgEl.style.color='var(--accent)'; msgEl.textContent = '✅ Débrief enregistré.';
   });
 }
 
@@ -1861,16 +1971,24 @@ window.startMatch = async () => {
 window.scorePoint = async (p) => {
   const m = window._currentMatch;
   STATE.history.push(JSON.parse(JSON.stringify(m.live_state)));
+  const prev = JSON.parse(JSON.stringify(m.live_state));
   addPoint(m.live_state, p);
-  if(m.live_state.finished) m.statut = 'termine';
+  const tbActive = m.live_state.inTiebreak || m.live_state.inSuperTb;
+  const wasGame = !tbActive && (m.live_state.games[p] > prev.games[p]);
+  const wasSet = m.live_state.sets.length > prev.sets.length;
+  const n = p===0 ? window._n1 : window._n2;
+  if(m.live_state.finished){ m.statut='termine'; lsSnack(`🏆 Match terminé — ${esc(n)} gagne !`); }
+  else if(wasSet){ lsSnack(`🏁 Set pour ${esc(n)}`); }
+  else if(wasGame){ lsSnack(`🔥 +1 jeu — ${esc(n)}`); }
+  else { lsSnack(`🟢 +1 ${tbActive?'point':'point'} — ${esc(n)}`); }
   await saveMatch(m);
 };
 window.undoPoint = async () => {
   const m = window._currentMatch;
-  if(STATE.history.length){
-    m.live_state = STATE.history.pop();
-    m.statut = m.live_state.finished ? 'termine' : 'en_cours';
-  }
+  if(!STATE.history.length){ lsSnack('Rien à annuler'); return; }
+  m.live_state = STATE.history.pop();
+  m.statut = m.live_state.finished ? 'termine' : 'en_cours';
+  lsSnack('↺ Annulé');
   await saveMatch(m);
 };
 window.resetMatch = async () => {
@@ -1878,6 +1996,15 @@ window.resetMatch = async () => {
   if(!confirm('Réinitialiser ce match à 0-0 ?')) return;
   m.live_state = initLiveState(m.live_state.format);
   m.statut = 'a_venir';
+  lsSnack('⟳ Match réinitialisé');
+  await saveMatch(m);
+};
+window.toggleServe = async () => {
+  const m = window._currentMatch;
+  STATE.history.push(JSON.parse(JSON.stringify(m.live_state)));
+  m.live_state.serve = m.live_state.serve===0 ? 1 : 0;
+  const n = m.live_state.serve===0 ? window._n1 : window._n2;
+  lsSnack(`🎾 Service : ${esc(n)}`);
   await saveMatch(m);
 };
 async function saveMatch(m){
