@@ -283,6 +283,13 @@ window.showPlayerCode = (code, nom) => {
   toast(`📋 ${nom} — Code : ${code}`);
   navigator.clipboard?.writeText(code).catch(()=>{});
 };
+window.deleteEtape = async (etapeId, tourneeId, nom) => {
+  if(!confirm(`Supprimer l'étape "${nom}" ? Tous ses matchs seront supprimés.`)) return;
+  const { error } = await supabase.from('tournaments').delete().eq('id', etapeId);
+  if(error){ toast(error.message, true); return; }
+  toast('Étape supprimée');
+  viewCoachTournee(tourneeId);
+};
 window.deleteTraining = async (trainingId, tourneeId) => {
   if(!confirm('Supprimer cet entraînement ?')) return;
   const { error } = await supabase.from('trainings').delete().eq('id', trainingId);
@@ -1558,10 +1565,13 @@ async function viewCoachTournee(id){
     const assigned = etapeCoachMap[e.id] || [];
     return `
     <div class="card">
-      <div onclick="navigate('#/coach/tournoi/${e.id}')" style="cursor:pointer">
-        <h3 style="margin:0">${esc(e.nom)}</h3>
-        <p class="muted">${esc(e.lieu||'')} ${e.date_debut?'· '+e.date_debut+(e.date_fin?(' → '+e.date_fin):''):''}</p>
-        <p class="muted">Format : ${esc(e.formats?.nom||'—')}</p>
+      <div class="row between">
+        <div onclick="navigate('#/coach/tournoi/${e.id}')" style="cursor:pointer; flex:1">
+          <h3 style="margin:0">${esc(e.nom)}</h3>
+          <p class="muted">${esc(e.lieu||'')} ${e.date_debut?'· '+e.date_debut+(e.date_fin?(' → '+e.date_fin):''):''}</p>
+          <p class="muted">Format : ${esc(e.formats?.nom||'—')}</p>
+        </div>
+        ${canManage ? `<button class="btn small clay" onclick="deleteEtape('${e.id}','${id}','${esc(e.nom).replace(/'/g,"\\\\'")}')">🗑</button>` : ''}
       </div>
       <p class="muted" style="margin-top:6px">🧑‍🏫 ${assigned.length ? assigned.map(coachName).map(esc).join(', ') : 'Aucun coach affecté'}</p>
       ${(teamCoaches||[]).length ? `
