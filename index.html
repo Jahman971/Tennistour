@@ -1180,7 +1180,6 @@ async function viewAdminHome(){
   shell(`
     <h2 style="margin:4px 0 14px">Toutes les équipes</h2>
     <p class="muted" style="margin-top:-10px">Vue administrateur — accès à toutes les tournées et matchs.</p>
-    <button class="btn secondary" onclick="navigate('#/admin/utilisateurs')">👥 Gestion des utilisateurs</button>
     ${teamsHtml}
   `, 'admin');
 }
@@ -1861,6 +1860,7 @@ async function viewPersonnes(tourneeId){
 
     <p class="section-title">Coachs (${(coaches||[]).length})</p>
     ${coachsHtml}
+    ${STATE.profile?.role==='admin' ? `<button class="btn secondary" style="margin-top:8px" onclick="navigate('#/admin/utilisateurs')">⚙️ Gérer les comptes</button>` : ''}
   `, 'personnes');
 
   document.getElementById('addExistingPlayerForm')?.addEventListener('submit', async e=>{
