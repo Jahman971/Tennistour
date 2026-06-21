@@ -350,10 +350,22 @@ window.viewPlayerPlanning = async (playerId, tourneeId, weekOffset=0) => {
         const m = it.data;
         const opp = m.joueur1_id===playerId ? (m.joueur_ext_nom||playerName(m.joueur2_id)) : playerName(m.joueur1_id);
         const cls = m.statut==='en_cours'?'live':m.statut==='termine'?'done':'';
-        return `<div class="week-match ${cls}" onclick="navigate('#/coach/match/${m.id}')">
-          <div class="wm-time">🕐 ${esc(time)}</div>
-          <div class="wm-players">vs ${esc(opp)}</div>
-          <div class="wm-sub">${esc(m.tournaments?.nom||'')}${m.court?' C.'+esc(m.court):''}</div>
+        const statusPill = m.statut==='en_cours' ? '<span class="pill live">Live</span>'
+          : m.statut==='termine' ? '<span class="pill done">Terminé</span>' : '<span class="pill upcoming">À venir</span>';
+        return `<div class="card">
+          <div class="row between" onclick="navigate('#/coach/match/${m.id}')" style="cursor:pointer">
+            <div>
+              <div class="wm-time">${time ? '🕐 '+time : ''}</div>
+              <div style="font-weight:700">vs ${esc(opp)}</div>
+              <div class="muted" style="font-size:12px">${esc(m.tournaments?.nom||'')}${m.court?' · Court '+esc(m.court):''}</div>
+            </div>
+            ${statusPill}
+          </div>
+          ${isSuperviseur ? `
+          <div class="row" style="margin-top:8px;gap:6px;border-top:1px solid var(--brd);padding-top:8px">
+            <button class="btn small secondary" style="flex:1" onclick="editMatch('${m.id}','${esc(playerName(m.joueur1_id)).replace(/'/g,"\\\\'")}','${esc(m.joueur_ext_nom||playerName(m.joueur2_id)).replace(/'/g,"\\\\'")}','${m.scheduled_at||''}','${m.tour||''}','${m.court||''}')">✏️ Modifier</button>
+            <button class="btn small clay" onclick="deleteMatchFromPlayer('${m.id}','${playerId}','${tourneeId}',${weekOffset})">🗑</button>
+          </div>` : ''}
         </div>`;
       } else {
         const tr = it.data;
@@ -466,6 +478,67 @@ window.deleteTraining = async (trainingId, tourneeId) => {
   if(error){ toast(error.message, true); return; }
   toast('Entraînement supprimé');
   viewCoachTournee(tourneeId);
+};
+window.deleteMatchFromPlayer = async (matchId, playerId, tourneeId, weekOffset) => {
+  if(!confirm('Supprimer ce match définitivement ?')) return;
+  await supabase.from('match_coaches').delete().eq('match_id', matchId);
+  const { error } = await supabase.from('matches').delete().eq('id', matchId);
+  if(error){ toast(error.message, true); return; }
+  toast('Match supprimé');
+  viewPlayerPlanning(playerId, tourneeId, weekOffset);
+};
+window.deleteMatch = async (matchId, tournamentId) => {
+  if(!confirm('Supprimer ce match définitivement ?')) return;
+  await supabase.from('match_coaches').delete().eq('match_id', matchId);
+  const { error } = await supabase.from('matches').delete().eq('id', matchId);
+  if(error){ toast(error.message, true); return; }
+  toast('Match supprimé');
+  viewCoachTournament(tournamentId);
+};
+window.editMatch = (matchId, n1, n2, scheduledAt, tour, court) => {
+  // Affiche un overlay d'édition inline
+  const existing = document.getElementById('editMatchOverlay');
+  if(existing) existing.remove();
+  const scheduledLocal = scheduledAt ? new Date(scheduledAt).toLocaleString('sv-SE',{timeZone:'Europe/Paris'}).slice(0,16) : '';
+  const overlay = document.createElement('div');
+  overlay.id = 'editMatchOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;display:flex;align-items:flex-end;backdrop-filter:blur(4px)';
+  overlay.innerHTML = `
+    <div style="background:var(--s2);border:1px solid var(--brd);border-radius:var(--rL) var(--rL) 0 0;width:100%;max-width:560px;margin:0 auto;padding:20px">
+      <div class="row between" style="margin-bottom:16px">
+        <strong>${esc(n1)} vs ${esc(n2)}</strong>
+        <button onclick="document.getElementById('editMatchOverlay').remove()" style="background:none;border:none;color:var(--gray);font-size:20px;cursor:pointer">✕</button>
+      </div>
+      <form id="editMatchForm">
+        <label>Date et heure</label>
+        <input type="datetime-local" name="scheduled_at" value="${scheduledLocal}">
+        <label>Tour / phase</label>
+        <input name="tour" value="${esc(tour)}" placeholder="Ex: 1er tour">
+        <label>Court</label>
+        <input name="court" value="${esc(court)}" placeholder="Ex: Court 2">
+        <button class="btn clay" type="submit">Enregistrer</button>
+      </form>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if(e.target===overlay) overlay.remove(); });
+  overlay.querySelector('#editMatchForm').addEventListener('submit', async e=>{
+    e.preventDefault();
+    const f = new FormData(e.target);
+    const scheduledAt = f.get('scheduled_at');
+    const { error } = await supabase.from('matches').update({
+      scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : null,
+      tour: f.get('tour')||null,
+      court: f.get('court')||null,
+      updated_at: new Date().toISOString()
+    }).eq('id', matchId);
+    if(error){ toast(error.message, true); return; }
+    toast('Match modifié ✅');
+    overlay.remove();
+    // Recharger la vue courante
+    const hash = location.hash;
+    const m = hash.match(/^#\/coach\/tournoi\/(.+)$/);
+    if(m) viewCoachTournament(m[1]);
+  });
 };
 window.deletePlayer = async (playerId, nom, tourneeId) => {
   if(!confirm(`Supprimer ${nom} ? Cette action supprime le joueur de toute l'application (matchs, entraînements, tournées).`)) return;
@@ -2156,12 +2229,19 @@ async function viewCoachTournament(id){
       : '<span class="pill upcoming">À venir</span>';
     const time = m.scheduled_at ? timeFmt.format(new Date(m.scheduled_at)) : null;
     const coaches = (m.match_coaches||[]).map(mc=>coachName(mc.profile_id)).filter(Boolean);
-    return `<div class="card" onclick="navigate('#/coach/match/${m.id}')" style="cursor:pointer">
-      <div class="row between">
-        <div><strong>${esc(playerName(m.joueur1_id))}</strong> vs <strong>${esc((m.joueur_ext_nom || playerName(m.joueur2_id)))}</strong></div>
+    return `<div class="card">
+      <div class="row between" onclick="navigate('#/coach/match/${m.id}')" style="cursor:pointer;flex:1">
+        <div>
+          <div><strong>${esc(playerName(m.joueur1_id))}</strong> <span class="muted">vs</span> <strong>${esc((m.joueur_ext_nom || playerName(m.joueur2_id)))}</strong></div>
+          <p class="muted" style="margin:3px 0 0">${time ? `🕐 ${time} · ` : ''}${esc(m.tour||'')}${m.court?' · Court '+esc(m.court):''}${coaches.length?' · 🧑‍🏫 '+coaches.map(esc).join(', '):''}</p>
+        </div>
         ${statusPill}
       </div>
-      <p class="muted">${time ? `🕐 ${time} · ` : ''}${esc(m.tour||'')}${m.court?' · '+esc(m.court):''}${coaches.length?' · 🧑‍🏫 '+coaches.map(esc).join(', '):''}</p>
+      ${canManage ? `
+      <div class="row" style="margin-top:10px;gap:6px;border-top:1px solid var(--brd);padding-top:10px">
+        <button class="btn small secondary" style="flex:1" onclick="editMatch('${m.id}','${esc(playerName(m.joueur1_id)).replace(/'/g,"\\\\'")}','${esc(m.joueur_ext_nom||playerName(m.joueur2_id)).replace(/'/g,"\\\\'")}','${m.scheduled_at||''}','${m.tour||''}','${m.court||''}')">✏️ Modifier</button>
+        <button class="btn small clay" onclick="deleteMatch('${m.id}','${id}')">🗑</button>
+      </div>` : ''}
     </div>`;
   };
 
