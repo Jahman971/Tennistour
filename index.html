@@ -1171,6 +1171,13 @@ async function viewWaitingValidation(){
 window.refreshValidation = async () => {
   const { data: profile } = await supabase.from('profiles').select('*').eq('id', STATE.session.user.id).maybeSingle();
   STATE.profile = profile;
+  if(profile?.role === 'coach'){
+    const { data: myTeams } = await supabase.from('coach_teams').select('team_id,superviseur,statut').eq('profile_id', profile.id);
+    STATE.coachTeams = myTeams || [];
+    STATE.profile.superviseur = (myTeams||[]).some(t=>t.superviseur);
+    const firstTeam = (myTeams||[]).find(t=>t.statut==='actif');
+    if(firstTeam) STATE.profile.team_id = firstTeam.team_id;
+  }
   if(profile?.statut === 'actif'){ toast('Compte validé !'); navigate('#/coach'); }
   else { toast("Toujours en attente de validation.", true); }
 };
@@ -3071,6 +3078,18 @@ async function loadSession(){
       );
       if(error) throw error;
       STATE.profile = profile;
+      // Charger les équipes du coach + statut superviseur
+      if(profile?.role === 'coach'){
+        const { data: myTeams } = await supabase.from('coach_teams')
+          .select('team_id, superviseur, statut, teams(nom)')
+          .eq('profile_id', profile.id);
+        STATE.coachTeams = myTeams || [];
+        // superviseur = true si superviseur dans au moins une équipe
+        STATE.profile.superviseur = (myTeams||[]).some(t=>t.superviseur);
+        // team_id = première équipe active (compatibilité)
+        const firstTeam = (myTeams||[]).find(t=>t.statut==='actif');
+        if(firstTeam) STATE.profile.team_id = firstTeam.team_id;
+      }
     }catch(err){
       console.warn('chargement du profil a échoué/timeout', err);
       setLoadingStatus('Erreur profil : ' + (err?.message || err));
