@@ -2211,6 +2211,7 @@ async function viewCoachTournament(id){
   const coachName = cid => fullName((teamCoaches||[]).find(c=>c.id===cid));
 
   const playerName = pid => fullName(players.find(p=>p.id===pid));
+  const canManage = STATE.profile?.role==='admin' || STATE.profile?.superviseur;
 
   // Planning : regroupement des matchs par jour
   const dateFmt = new Intl.DateTimeFormat('fr-FR', { weekday:'long', day:'numeric', month:'long' });
