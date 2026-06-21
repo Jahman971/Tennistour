@@ -1253,18 +1253,6 @@ async function viewAdminUsers(){
         <label>Identifiant</label>
         <input name="login" required placeholder="Ex: lohan" autocapitalize="none" pattern="[A-Za-z0-9._-]+">
         <label>Rôle</label>
-        <select name="role">
-          <option value="coach">Coach</option>
-          <option value="admin">Admin</option>
-        </select>
-      <form id="createUserForm">
-        <label>Prénom</label>
-        <input name="prenom" placeholder="Ex: Lohan">
-        <label>Nom</label>
-        <input name="nom" required placeholder="Ex: Dupont">
-        <label>Identifiant</label>
-        <input name="login" required placeholder="Ex: lohan" autocapitalize="none" pattern="[A-Za-z0-9._-]+">
-        <label>Rôle</label>
         <select name="role" id="createUserRole" onchange="document.getElementById('createUserTeamRow').style.display=this.value==='coach'?'block':'none'">
           <option value="coach">Coach</option>
           <option value="admin">Admin</option>
