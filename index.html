@@ -678,28 +678,70 @@ function saveCode(code, nom){
   localStorage.setItem('setpoint_codes', JSON.stringify(list.slice(0,8)));
 }
 function viewLanding(){
-  app.innerHTML = `
-    <main style="padding:16px;">
-      <div style="text-align:center; padding:50px 10px 10px;">
-        <div style="font-family:var(--fnt-head); font-size:34px; font-weight:900; letter-spacing:4px; color:var(--accent); text-transform:uppercase;">🎾 Tennistour</div>
-        <p class="muted" style="margin-top:6px; font-size:14px;">Suivi de tournée tennis en direct</p>
-      </div>
-
-      <div class="card">
-        <label>Code joueur</label>
-        <div class="row">
-          <input id="playerCodeInput" placeholder="CODE" maxlength="5" style="text-transform:uppercase; flex:1;" autocapitalize="characters" autocomplete="off">
-          <button class="btn clay" style="width:auto; margin-top:0; padding:12px 18px;" onclick="goToPlayerCode()">→</button>
+  // Récupérer les matchs live publiquement pour les afficher sur la landing
+  supabase.from('matches').select('*, tournaments(nom), players!matches_joueur1_id_fkey(nom,prenom), players!matches_joueur2_id_fkey(nom,prenom)').eq('statut','en_cours').limit(5).then(({ data: liveMatches }) => {
+    const liveHtml = (liveMatches||[]).length ? `
+      <div style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <div style="width:8px;height:8px;border-radius:50%;background:var(--live);animation:blink 1s infinite;flex-shrink:0"></div>
+          <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--live)">Matchs en direct</span>
         </div>
-        <p class="muted">Ton code te donne accès aux matchs et au score en direct de ton/tes joueurs.</p>
+        ${liveMatches.map(m=>`
+          <div class="card" onclick="navigate('#/match/${m.id}')" style="cursor:pointer;border-color:var(--live);background:rgba(224,92,58,.07);margin-bottom:8px">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+              <div style="font-weight:700;font-size:15px">${esc(fullName(m.players)||'?')} <span style="color:var(--gray);font-weight:400">vs</span> ${esc(m.joueur_ext_nom||fullName(m['players!matches_joueur2_id_fkey'])||'?')}</div>
+              <span class="pill live">Live 🔴</span>
+            </div>
+            <p class="muted" style="margin:4px 0 0">${esc(m.tournaments?.nom||'')}${m.court?' · Court '+esc(m.court):''}</p>
+          </div>`).join('')}
+      </div>` : '';
+
+    app.innerHTML = `
+      <div style="background:var(--s1);padding:32px 20px 20px;text-align:center;border-bottom:1px solid var(--brd)">
+        <div style="font-family:var(--fnt-head);font-size:38px;font-weight:900;letter-spacing:5px;color:var(--accent);text-transform:uppercase">🎾 Tennistour</div>
+        <p class="muted" style="margin:6px 0 0;font-size:13px">Scores en direct · Tournées tennis</p>
+      </div>
+      <main>
+        ${liveHtml}
+        <div class="card">
+          <p style="font-size:14px;font-weight:600;margin:0 0 10px">Suivre un joueur</p>
+          <div class="row">
+            <input id="playerCodeInput" placeholder="CODE JOUEUR" maxlength="5"
+              style="text-transform:uppercase;flex:1;font-size:16px;font-weight:700;letter-spacing:3px;text-align:center"
+              autocapitalize="characters" autocomplete="off">
+            <button class="btn clay" style="width:auto;margin-top:0;padding:13px 20px;font-size:16px" onclick="goToPlayerCode()">→</button>
+          </div>
+          <p class="muted" style="margin-top:8px;font-size:12px">Entre le code fourni par le coach pour voir les matchs et scores en direct.</p>
+          <div class="error" id="landingErr"></div>
+        </div>
+        <button class="btn secondary" onclick="navigate('#/coach-login')" style="opacity:.6">🔑 Espace coach</button>
+      </main>`;
+
+    const input = document.getElementById('playerCodeInput');
+    input?.addEventListener('keydown', e => { if(e.key==='Enter') goToPlayerCode(); });
+  });
+
+  // Affichage immédiat pendant le chargement
+  app.innerHTML = `
+    <div style="background:var(--s1);padding:32px 20px 20px;text-align:center;border-bottom:1px solid var(--brd)">
+      <div style="font-family:var(--fnt-head);font-size:38px;font-weight:900;letter-spacing:5px;color:var(--accent);text-transform:uppercase">🎾 Tennistour</div>
+      <p class="muted" style="margin:6px 0 0;font-size:13px">Scores en direct · Tournées tennis</p>
+    </div>
+    <main>
+      <div class="card">
+        <p style="font-size:14px;font-weight:600;margin:0 0 10px">Suivre un joueur</p>
+        <div class="row">
+          <input id="playerCodeInput" placeholder="CODE JOUEUR" maxlength="5"
+            style="text-transform:uppercase;flex:1;font-size:16px;font-weight:700;letter-spacing:3px;text-align:center"
+            autocapitalize="characters" autocomplete="off">
+          <button class="btn clay" style="width:auto;margin-top:0;padding:13px 20px;font-size:16px" onclick="goToPlayerCode()">→</button>
+        </div>
+        <p class="muted" style="margin-top:8px;font-size:12px">Entre le code fourni par le coach pour voir les matchs et scores en direct.</p>
         <div class="error" id="landingErr"></div>
       </div>
-
-      <button class="btn secondary" style="margin-top:18px;" onclick="navigate('#/coach-login')">🔑 Accès Coach</button>
+      <button class="btn secondary" onclick="navigate('#/coach-login')" style="opacity:.6">🔑 Espace coach</button>
     </main>`;
-
-  const input = document.getElementById('playerCodeInput');
-  input.addEventListener('keydown', e => { if(e.key==='Enter') goToPlayerCode(); });
+  document.getElementById('playerCodeInput')?.addEventListener('keydown', e => { if(e.key==='Enter') goToPlayerCode(); });
 }
 window.goToPlayerCode = () => {
   const code = document.getElementById('playerCodeInput').value.trim().toUpperCase();
@@ -741,28 +783,47 @@ async function viewPlayerCode(code){
     (pls||[]).forEach(p=>namesMap[p.id]=fullName(p));
   }
 
-  // Planning matchs uniquement (par semaine/jour)
-  const playerName2 = pid => namesMap[pid] || '—';
-  const items = (matches||[]).map(m=>({ type:'match', date:m.scheduled_at, data:m }));
-  const planningHtml = buildPlanningHtml(items, playerName2, false);
-
-  // Scores & débriefs — chaque joueur voit son propre débrief
   const order = { en_cours:0, a_venir:1, termine:2 };
   const sorted = [...(matches||[])].sort((a,b)=> (order[a.statut]??3) - (order[b.statut]??3));
-  const matchesHtml = sorted.filter(m=>m.statut==='termine' && (m.debrief||m.debrief_j2)).map(m => {
-    const isJ1 = m.joueur1_id === player.id;
-    const myDebrief = isJ1 ? m.debrief : m.debrief_j2;
-    if(!myDebrief) return '';
-    const oppName = m.joueur_ext_nom || namesMap[isJ1 ? m.joueur2_id : m.joueur1_id] || '—';
-    return `<div class="card">
-      <p class="muted" style="margin:0 0 6px">${esc(m.tournaments?.nom||'')} ${m.scheduled_at ? '· '+new Intl.DateTimeFormat('fr-FR',{day:'numeric',month:'short'}).format(new Date(m.scheduled_at)) : ''}</p>
+
+  // --- Matchs live (en cours) — PRIORITÉ ABSOLUE ---
+  const liveMatches = sorted.filter(m=>m.statut==='en_cours');
+  const liveHtml = liveMatches.length ? liveMatches.map(m=>`
+    <div onclick="navigate('#/match/${m.id}')" style="cursor:pointer;margin-bottom:10px">
       ${scoreboardHTML(m, namesMap[m.joueur1_id]||'—', m.joueur_ext_nom||(namesMap[m.joueur2_id]||'—'))}
-      <div style="margin-top:8px; padding-top:8px; border-top:1px solid var(--brd)">
-        <p class="muted" style="font-size:11px; text-transform:uppercase; letter-spacing:1.5px; margin-bottom:4px">📝 Débrief du coach</p>
-        <p style="white-space:pre-wrap; margin:0">${esc(myDebrief)}</p>
+      <p class="muted" style="text-align:center;margin-top:-6px;font-size:12px">Touche pour voir le live ↑</p>
+    </div>`).join('') : '';
+
+  // --- Prochains matchs ---
+  const upcomingMatches = sorted.filter(m=>m.statut==='a_venir');
+  const upcomingHtml = upcomingMatches.length ? upcomingMatches.map(m=>{
+    const time = m.scheduled_at ? new Intl.DateTimeFormat('fr-FR',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}).format(new Date(m.scheduled_at)) : null;
+    const opp = m.joueur1_id===player.id ? (m.joueur_ext_nom||namesMap[m.joueur2_id]||'—') : namesMap[m.joueur1_id]||'—';
+    return `<div class="card" style="display:flex;align-items:center;gap:12px;padding:12px 14px">
+      <div style="font-size:24px">🎾</div>
+      <div style="flex:1">
+        <div style="font-weight:700">vs ${esc(opp)}</div>
+        <div class="muted">${time?esc(time):'À programmer'}${m.court?' · Court '+esc(m.court):''}</div>
+        <div class="muted">${esc(m.tournaments?.nom||'')}</div>
       </div>
+      <span class="pill upcoming">À venir</span>
     </div>`;
-  }).filter(Boolean).join('');
+  }).join('') : '';
+
+  // --- Résultats avec débriefs ---
+  const doneHtml = sorted.filter(m=>m.statut==='termine').map(m=>{
+    const isJ1 = m.joueur1_id===player.id;
+    const myDebrief = isJ1 ? m.debrief : m.debrief_j2;
+    const n1 = namesMap[m.joueur1_id]||'—';
+    const n2 = m.joueur_ext_nom||(namesMap[m.joueur2_id]||'—');
+    return `<div style="margin-bottom:10px">
+      ${scoreboardHTML(m, n1, n2)}
+      ${myDebrief ? `<div class="card" style="margin-top:-6px;border-top:none;border-radius:0 0 var(--rL) var(--rL);background:var(--s1)">
+        <p style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--gray);margin:0 0 6px">📝 Débrief du coach</p>
+        <p style="margin:0;white-space:pre-wrap;font-size:14px;line-height:1.5">${esc(myDebrief)}</p>
+      </div>` : ''}
+    </div>`;
+  }).join('');
 
   app.innerHTML = `
     <div class="topbar">
@@ -770,10 +831,30 @@ async function viewPlayerCode(code){
       <button class="btn ghost" onclick="navigate('#/')" style="font-size:11px">✕ Quitter</button>
     </div>
     <main>
-      <h2 style="margin:4px 0 2px">${player.genre==='F'?'👧 ':player.genre==='G'?'👦 ':''}${esc(fullName(player))}</h2>
-      <h3 style="margin:18px 0 8px">Planning des matchs</h3>
-      ${planningHtml}
-      ${matchesHtml ? `<h3 style="margin:18px 0 8px">Débriefs du coach</h3>${matchesHtml}` : ''}
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+        <div style="font-size:32px">${player.genre==='F'?'👧':player.genre==='G'?'👦':'🎾'}</div>
+        <div>
+          <div style="font-family:var(--fnt-head);font-size:22px;font-weight:900">${esc(fullName(player))}</div>
+          <div class="muted" style="font-size:12px">Tournée tennis</div>
+        </div>
+      </div>
+
+      ${liveMatches.length ? `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <div style="width:8px;height:8px;border-radius:50%;background:var(--live);animation:blink 1s infinite"></div>
+          <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--live)">En cours</span>
+        </div>
+        ${liveHtml}` : ''}
+
+      ${upcomingMatches.length ? `
+        <p class="section-title">À venir</p>
+        ${upcomingHtml}` : ''}
+
+      ${doneHtml ? `
+        <p class="section-title">Résultats & débriefs</p>
+        ${doneHtml}` : ''}
+
+      ${!sorted.length ? `<div class="empty-state"><div class="icon">🎾</div><p>Aucun match programmé pour l'instant.</p></div>` : ''}
     </main>`;
 }
 
@@ -2548,27 +2629,64 @@ async function viewSuivi(){
 // ---------------------------------------------------------------
 let liveChannel = null;
 async function viewMatchPublic(id){
-  shell(`<div class="empty">Chargement…</div>`, 'home');
+  app.innerHTML = `<main style="padding-top:70px;text-align:center"><div class="muted">Chargement…</div></main>`;
   const { data: m } = await supabase.from('matches').select('*, tournaments(nom)').eq('id', id).single();
-  if(!m){ shell(`<div class="empty">Match introuvable.</div>`,'home'); return; }
+  if(!m){ app.innerHTML = `<main><div class="empty-state"><div class="icon">😕</div><p>Match introuvable.</p></div></main>`; return; }
   const { data: p1 } = await supabase.from('players').select('nom,prenom').eq('id', m.joueur1_id).single();
-  const { data: p2 } = await supabase.from('players').select('nom,prenom').eq('id', m.joueur2_id).single();
-  renderPublicMatch(m, fullName(p1), fullName(p2));
+  const n2 = m.joueur_ext_nom || (m.joueur2_id ? await supabase.from('players').select('nom,prenom').eq('id', m.joueur2_id).single().then(r=>fullName(r.data)) : '—');
+  renderPublicMatch(m, fullName(p1), n2);
 
   if(liveChannel) supabase.removeChannel(liveChannel);
   liveChannel = supabase.channel('match-'+id)
     .on('postgres_changes', { event:'UPDATE', schema:'public', table:'matches', filter:`id=eq.${id}` }, payload => {
-      renderPublicMatch(payload.new, fullName(p1), fullName(p2));
+      renderPublicMatch(payload.new, fullName(p1), n2);
     }).subscribe();
 }
 function renderPublicMatch(m, n1, n2){
-  const backRoute = (STATE.profile?.role === 'coach' || STATE.profile?.role === 'admin') ? '#/coach' : '#/suivi';
-  shell(`
-    <button class="btn ghost" onclick="navigate('${backRoute}')">← Retour</button>
-    <p class="muted" style="margin:4px 0">${esc(m.tournaments?.nom||'')}</p>
-    ${scoreboardHTML(m, n1, n2)}
-    <p class="muted" style="text-align:center">Score mis à jour en direct par le coach.</p>
-  `, 'home');
+  const isLive = m.statut==='en_cours';
+  const isOver = m.statut==='termine';
+  const st = m.live_state;
+  const sw = st ? setsWon(st) : [0,0];
+  const tbActive = st && (st.inTiebreak||st.inSuperTb);
+
+  const backBtn = STATE.profile ? `<button class="btn ghost" onclick="history.back()">← Retour</button>` : `<button class="btn ghost" onclick="navigate('#/')">← Accueil</button>`;
+
+  app.innerHTML = `
+    <div class="topbar">
+      <div class="brand"><span class="dot"></span> Tennistour</div>
+      ${isLive ? `<div style="display:flex;align-items:center;gap:6px"><div style="width:8px;height:8px;border-radius:50%;background:var(--live);animation:blink 1s infinite"></div><span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--live)">Live</span></div>` : ''}
+    </div>
+    <main>
+      ${backBtn}
+      <p class="muted" style="margin:8px 0 12px;font-size:13px">${esc(m.tournaments?.nom||'')}${m.tour?' · '+esc(m.tour):''}${m.court?' · Court '+esc(m.court):''}</p>
+
+      ${scoreboardHTML(m, n1, n2)}
+
+      ${isLive && tbActive ? `
+        <div class="card" style="text-align:center;border-color:var(--accent);background:var(--accent3);margin-top:-4px">
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:2px;color:var(--accent);font-weight:700;margin-bottom:8px">${st.inSuperTb?'Super tie-break':'Jeu décisif'}</div>
+          <div style="display:flex;justify-content:center;gap:24px;align-items:center">
+            <div style="text-align:center">
+              <div style="font-size:11px;color:var(--gray);margin-bottom:4px">${esc(n1)}</div>
+              <div style="font-family:var(--fnt-head);font-size:52px;font-weight:900;line-height:1;color:var(--accent)">${st.points[0]}</div>
+            </div>
+            <div style="font-size:24px;color:var(--brd)">–</div>
+            <div style="text-align:center">
+              <div style="font-size:11px;color:var(--gray);margin-bottom:4px">${esc(n2)}</div>
+              <div style="font-family:var(--fnt-head);font-size:52px;font-weight:900;line-height:1;color:var(--accent)">${st.points[1]}</div>
+            </div>
+          </div>
+        </div>` : ''}
+
+      ${isLive ? `<p class="muted" style="text-align:center;font-size:12px;margin-top:8px">Score mis à jour en direct · Rafraîchissement automatique</p>` : ''}
+
+      ${isOver && st?.winner !== null ? `
+        <div class="card" style="text-align:center;border-color:var(--court);background:rgba(39,151,107,.08);padding:20px">
+          <div style="font-size:32px;margin-bottom:8px">🏆</div>
+          <div style="font-family:var(--fnt-head);font-size:24px;font-weight:900">${esc(st.winner===0?n1:n2)}</div>
+          <div class="muted" style="margin-top:4px">Vainqueur</div>
+        </div>` : ''}
+    </main>`;
 }
 
 // ---------------------------------------------------------------
