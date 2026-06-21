@@ -1291,11 +1291,10 @@ window.adminRemoveCoachFromTeam = async (coachId, prenom, teamId) => {
   viewAdminHome();
 };
 window.adminDeleteTeam = async (teamId, nom) => {
-  if(!confirm(`Supprimer l'équipe "${nom}" ?`)) return;
-  // coach_teams supprimés en cascade
+  if(!confirm(`Supprimer l'équipe "${nom}" ? Toutes ses tournées et données seront supprimées.`)) return;
   const { error } = await supabase.from('teams').delete().eq('id', teamId);
-  if(error){ toast(error.message, true); return; }
-  toast('Équipe supprimée');
+  if(error){ toast('Erreur : ' + error.message, true); return; }
+  toast(`"${nom}" supprimée ✅`);
   viewAdminHome();
 };
 
