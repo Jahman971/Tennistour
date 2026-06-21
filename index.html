@@ -971,7 +971,7 @@ function viewAuth(){
         <p class="muted">Accès réservé aux coachs et superviseurs. Tes identifiants t'ont été fournis par l'administrateur.</p>
         <form id="authForm">
           <label>Identifiant</label>
-          <input name="login" required placeholder="Ex: jimmy" autocapitalize="none" autocomplete="username" pattern="[A-Za-z0-9._-]+">
+          <input name="login" required placeholder="Ex: jimmy" autocapitalize="none" autocomplete="username" pattern="[A-Za-z0-9._\-]+">
           <label>Mot de passe</label>
           <input type="password" name="password" required minlength="6" placeholder="Mot de passe" autocomplete="current-password">
           <button class="btn clay" type="submit">Se connecter</button>
@@ -1209,7 +1209,26 @@ async function viewAdminHome(){
     <h2 style="margin:4px 0 14px">Toutes les équipes</h2>
     <p class="muted" style="margin-top:-10px">Vue administrateur — accès à toutes les tournées et matchs.</p>
     ${teamsHtml}
+    <div class="card" style="border-style:dashed">
+      <h3>+ Créer une équipe</h3>
+      <form id="adminCreateTeamForm">
+        <label>Nom de l'équipe / club</label>
+        <input name="nom" required placeholder="Ex: ES Brunoy Tennis">
+        <button class="btn clay" type="submit">Créer</button>
+        <div class="error" id="adminTeamErr"></div>
+      </form>
+    </div>
   `, 'admin');
+
+  document.getElementById('adminCreateTeamForm').addEventListener('submit', async e=>{
+    e.preventDefault();
+    const nom = new FormData(e.target).get('nom').trim();
+    const code = genCode();
+    const { error } = await supabase.from('teams').insert({ nom, code, created_by: STATE.session.user.id });
+    if(error){ document.getElementById('adminTeamErr').textContent = error.message; return; }
+    toast(`Équipe "${nom}" créée ✅`);
+    viewAdminHome();
+  });
 }
 
 // ---------------------------------------------------------------
@@ -1260,7 +1279,7 @@ async function viewAdminUsers(){
         <label>Nom</label>
         <input name="nom" required placeholder="Ex: Dupont">
         <label>Identifiant</label>
-        <input name="login" required placeholder="Ex: lohan" autocapitalize="none" pattern="[A-Za-z0-9._-]+">
+        <input name="login" required placeholder="Ex: lohan" autocapitalize="none" pattern="[A-Za-z0-9._\-]+">
         <label>Rôle</label>
         <select name="role" id="createUserRole" onchange="document.getElementById('createUserTeamRow').style.display=this.value==='coach'?'block':'none'">
           <option value="coach">Coach</option>
