@@ -1053,11 +1053,7 @@ async function viewProfil(){
             <button class="btn secondary" type="submit">Enregistrer le nom</button>
             <div class="error" id="editTeamErr"></div>
           </form>` : `<p class="muted">${esc(team.nom)}</p>`}
-          <label style="margin-top:14px">Code d'invitation coachs</label>
-          <div class="row" style="gap:8px;margin-top:6px">
-            <div class="code-badge" style="flex:1;text-align:center;font-size:18px;letter-spacing:4px;cursor:pointer" onclick="copyTeamCode('${esc(team.code)}')">${esc(team.code)} 📋</div>
-          </div>
-          ${isPrincipal ? `<button class="btn secondary" style="margin-top:8px" onclick="regenerateTeamCode('${team.id}')">↺ Nouveau code</button>` : ''}
+
         </div>`;
     }
   }
@@ -1111,57 +1107,30 @@ window.editTeamAdmin = (teamId, currentNom) => {
     viewAdminHome();
   });
 };
-window.copyTeamCode = (code) => {
-  navigator.clipboard?.writeText(code).catch(()=>{});
-  toast('Code copié 📋');
-};
-window.regenerateTeamCode = async (teamId) => {
-  if(!confirm("Générer un nouveau code d'invitation ? L'ancien code ne fonctionnera plus pour rejoindre l'équipe.")) return;
-  const newCode = genCode();
-  const { error } = await supabase.from('teams').update({ code: newCode }).eq('id', teamId);
-  if(error){ toast(error.message, true); return; }
-  toast('Nouveau code généré');
-  viewProfil();
-};
 window.logout = async () => { await supabase.auth.signOut(); STATE.profile=null; navigate('#/'); };
 
 // ---------------------------------------------------------------
 // VUE : COACH — CONFIGURATION DE L'ÉQUIPE (étape obligatoire avant accès)
 // ---------------------------------------------------------------
-let teamSetupMode = 'create';
 function viewTeamSetup(){
   app.innerHTML = `
     <div class="topbar">
       <div class="brand"><span class="dot"></span> Tennistour</div>
-      <div class="who" onclick="navigate('#/profil')">${esc(STATE.profile.role)}</div>
     </div>
     <main>
       <div class="card">
-        <h3>Ton équipe de coachs</h3>
-        <p class="muted">Avant de créer des tournois, rattache-toi à une équipe : crée celle de ton club, ou rejoins-en une avec le code donné par le coach principal.</p>
-        <div class="tabs">
-          <button class="${teamSetupMode==='create'?'active':''}" onclick="setTeamSetupMode('create')">Créer mon équipe</button>
-          <button class="${teamSetupMode==='join'?'active':''}" onclick="setTeamSetupMode('join')">Rejoindre</button>
-        </div>
-        ${teamSetupMode==='create' ? `
-          <form id="teamCreateForm">
-            <label>Nom de l'équipe / club</label>
-            <input name="nom" required placeholder="Ex: ES Brunoy Handball - Staff Tennis">
-            <button class="btn clay" type="submit">Créer l'équipe</button>
-            <div class="error" id="teamErr"></div>
-          </form>
-        ` : `
-          <form id="teamJoinForm">
-            <label>Code d'invitation (donné par le coach principal)</label>
-            <input name="code" required placeholder="CODE" style="text-transform:uppercase">
-            <button class="btn clay" type="submit">Rejoindre l'équipe</button>
-            <div class="error" id="teamErr"></div>
-          </form>
-        `}
+        <h3>Créer ton équipe</h3>
+        <p class="muted">Donne un nom à ton équipe pour commencer à gérer tes tournées.</p>
+        <form id="teamCreateForm">
+          <label>Nom de l'équipe / club</label>
+          <input name="nom" required placeholder="Ex: ES Brunoy Tennis">
+          <button class="btn clay" type="submit">Créer</button>
+          <div class="error" id="teamErr"></div>
+        </form>
       </div>
     </main>
   `;
-  document.getElementById('teamCreateForm')?.addEventListener('submit', async e=>{
+  document.getElementById('teamCreateForm').addEventListener('submit', async e=>{
     e.preventDefault();
     const nom = new FormData(e.target).get('nom').trim();
     const code = genCode();
@@ -1170,22 +1139,10 @@ function viewTeamSetup(){
     const { error: pErr } = await supabase.from('profiles').update({ team_id: team.id }).eq('id', STATE.session.user.id);
     if(pErr){ document.getElementById('teamErr').textContent = pErr.message; return; }
     STATE.profile.team_id = team.id;
-    toast(`Équipe créée · code ${code}`);
-    navigate('#/coach');
-  });
-  document.getElementById('teamJoinForm')?.addEventListener('submit', async e=>{
-    e.preventDefault();
-    const code = new FormData(e.target).get('code').trim().toUpperCase();
-    const { data: team, error } = await supabase.from('teams').select('*').eq('code', code).maybeSingle();
-    if(error || !team){ document.getElementById('teamErr').textContent = 'Code introuvable.'; return; }
-    const { error: pErr } = await supabase.from('profiles').update({ team_id: team.id, statut: 'en_attente' }).eq('id', STATE.session.user.id);
-    if(pErr){ document.getElementById('teamErr').textContent = pErr.message; return; }
-    STATE.profile.team_id = team.id;
-    STATE.profile.statut = 'en_attente';
+    toast('Équipe créée ✅');
     navigate('#/coach');
   });
 }
-window.setTeamSetupMode = m => { teamSetupMode = m; viewTeamSetup(); };
 
 // ---------------------------------------------------------------
 // VUE : COACH ADJOINT — EN ATTENTE DE VALIDATION (style Brunoy)
