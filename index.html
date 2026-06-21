@@ -1203,7 +1203,7 @@ async function viewAdminHome(){
           <h3 style="margin:0">${esc(team.nom)}</h3>
 <button class="btn small secondary" onclick="editTeamAdmin('${team.id}','${esc(team.nom).replace(/'/g,"\\\\'")}')">✏️</button>
         </div>
-        <p class="muted">Coachs : ${(coachByTeam[team.id]||[]).map(esc).join(', ')||'—'}</p>
+        <p class="muted">Coachs : ${(coachesByTeam[team.id]||[]).map(c=>esc(c.prenom||c.nom||'?')).join(', ')||'—'}</p>
         ${tourHtml}
       </div>`;
   }).join('') : `<div class="empty"><div class="big">🛠️</div>Aucune équipe créée pour l'instant.</div>`;
