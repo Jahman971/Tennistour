@@ -1731,6 +1731,7 @@ async function viewCoachTournee(id){
 
   // --- Joueurs de la tournée ---
   const canDeletePlayer = STATE.profile?.role==='admin' || STATE.profile?.superviseur;
+  const canManage = canDeletePlayer;
   const tourneePlayersHtml = tourneePlayers.length ? tourneePlayers.map(p=>`
     <div class="row between" style="padding:8px 0; border-bottom:1px solid var(--brd)">
       <div onclick="viewPlayerPlanning('${p.id}','${id}')" style="cursor:pointer; flex:1; display:flex; align-items:center; gap:6px;">
@@ -1770,7 +1771,6 @@ async function viewCoachTournee(id){
   }).join('') : `<p class="muted">Aucune étape pour l'instant.</p>`;
 
   // --- Entraînements ---
-  const canManage = STATE.profile?.role==='admin' || STATE.profile?.superviseur;
   const trainingsHtml = (trainings||[]).length ? trainings.map(tr=>{
     const names = (tr.training_players||[]).map(tp=>playerName(tp.player_id)).join(', ');
     const when = tr.scheduled_at ? new Intl.DateTimeFormat('fr-FR',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}).format(new Date(tr.scheduled_at)) : 'Non planifié';
