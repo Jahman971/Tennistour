@@ -295,10 +295,10 @@ window.showPlayerCode = (code, nom) => {
   navigator.clipboard?.writeText(code).catch(()=>{});
 };
 window.viewPlayerPlanning = async (playerId, tourneeId, weekOffset=0) => {
-  shell(`<div class="empty">Chargement…</div>`, 'home');
+  shell(`<div class="empty">Chargement…</div>`, 'personnes');
 
   const { data: player } = await supabase.from('players').select('*').eq('id', playerId).maybeSingle();
-  if(!player){ shell(`<div class="empty">Joueur introuvable.</div>`,'home'); return; }
+  if(!player){ shell(`<div class="empty">Joueur introuvable.</div>`,'personnes'); return; }
 
   const { data: tournee } = await supabase.from('tournees').select('*, teams(nom)').eq('id', tourneeId).maybeSingle();
   const { data: etapes } = await supabase.from('tournaments').select('id,nom,formats(*)').eq('tournee_id', tourneeId);
@@ -318,8 +318,8 @@ window.viewPlayerPlanning = async (playerId, tourneeId, weekOffset=0) => {
 
   const { data: allPlayers } = await supabase.from('players').select('id,nom,prenom,genre').eq('team_id', player.team_id);
   const playerName = pid => fullName((allPlayers||[]).find(p=>p.id===pid));
+  const isSuperviseur = STATE.profile?.superviseur || STATE.profile?.role==='admin';
 
-  // Semaine
   const now = new Date();
   const todayStr = now.toISOString().slice(0,10);
   const monday = new Date(now);
@@ -328,8 +328,8 @@ window.viewPlayerPlanning = async (playerId, tourneeId, weekOffset=0) => {
   monday.setHours(0,0,0,0);
   const days = Array.from({length:7},(_,i)=>{ const d=new Date(monday); d.setDate(monday.getDate()+i); return d; });
   const dayKeys = days.map(d=>d.toISOString().slice(0,10));
-  const dayNames = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
   const monthFmt = new Intl.DateTimeFormat('fr-FR',{day:'numeric',month:'short'});
+  const dayFmt = new Intl.DateTimeFormat('fr-FR',{weekday:'long',day:'numeric',month:'long'});
   const timeFmt = new Intl.DateTimeFormat('fr-FR',{hour:'2-digit',minute:'2-digit'});
   const weekLabel = `${monthFmt.format(days[0])} – ${monthFmt.format(days[6])} ${days[0].getFullYear()}`;
 
@@ -340,54 +340,58 @@ window.viewPlayerPlanning = async (playerId, tourneeId, weekOffset=0) => {
   const byDay = {}; dayKeys.forEach(k=>byDay[k]=[]);
   items.forEach(it=>{ const k=(it.date||'').slice(0,10); if(byDay[k]) byDay[k].push(it); });
 
-  const isSuperviseur = STATE.profile?.superviseur || STATE.profile?.role==='admin';
-
-  const cols = dayKeys.map((k,i)=>{
+  const listHtml = dayKeys.map((k,i)=>{
+    const dayItems = (byDay[k]||[]).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+    if(!dayItems.length) return '';
     const isToday = k===todayStr;
-    const cells = (byDay[k]||[]).sort((a,b)=>(a.date||'').localeCompare(b.date||'')).map(it=>{
+    const dayLabel = dayFmt.format(days[i]);
+    const itemsHtml = dayItems.map(it=>{
       const time = it.date ? timeFmt.format(new Date(it.date)) : '';
       if(it.type==='match'){
         const m = it.data;
         const opp = m.joueur1_id===playerId ? (m.joueur_ext_nom||playerName(m.joueur2_id)) : playerName(m.joueur1_id);
-        const cls = m.statut==='en_cours'?'live':m.statut==='termine'?'done':'';
-        const statusPill = m.statut==='en_cours' ? '<span class="pill live">Live</span>'
+        const statusPill = m.statut==='en_cours' ? '<span class="pill live">Live 🔴</span>'
           : m.statut==='termine' ? '<span class="pill done">Terminé</span>' : '<span class="pill upcoming">À venir</span>';
-        return `<div class="card">
-          <div class="row between" onclick="navigate('#/coach/match/${m.id}')" style="cursor:pointer">
-            <div>
-              <div class="wm-time">${time ? '🕐 '+time : ''}</div>
-              <div style="font-weight:700">vs ${esc(opp)}</div>
-              <div class="muted" style="font-size:12px">${esc(m.tournaments?.nom||'')}${m.court?' · Court '+esc(m.court):''}</div>
+        return `<div class="card" style="margin-bottom:8px">
+          <div class="row between" onclick="navigate('#/coach/match/${m.id}')" style="cursor:pointer;gap:12px">
+            <div style="flex:1;min-width:0">
+              ${time ? `<div style="font-size:11px;color:var(--accent);font-weight:700;margin-bottom:4px">🕐 ${time}</div>` : ''}
+              <div style="font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">🎾 vs ${esc(opp)}</div>
+              <div class="muted" style="font-size:12px;margin-top:2px">${esc(m.tournaments?.nom||'')}${m.court?' · Court '+esc(m.court):''}${m.tour?' · '+esc(m.tour):''}</div>
             </div>
             ${statusPill}
           </div>
-          ${isSuperviseur ? `
-          <div class="row" style="margin-top:8px;gap:6px;border-top:1px solid var(--brd);padding-top:8px">
-            <button class="btn small secondary" style="flex:1" onclick="editMatch('${m.id}','${esc(playerName(m.joueur1_id)).replace(/'/g,"\\\\'")}','${esc(m.joueur_ext_nom||playerName(m.joueur2_id)).replace(/'/g,"\\\\'")}','${m.scheduled_at||''}','${m.tour||''}','${m.court||''}')">✏️ Modifier</button>
-            <button class="btn small clay" onclick="deleteMatchFromPlayer('${m.id}','${playerId}','${tourneeId}',${weekOffset})">🗑</button>
+          ${isSuperviseur ? `<div class="row" style="margin-top:10px;gap:8px;padding-top:10px;border-top:1px solid var(--brd)">
+            <button class="btn small secondary" style="flex:1" onclick="editMatch('${m.id}','${esc(playerName(m.joueur1_id)).replace(/'/g,"\\'")}','${esc((m.joueur_ext_nom||playerName(m.joueur2_id))).replace(/'/g,"\\'")}','${m.scheduled_at||''}','${m.tour||''}','${m.court||''}')">✏️ Modifier</button>
+            <button class="btn small clay" style="width:44px;text-align:center" onclick="deleteMatchFromPlayer('${m.id}','${playerId}','${tourneeId}',${weekOffset})">🗑</button>
           </div>` : ''}
         </div>`;
       } else {
         const tr = it.data;
-        return `<div class="week-match" style="background:var(--s3)">
-          <div class="wm-time">🕐 ${esc(time)}</div>
-          <div class="wm-players">🏋️ ${esc(tr.titre)}</div>
-          ${tr.lieu?`<div class="wm-sub">📍 ${esc(tr.lieu)}</div>`:''}
+        return `<div class="card" style="background:var(--s3);margin-bottom:8px">
+          ${time ? `<div style="font-size:11px;color:var(--accent);font-weight:700;margin-bottom:4px">🕐 ${time}</div>` : ''}
+          <div style="font-weight:700">🏋️ ${esc(tr.titre)}</div>
+          ${tr.lieu?`<div class="muted" style="font-size:12px;margin-top:2px">📍 ${esc(tr.lieu)}</div>`:''}
         </div>`;
       }
-    }).join('') || '';
-    return { isToday, cells, dayName: dayNames[i], date: monthFmt.format(days[i]) };
-  });
+    }).join('');
+    return `<div style="margin-bottom:20px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        ${isToday ? '<div style="width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0"></div>' : '<div style="width:6px;height:6px;border-radius:50%;background:var(--brd);flex-shrink:0"></div>'}
+        <span style="font-size:12px;font-weight:700;text-transform:capitalize;color:${isToday?'var(--accent)':'var(--light)'}">${dayLabel}</span>
+      </div>
+      ${itemsHtml}
+    </div>`;
+  }).filter(Boolean).join('');
 
-  // Formulaire ajout match (superviseur seulement)
   const formHtml = isSuperviseur ? `
-    <h3 style="margin:20px 0 8px">Programmer un match pour ${esc(fullName(player))}</h3>
+    <p class="section-title">Programmer un match</p>
     <div class="card">
       <form id="playerMatchForm">
         <label>Adversaire</label>
         <div class="tabs" style="margin-bottom:8px">
           <button type="button" class="active" onclick="setAdvMode(this,'interne')">Joueur de la tournée</button>
-          <button type="button" onclick="setAdvMode(this,'externe')">Joueur externe</button>
+          <button type="button" onclick="setAdvMode(this,'externe')">Externe</button>
         </div>
         <div id="advInterne">
           <select name="j2">
@@ -398,7 +402,7 @@ window.viewPlayerPlanning = async (playerId, tourneeId, weekOffset=0) => {
           <input name="joueur_ext_nom" placeholder="Prénom Nom de l'adversaire">
         </div>
         <label>Date et heure</label>
-        <input type="datetime-local" name="scheduled_at" required>
+        <input type="datetime-local" name="scheduled_at" id="playerMatchDate" required>
         <label>Étape</label>
         <select name="tournament_id" required>
           ${(etapes||[]).map(e=>`<option value="${e.id}">${esc(e.nom)}</option>`).join('')}
@@ -413,29 +417,22 @@ window.viewPlayerPlanning = async (playerId, tourneeId, weekOffset=0) => {
     </div>` : '';
 
   shell(`
-    <button class="btn ghost" onclick="navigate('#/coach/tournee/${tourneeId}')">← ${esc(tournee?.nom||'Tournée')}</button>
-    <div class="card" style="display:flex;align-items:center;gap:14px;padding:14px 16px;margin-bottom:6px">
+    <button class="btn ghost" onclick="navigate('#/personnes/${tourneeId}')">← Personnes</button>
+    <div style="display:flex;align-items:center;gap:12px;margin:12px 0 16px">
       <div style="font-size:36px;line-height:1">${player.genre==='F'?'👧':player.genre==='G'?'👦':'🎾'}</div>
       <div>
         <div style="font-family:var(--fnt-head);font-size:22px;font-weight:900">${esc(fullName(player))}</div>
-        <div class="muted">${esc(tournee?.nom||'')} · <button class="btn ghost" style="display:inline;padding:2px 8px;font-size:11px" onclick="showPlayerCode('${player.code}','${esc(fullName(player)).replace(/'/g,"\\'")}')">📋 Code</button></div>
+        <div class="muted" style="font-size:12px">${esc(tournee?.nom||'')} &nbsp;<button class="btn ghost" style="display:inline-flex;padding:2px 8px;font-size:11px;margin-top:0" onclick="showPlayerCode('${player.code}','${esc(fullName(player)).replace(/'/g,"\'")}')">📋 Code</button></div>
       </div>
     </div>
-    <div class="week-nav" style="margin-top:10px">
+    <div class="week-nav">
       <button class="btn small secondary" onclick="viewPlayerPlanning('${playerId}','${tourneeId}',${weekOffset-1})">← Préc.</button>
-      <h3>📆 ${esc(weekLabel)}</h3>
+      <span style="font-size:13px;font-weight:700">📆 ${esc(weekLabel)}</span>
       <button class="btn small secondary" onclick="viewPlayerPlanning('${playerId}','${tourneeId}',${weekOffset+1})">Suiv. →</button>
     </div>
-    <div style="overflow-x:auto">
-      <table class="week-table">
-        <thead><tr>
-          ${cols.map(c=>`<th class="${c.isToday?'today-col':''}">${c.dayName}<br><span style="font-weight:400">${c.date}</span></th>`).join('')}
-        </tr></thead>
-        <tbody><tr>${cols.map(c=>`<td>${c.cells||'<div style="height:20px"></div>'}</td>`).join('')}</tr></tbody>
-      </table>
-    </div>
+    ${listHtml || `<div class="empty-state"><div class="icon">📅</div><p>Aucun événement cette semaine.</p></div>`}
     ${formHtml}
-  `, 'home');
+  `, 'personnes');
 
   window.setAdvMode = (btn, mode) => {
     btn.closest('.tabs').querySelectorAll('button').forEach(b=>b.classList.remove('active'));
