@@ -724,12 +724,11 @@ function shell(content, navActive){
   const activeTourneeId = STATE.activeTourneeId;
   let nav = '';
   if(role === 'admin'){
-    const hasTeam = !!STATE.profile.team_id;
     nav = `
       <div class="tab-bar">
         <button class="${navActive==='admin'?'active':''}" onclick="navigate('#/coach')">🛠️<span class="label">Équipes</span></button>
         ${activeTourneeId ? `<button class="${navActive==='semaine'?'active':''}" onclick="viewTourneePlanning('${activeTourneeId}',0,'joueurs')">📆<span class="label">Semaine</span></button>` : ''}
-        ${activeTourneeId ? `<button class="${navActive==='personnes'?'active':''}" onclick="navigate('#/personnes/${activeTourneeId}')">👥<span class="label">Personnes</span></button>` : ''}
+        <button class="${navActive==='personnes'||navActive==='users'?'active':''}" onclick="${activeTourneeId?`navigate('#/personnes/${activeTourneeId}')`:`navigate('#/admin/utilisateurs')`}">👥<span class="label">Comptes</span></button>
         <button class="${navActive==='profile'?'active':''}" onclick="navigate('#/profil')">👤<span class="label">Profil</span></button>
       </div>`;
   } else if(role === 'coach'){
@@ -1209,8 +1208,8 @@ async function viewAdminHome(){
   }).join('') : `<div class="empty"><div class="big">🛠️</div>Aucune équipe créée pour l'instant.</div>`;
 
   shell(`
-    <h2 style="margin:4px 0 14px">Toutes les équipes</h2>
-    <p class="muted" style="margin-top:-10px">Vue administrateur — accès à toutes les tournées et matchs.</p>
+    <h2 style="margin:4px 0 8px">Toutes les équipes</h2>
+    <button class="btn secondary" style="margin-bottom:14px" onclick="navigate('#/admin/utilisateurs')">👥 Gérer les comptes</button>
     ${teamsHtml}
     <div class="card" style="border-style:dashed">
       <h3>+ Créer une équipe</h3>
@@ -1272,7 +1271,7 @@ async function viewAdminUsers(){
 
   shell(`
     <button class="btn ghost" onclick="history.back()">← Retour</button>
-    <h2 style="margin:8px 0 14px">Gestion des utilisateurs</h2>
+    <h2 style="margin:8px 0 14px">Gestion des comptes</h2>
 
     <div class="card">
       <h3>+ Créer un compte</h3>
@@ -1302,7 +1301,7 @@ async function viewAdminUsers(){
     </div>
 
     ${rows}
-  `, 'admin');
+  `, 'users');
 
   document.getElementById('createUserForm').addEventListener('submit', async e=>{
     e.preventDefault();
