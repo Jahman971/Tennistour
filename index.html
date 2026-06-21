@@ -3126,8 +3126,16 @@ function router(){
   const role = STATE.profile.role;
 
   // Un coach doit appartenir à une équipe avant d'accéder au reste de l'app
-  if(role === 'coach' && !STATE.profile.team_id && hash !== '#/equipe' && hash !== '#/profil'){
-    navigate('#/equipe'); return;
+  if(role === 'coach' && !STATE.profile.team_id && hash !== '#/profil'){
+    // Coach sans équipe : afficher message d'attente au lieu de rediriger vers création
+    shell(`
+      <div class="empty-state" style="padding:48px 24px">
+        <div class="icon">⏳</div>
+        <p>Tu n'es encore affecté à aucune équipe.<br>L'administrateur va t'assigner à une équipe.</p>
+        <button class="btn secondary" style="margin-top:16px" onclick="navigate('#/profil')">👤 Mon profil</button>
+      </div>
+    `);
+    return;
   }
   // Un coach adjoint qui vient de rejoindre une équipe attend la validation du coach principal
   if(role === 'coach' && STATE.profile.team_id && STATE.profile.statut === 'en_attente' && hash !== '#/profil'){
