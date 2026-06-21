@@ -1182,13 +1182,20 @@ async function viewAdminHome(){
   shell(`<div class="empty">Chargement…</div>`, 'admin');
   const { data: teams } = await supabase.from('teams').select('*').order('created_at',{ascending:false});
   const { data: tournees } = await supabase.from('tournees').select('*').order('date_debut',{ascending:false});
-  const { data: allCoaches } = await supabase.from('profiles').select('id,prenom,nom,team_id,superviseur,statut').eq('role','coach').order('prenom');
+  const { data: allCoaches } = await supabase.from('profiles').select('id,prenom,nom,statut').eq('role','coach').order('prenom');
+  const { data: coachTeamsAll } = await supabase.from('coach_teams').select('profile_id,team_id,superviseur,statut');
 
   const tByTeam = {};
   (tournees||[]).forEach(t => { (tByTeam[t.team_id] ||= []).push(t); });
+  // coachesByTeam : team_id -> [{...coach, superviseur, statut_equipe}]
   const coachesByTeam = {};
-  (allCoaches||[]).filter(c=>c.team_id).forEach(c=>{ (coachesByTeam[c.team_id]||=[]).push(c); });
-  const coachesSansEquipe = (allCoaches||[]).filter(c=>!c.team_id);
+  (coachTeamsAll||[]).forEach(ct=>{
+    const coach = (allCoaches||[]).find(c=>c.id===ct.profile_id);
+    if(coach) (coachesByTeam[ct.team_id]||=[]).push({...coach, superviseur:ct.superviseur, statut:ct.statut});
+  });
+  // Coachs sans aucune équipe
+  const coachTeamIds = new Set((coachTeamsAll||[]).map(ct=>ct.profile_id));
+  const coachesSansEquipe = (allCoaches||[]).filter(c=>!coachTeamIds.has(c.id));
 
   const teamsHtml = (teams||[]).length ? (teams||[]).map(team => {
     const tours = tByTeam[team.id] || [];
@@ -1262,7 +1269,7 @@ async function viewAdminHome(){
     form.addEventListener('submit', async e=>{
       e.preventDefault();
       const coachId = new FormData(e.target).get('coach_id');
-      const { error } = await supabase.from('profiles').update({ team_id: form.dataset.team, statut:'actif' }).eq('id', coachId);
+      const { error } = await supabase.from('coach_teams').upsert({ profile_id: coachId, team_id: form.dataset.team, statut:'actif', superviseur: false });
       if(error){ toast(error.message, true); return; }
       toast('Coach ajouté ✅');
       viewAdminHome();
@@ -1272,13 +1279,13 @@ async function viewAdminHome(){
 window.viewAdminOpenTournee = (id) => { STATE.activeTourneeId = id; navigate('#/coach/tournee/'+id); };
 window.adminRemoveCoachFromTeam = async (coachId, prenom, teamId) => {
   if(!confirm(`Retirer ${prenom} de cette équipe ?`)) return;
-  await supabase.from('profiles').update({ team_id: null, superviseur: false }).eq('id', coachId);
+  await supabase.from('coach_teams').delete().eq('profile_id', coachId).eq('team_id', teamId);
   toast(`${prenom} retiré`);
   viewAdminHome();
 };
 window.adminDeleteTeam = async (teamId, nom) => {
-  if(!confirm(`Supprimer l'équipe "${nom}" ? Les coachs seront détachés.`)) return;
-  await supabase.from('profiles').update({ team_id: null, superviseur: false }).eq('team_id', teamId);
+  if(!confirm(`Supprimer l'équipe "${nom}" ?`)) return;
+  // coach_teams supprimés en cascade
   const { error } = await supabase.from('teams').delete().eq('id', teamId);
   if(error){ toast(error.message, true); return; }
   toast('Équipe supprimée');
@@ -1553,6 +1560,10 @@ async function viewMyPlanning(){
   const teamId = STATE.profile.team_id;
 
   // Matchs assignés via etape_coaches OU match_coaches
+  // Équipes du coach (peut en avoir plusieurs)
+  const { data: myTeams } = await supabase.from('coach_teams').select('team_id').eq('profile_id', uid);
+  const myTeamIds = (myTeams||[]).map(t=>t.team_id);
+
   const { data: ec } = await supabase.from('etape_coaches').select('tournament_id').eq('profile_id', uid);
   const etapeIds = (ec||[]).map(r=>r.tournament_id);
   const { data: mc } = await supabase.from('match_coaches').select('match_id').eq('profile_id', uid);
@@ -1903,7 +1914,8 @@ async function viewPersonnes(tourneeId){
 
   const { data: etapes } = await supabase.from('tournaments').select('id,nom,formats(*)').eq('tournee_id', tourneeId);
 
-  const { data: coaches } = await supabase.from('profiles').select('id,nom,prenom,statut,superviseur').eq('team_id', tournee.team_id).eq('role','coach');
+  const { data: coachLinks } = await supabase.from('coach_teams').select('profile_id,superviseur,statut,profiles(id,nom,prenom)').eq('team_id', tournee.team_id);
+  const coaches = (coachLinks||[]).map(l=>({...l.profiles, superviseur:l.superviseur, statut:l.statut})).filter(c=>c.id);
 
   const canManage = STATE.profile?.role==='admin' || STATE.profile?.superviseur;
 
@@ -2020,11 +2032,11 @@ async function viewCoachHome(){
   }
   // Superviseur → liste des tournées + création
   shell(`<div class="empty">Chargement…</div>`, 'home');
-  const teamId = STATE.profile.team_id;
-  const { data: tournees, error } = await supabase
-    .from('tournees').select('*')
-    .eq('team_id', teamId)
-    .order('date_debut', { ascending:false });
+  const { data: myTeamLinks } = await supabase.from('coach_teams').select('team_id, teams(nom)').eq('profile_id', STATE.session.user.id);
+  const myTeamIds = (myTeamLinks||[]).map(t=>t.team_id);
+  const { data: tournees, error } = myTeamIds.length
+    ? await supabase.from('tournees').select('*').in('team_id', myTeamIds).order('date_debut', { ascending:false })
+    : { data: [], error: null };
 
   let list = '';
   if(error){ list = `<div class="error">${esc(error.message)}</div>`; }
@@ -2130,7 +2142,8 @@ async function viewCoachTournee(id){
   }
 
   // Coachs de l'équipe (pour affectation) + affectations existantes
-  const { data: teamCoaches } = await supabase.from('profiles').select('id, nom, prenom').eq('team_id', tournee.team_id).eq('role','coach').eq('statut','actif');
+  const { data: coachTeamLinks } = await supabase.from('coach_teams').select('profile_id, profiles(id,nom,prenom)').eq('team_id', tournee.team_id).eq('statut','actif');
+  const teamCoaches = (coachTeamLinks||[]).map(l=>l.profiles).filter(Boolean);
   const coachName = pid => fullName((teamCoaches||[]).find(c=>c.id===pid));
 
   let etapeCoachMap = {}; // etapeId -> [profileId,...]
