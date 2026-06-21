@@ -1182,12 +1182,13 @@ async function viewAdminHome(){
   shell(`<div class="empty">Chargement…</div>`, 'admin');
   const { data: teams } = await supabase.from('teams').select('*').order('created_at',{ascending:false});
   const { data: tournees } = await supabase.from('tournees').select('*').order('date_debut',{ascending:false});
-  const { data: coaches } = await supabase.from('profiles').select('id, nom, team_id').eq('role','coach');
+  const { data: allCoaches } = await supabase.from('profiles').select('id,prenom,nom,team_id,superviseur,statut').eq('role','coach').order('prenom');
 
   const tByTeam = {};
   (tournees||[]).forEach(t => { (tByTeam[t.team_id] ||= []).push(t); });
-  const coachByTeam = {};
-  (coaches||[]).forEach(c => { (coachByTeam[c.team_id] ||= []).push(c.nom); });
+  const coachesByTeam = {};
+  (allCoaches||[]).filter(c=>c.team_id).forEach(c=>{ (coachesByTeam[c.team_id]||=[]).push(c); });
+  const coachesSansEquipe = (allCoaches||[]).filter(c=>!c.team_id);
 
   const teamsHtml = (teams||[]).length ? (teams||[]).map(team => {
     const tours = tByTeam[team.id] || [];
@@ -1246,12 +1247,13 @@ async function viewAdminUsers(){
   const rows = (profiles||[]).length ? (profiles||[]).map(p=>{
     const isMe = p.id === STATE.session.user.id;
     const statut = p.role==='admin' ? 'Admin' : p.superviseur ? 'Superviseur' : 'Coach';
+    const pPrenom = esc(p.prenom||p.nom?.split(' ')[0]||'?');
     const statutColor = p.role==='admin' ? 'done' : p.superviseur ? 'live' : 'upcoming';
     return `
     <div class="card">
       <div class="row between" style="gap:10px">
         <div>
-          <div style="font-weight:700">${esc(fullName(p)||'—')}</div>
+          <div style="font-weight:700">${esc(p.prenom||'')} <span style="opacity:.6;font-size:13px">${esc(p.nom||'')}</span></div>
           <div class="muted" style="font-size:12px">${p.team_id?esc(teamName(p.team_id)):'Sans équipe'}</div>
         </div>
         <div style="text-align:right;flex-shrink:0">
@@ -2200,7 +2202,7 @@ async function viewCoachTournee(id){
     <button class="btn ghost" onclick="history.back()">← Tournées</button>
     <h2 style="margin:8px 0 2px">${esc(tournee.nom)}</h2>
     <p class="muted" style="margin-top:0">${esc(tournee.lieu||'')} ${tournee.date_debut?'· '+tournee.date_debut+(tournee.date_fin?(' → '+tournee.date_fin):''):''}</p>
-    <button class="btn" style="margin-bottom:14px" onclick="viewTourneePlanning('${id}',0)">📆 Voir le planning semaine</button>
+    <div class="row" style="gap:8px;margin-bottom:14px"><button class="btn" style="flex:1" onclick="viewTourneePlanning('${id}',0,'joueurs')">📆 Semaine</button><button class="btn secondary" style="flex:1" onclick="navigate('#/personnes/${id}')">👥 Joueurs</button></div>
 
     <p class="section-title">Joueurs de la tournée</p>
     <div class="card">
