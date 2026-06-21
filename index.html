@@ -437,7 +437,7 @@ window.viewPlayerPlanning = async (playerId, tourneeId, weekOffset=0, selectedDa
     </div>` : '';
 
   shell(`
-    <button class="btn ghost" onclick="navigate('#/personnes/${tourneeId}')">← Personnes</button>
+    <button class="btn ghost" onclick="history.back()">← Personnes</button>
     <div style="display:flex;align-items:center;gap:12px;margin:12px 0 16px">
       <div style="font-size:36px;line-height:1">${player.genre==='F'?'👧':player.genre==='G'?'👦':'🎾'}</div>
       <div>
@@ -1240,7 +1240,7 @@ async function viewAdminUsers(){
   }).join('') : `<div class="empty">Aucun utilisateur.</div>`;
 
   shell(`
-    <button class="btn ghost" onclick="navigate('#/coach')">← Toutes les équipes</button>
+    <button class="btn ghost" onclick="history.back()">← Retour</button>
     <h2 style="margin:8px 0 14px">Gestion des utilisateurs</h2>
 
     <div class="card">
@@ -1731,7 +1731,7 @@ async function viewTourneePlanning(tourneeId, weekOffset=0, viewMode='joueurs'){
     </div>` : '';
 
   shell(`
-    <button class="btn ghost" onclick="navigate('#/coach/tournee/${tourneeId}')">← ${esc(tournee.nom)}</button>
+    <button class="btn ghost" onclick="history.back()">← ${esc(tournee.nom)}</button>
     ${weekNav}
     ${tabBar}
     ${mainHtml}
@@ -2148,7 +2148,7 @@ async function viewCoachTournee(id){
   }).join('') : `<div class="empty">Rien de programmé pour l'instant.</div>`;
 
   shell(`
-    <button class="btn ghost" onclick="navigate('${tournee.team_id===STATE.profile.team_id ? '#/mon-equipe' : '#/coach'}')">← Tournées</button>
+    <button class="btn ghost" onclick="history.back()">← Tournées</button>
     <h2 style="margin:8px 0 2px">${esc(tournee.nom)}</h2>
     <p class="muted" style="margin-top:0">${esc(tournee.lieu||'')} ${tournee.date_debut?'· '+tournee.date_debut+(tournee.date_fin?(' → '+tournee.date_fin):''):''}</p>
     <button class="btn" style="margin-bottom:14px" onclick="viewTourneePlanning('${id}',0)">📆 Voir le planning semaine</button>
@@ -2402,7 +2402,7 @@ async function viewCoachTournament(id){
     </div>`).join('') : `<p class="muted">Aucun joueur inscrit.</p>`;
 
   shell(`
-    <button class="btn ghost" onclick="navigate('#/coach/tournee/${t.tournee_id}')">← Tournée</button>
+    <button class="btn ghost" onclick="history.back()">← Tournée</button>
     <h2 style="margin:8px 0 2px">${esc(t.nom)}</h2>
     <p class="muted" style="margin-top:0">${esc(t.formats?.nom||'')}</p>
 
@@ -2568,7 +2568,7 @@ function renderCoachMatch(m, n1, n2){
   }).join(' &nbsp;');
 
   shell(`
-    <button class="btn ghost" onclick="navigate('#/coach/tournoi/${m.tournament_id}')">← Tournoi</button>
+    <button class="btn ghost" onclick="history.back()">← Retour</button>
     ${scoreboardHTML(m, n1, n2)}
 
     ${isLive ? `
