@@ -2278,11 +2278,22 @@ async function viewCoachTournament(id){
 // VUE : COACH — SAISIE DU SCORE EN DIRECT
 // ---------------------------------------------------------------
 async function viewCoachMatch(id){
-  shell(`<div class="empty">Chargement…</div>`, 'home');
+  app.innerHTML = `<main style="padding-top:70px;text-align:center"><div class="muted">Chargement…</div></main>`;
   const { data: m } = await supabase.from('matches').select('*, tournaments(nom, format_id, tournee_id), match_coaches(profile_id, profiles(nom,prenom))').eq('id', id).single();
   if(!m){ shell(`<div class="empty">Match introuvable.</div>`,'home'); return; }
   const { data: p1 } = await supabase.from('players').select('nom,prenom').eq('id', m.joueur1_id).single();
   const n2 = m.joueur_ext_nom || (m.joueur2_id ? await supabase.from('players').select('nom,prenom').eq('id', m.joueur2_id).single().then(r=>fullName(r.data)) : '—');
+
+  // Vérifier si le coach courant peut modifier le score
+  const uid = STATE.session.user.id;
+  const isAdmin = STATE.profile?.role === 'admin';
+  const isSuperviseur = STATE.profile?.superviseur;
+  const assignedCoaches = (m.match_coaches||[]).map(mc=>mc.profile_id);
+  const hasAssignedCoaches = assignedCoaches.length > 0;
+  const isAssigned = assignedCoaches.includes(uid);
+  // Peut scorer si : admin OU superviseur OU (assigné à ce match) OU (aucun coach assigné = ouvert à tous les coachs de l'équipe)
+  const canScore = isAdmin || isSuperviseur || isAssigned || !hasAssignedCoaches;
+
   // Charger les coachs de l'équipe pour la section d'affectation
   let teamCoaches = [];
   if(m.tournaments?.tournee_id){
@@ -2294,6 +2305,7 @@ async function viewCoachMatch(id){
   }
   STATE.history = [];
   STATE._matchTeamCoaches = teamCoaches;
+  STATE._canScore = canScore;
   renderCoachMatch(m, fullName(p1), n2);
 }
 
@@ -2318,6 +2330,7 @@ function renderCoachMatch(m, n1, n2){
     if(tbActive) return st.points[i];
     return ptLabel[Math.min(st.points?.[i]||0, 3)] || '0';
   };
+  const canScore = STATE._canScore !== false; // true par défaut
   const isOver = m.statut === 'termine';
   const isLive = m.statut === 'en_cours';
   const unit = tbActive ? 'point' : 'jeu';
@@ -2369,7 +2382,7 @@ function renderCoachMatch(m, n1, n2){
         </div>
       </div>
     </div>
-
+    ${canScore ? `
     <div class="pointZone">
       <button class="pointBtn primary" onclick="scorePoint(0)">
         <span class="pbWho">${esc(n1)}</span>
@@ -2386,10 +2399,13 @@ function renderCoachMatch(m, n1, n2){
       <button class="btn secondary" onclick="toggleServe()">🎾 Chg. service</button>
       <button class="btn secondary" onclick="undoPoint()">↺ Annuler</button>
       <button class="btn secondary" onclick="resetMatch()">⟳ Réinit.</button>
-    </div>
+    </div>` : `
+    <div class="card" style="text-align:center;background:var(--s1);border-style:dashed">
+      <p class="muted" style="margin:0">👁 Observateur — seul le coach assigné peut modifier le score.</p>
+    </div>`}
     ` : ''}
 
-    ${m.statut==='a_venir' ? `<button class="btn clay" style="font-size:18px; padding:20px" onclick="startMatch()">▶ Démarrer le match</button>` : ''}
+    ${m.statut==='a_venir' ? (canScore ? `<button class="btn clay" style="font-size:18px; padding:20px" onclick="startMatch()">▶ Démarrer le match</button>` : `<div class="card" style="text-align:center;background:var(--s1);border-style:dashed"><p class="muted" style="margin:0">👁 Observateur — seul le coach assigné peut démarrer ce match.</p></div>`) : ''}
 
     <div class="card" style="margin-top:10px">
       <h3>🧑‍🏫 Coachs accompagnants</h3>
