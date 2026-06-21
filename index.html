@@ -1055,8 +1055,7 @@ async function viewProfil(){
           </form>` : `<p class="muted">${esc(team.nom)}</p>`}
           <label style="margin-top:14px">Code d'invitation coachs</label>
           <div class="row" style="gap:8px;margin-top:6px">
-            <div class="code-badge" style="flex:1;text-align:center;font-size:18px;letter-spacing:4px">${esc(team.code)}</div>
-            <button class="btn small secondary" onclick="navigator.clipboard?.writeText('${esc(team.code)}');toast('Code copié 📋')">📋</button>
+            <div class="code-badge" style="flex:1;text-align:center;font-size:18px;letter-spacing:4px;cursor:pointer" onclick="copyTeamCode('${esc(team.code)}')">${esc(team.code)} 📋</div>
           </div>
           ${isPrincipal ? `<button class="btn secondary" style="margin-top:8px" onclick="regenerateTeamCode('${team.id}')">↺ Nouveau code</button>` : ''}
         </div>`;
@@ -1111,6 +1110,10 @@ window.editTeamAdmin = (teamId, currentNom) => {
     overlay.remove();
     viewAdminHome();
   });
+};
+window.copyTeamCode = (code) => {
+  navigator.clipboard?.writeText(code).catch(()=>{});
+  toast('Code copié 📋');
 };
 window.regenerateTeamCode = async (teamId) => {
   if(!confirm("Générer un nouveau code d'invitation ? L'ancien code ne fonctionnera plus pour rejoindre l'équipe.")) return;
@@ -1238,10 +1241,7 @@ async function viewAdminHome(){
       <div class="card">
         <div class="row between" style="margin-bottom:6px">
           <h3 style="margin:0">${esc(team.nom)}</h3>
-          <div class="row" style="gap:6px">
-            <div class="code-badge" style="font-size:13px;padding:4px 8px;cursor:pointer" onclick="navigator.clipboard?.writeText('${esc(team.code)}');toast('Code copié 📋')">${esc(team.code)} 📋</div>
-            <button class="btn small secondary" onclick="editTeamAdmin('${team.id}','${esc(team.nom).replace(/'/g,"\\\\'")}')">✏️</button>
-          </div>
+<button class="btn small secondary" onclick="editTeamAdmin('${team.id}','${esc(team.nom).replace(/'/g,"\\\\'")}')">✏️</button>
         </div>
         <p class="muted">Coachs : ${(coachByTeam[team.id]||[]).map(esc).join(', ')||'—'}</p>
         ${tourHtml}
