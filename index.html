@@ -773,7 +773,7 @@ function saveCode(code, nom){
 }
 function viewLanding(){
   // Récupérer les matchs live publiquement pour les afficher sur la landing
-  supabase.from('matches').select('*, tournaments(nom), players!matches_joueur1_id_fkey(nom,prenom), players!matches_joueur2_id_fkey(nom,prenom)').eq('statut','en_cours').limit(5).then(({ data: liveMatches }) => {
+  supabase.from('matches').select('*, tournaments(nom)').eq('statut','en_cours').limit(5).then(({ data: liveMatches }) => {
     const liveHtml = (liveMatches||[]).length ? `
       <div style="margin-bottom:20px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
@@ -783,7 +783,7 @@ function viewLanding(){
         ${liveMatches.map(m=>`
           <div class="card" onclick="navigate('#/match/${m.id}')" style="cursor:pointer;border-color:var(--live);background:rgba(224,92,58,.07);margin-bottom:8px">
             <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-              <div style="font-weight:700;font-size:15px">${esc(fullName(m.players)||'?')} <span style="color:var(--gray);font-weight:400">vs</span> ${esc(m.joueur_ext_nom||fullName(m['players!matches_joueur2_id_fkey'])||'?')}</div>
+              <div style="font-weight:700;font-size:15px">Match en direct</div>
               <span class="pill live">Live 🔴</span>
             </div>
             <p class="muted" style="margin:4px 0 0">${esc(m.tournaments?.nom||'')}${m.court?' · Court '+esc(m.court):''}</p>
