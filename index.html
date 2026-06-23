@@ -1379,6 +1379,10 @@ async function viewAdminUsers(){
             <option value="">— Sans équipe —</option>
             ${(teams||[]).map(t=>`<option value="${t.id}">${esc(t.nom)}</option>`).join('')}
           </select>
+          <div class="chk-item" style="margin-top:8px">
+            <input type="checkbox" name="superviseur" id="createUserSuperviseur">
+            <label for="createUserSuperviseur">⭐ Superviseur de cette équipe</label>
+          </div>
         </div>
         <button class="btn clay" type="submit">Créer le compte</button>
         <div class="error" id="createUserErr"></div>
@@ -1400,11 +1404,19 @@ async function viewAdminUsers(){
     errEl.textContent = ''; resEl.innerHTML = '';
     const role = f.get('role');
     const teamId = role === 'coach' ? (f.get('team_id')||null) : null;
+    const isSuperviseur = role === 'coach' && f.get('superviseur') === 'on';
     const { data, error } = await supabase.functions.invoke('admin-create-user', {
       body: { nom: f.get('nom'), prenom: f.get('prenom')||null, login: f.get('login'), role, team_id: teamId }
     });
     if(error){ errEl.textContent = "Erreur réseau : " + error.message; return; }
     if(data?.error){ errEl.textContent = data.error; return; }
+    // Si équipe sélectionnée, insérer dans coach_teams
+    if(teamId && data.user_id){
+      await supabase.from('coach_teams').upsert({
+        profile_id: data.user_id, team_id: teamId,
+        superviseur: isSuperviseur, statut: 'actif'
+      });
+    }
     resEl.innerHTML = `
       <div class="card" style="margin-top:10px;border-color:var(--accent)">
         <h3>✅ Compte créé</h3>
