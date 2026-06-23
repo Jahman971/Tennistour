@@ -97,8 +97,8 @@ textarea{resize:vertical; min-height:90px;}
 }
 .tab-bar button{
   flex:1; background:none; border:none; color:var(--gray); padding:8px 0;
-  display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer;
-  transition:color .15s;
+  display:flex; flex-direction:column; align-items:center; gap:3px; cursor:pointer;
+  transition:color .15s; font-size:20px;
 }
 .tab-bar button.active{color:var(--accent);}
 .tab-bar button:active{opacity:.7;}
@@ -141,7 +141,7 @@ textarea{resize:vertical; min-height:90px;}
 .board .tiebreak-banner .tb-label{font-size:10px; text-transform:uppercase; letter-spacing:1.5px; align-self:center; color:var(--light); font-weight:700;}
 
 /* Section titles */
-.section-title{font-size:11px; text-transform:uppercase; letter-spacing:2px; color:var(--gray); font-weight:700; margin:20px 0 8px; padding-bottom:6px; border-bottom:1px solid var(--brd);}
+.section-title{font-size:10px; text-transform:uppercase; letter-spacing:2px; color:var(--gray); font-weight:700; margin:18px 0 8px; padding-bottom:5px; border-bottom:1px solid var(--brd); display:flex; align-items:center; gap:6px;}
 /* Empty state */
 .empty-state{text-align:center; padding:48px 24px; color:var(--gray);}
 .empty-state .icon{font-size:48px; margin-bottom:12px;}
@@ -165,7 +165,7 @@ textarea{resize:vertical; min-height:90px;}
 .week-match .wm-time{font-size:10px; color:var(--accent); font-weight:700; margin-bottom:2px; opacity:.8;}
 .week-match .wm-players{font-weight:700; font-size:11px; line-height:1.3;}
 .week-match .wm-sub{font-size:10px; color:var(--dim); margin-top:2px;}
-.week-nav{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; background:var(--s2); border:1px solid var(--brd); border-radius:var(--r); padding:10px 12px;}
+.week-nav{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; background:var(--s2); border:1px solid var(--brd); border-radius:var(--r); padding:8px 10px;}
 .week-nav h3{margin:0; font-size:13px; font-weight:700; color:var(--white);}
 /* ── Live scoring ── */
 .lsBoard{
@@ -411,7 +411,7 @@ window.viewPlayerPlanning = async (playerId, tourneeId, weekOffset=0, selectedDa
   const activeDayLabel = dayFmt.format(new Date(active+'T00:00:00'));
 
   const formHtml = isSuperviseur ? `
-    <p class="section-title">Programmer un match</p>
+    <p class="section-title">+ Match</p>
     <div class="card">
       <form id="playerMatchForm">
         <label>Adversaire</label>
@@ -810,9 +810,9 @@ function shell(content, navActive){
   app.innerHTML = `
     <div class="topbar">
       <div class="brand"><span class="dot"></span> Tennistour</div>
-      ${STATE.profile ? `<div class="who" onclick="navigate('#/profil')" style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;line-height:1.2">
-        <span>${esc(STATE.profile.prenom || STATE.profile.nom?.split(' ')[0] || 'Moi')}</span>
-        <span style="font-size:9px;opacity:.7;letter-spacing:1px">${STATE.profile.role==='admin'?'ADMIN':STATE.profile.superviseur?'SUPERVISEUR':'COACH'}</span>
+      ${STATE.profile ? `<div class="who" onclick="navigate('#/profil')" style="cursor:pointer;display:flex;flex-direction:column;align-items:flex-end;gap:1px;line-height:1.2;padding:4px 10px;border-radius:20px;border:1px solid var(--brd)">
+        <span style="font-size:12px;font-weight:700">${esc(STATE.profile.prenom || STATE.profile.nom?.split(' ')[0] || 'Moi')}</span>
+        <span style="font-size:9px;opacity:.6;letter-spacing:1px">${STATE.profile.role==='admin'?'ADMIN':STATE.profile.superviseur?'SUPERV.':'COACH'}</span>
       </div>` : ''}
     </div>
     <main>${content}</main>
@@ -1965,7 +1965,7 @@ async function viewTourneePlanning(tourneeId, weekOffset=0, viewMode='joueurs'){
 
   // Formulaire "Programmer un match" pour superviseur (vue joueurs seulement)
   const formHtml = isSuperviseur && viewMode==='joueurs' ? `
-    <p class="section-title">Programmer un match</p>
+    <p class="section-title">+ Match</p>
     <div class="card">
       <form id="quickMatchForm">
         <label>Joueur de la tournée</label>
@@ -2273,7 +2273,7 @@ async function viewCoachHome(){
   });
 }
 window.viewCoachTourneeTab = (id, tab) => {
-  history.replaceState(null,'', location.pathname + location.search + '#/coach/tournee/' + id + '?tab=' + tab);
+  STATE._tourneeTab = tab;
   viewCoachTournee(id);
 };
 window.validateCoach = async (profileId) => {
@@ -2288,6 +2288,8 @@ window.validateCoach = async (profileId) => {
 // ---------------------------------------------------------------
 async function viewCoachTournee(id){
   STATE.activeTourneeId = id;
+  if(STATE._lastTourneeId !== id){ STATE._tourneeTab = 'joueurs'; }
+  STATE._lastTourneeId = id;
   shell(`<div class="empty">Chargement…</div>`, 'home');
 
   const { data: tournee } = await supabase.from('tournees').select('*').eq('id', id).maybeSingle();
@@ -2439,13 +2441,13 @@ async function viewCoachTournee(id){
     return `<h3 style="margin:18px 0 8px; text-transform:capitalize;">${esc(label)}</h3>${rows}`;
   }).join('') : `<div class="empty">Rien de programmé pour l'instant.</div>`;
 
-  const tabParam = (new URLSearchParams(location.hash.split('?')[1]||'')).get('tab') || 'joueurs';
+  const tabParam = STATE._tourneeTab || 'joueurs';
 
-  const tabBar = `<div class="tabs" style="margin-bottom:12px">
-    <button class="${tabParam==='joueurs'?'active':''}" onclick="viewCoachTourneeTab('${id}','joueurs')">👥 Joueurs</button>
-    <button class="${tabParam==='etapes'?'active':''}" onclick="viewCoachTourneeTab('${id}','etapes')">🎾 Étapes</button>
-    <button class="${tabParam==='training'?'active':''}" onclick="viewCoachTourneeTab('${id}','training')">🏋️ Entraîn.</button>
-    <button class="${tabParam==='planning'?'active':''}" onclick="viewCoachTourneeTab('${id}','planning')">📆 Planning</button>
+  const tabBar = `<div class="tabs" style="margin-bottom:14px;gap:6px">
+    <button class="${tabParam==='joueurs'?'active':''}" onclick="viewCoachTourneeTab('${id}','joueurs')" style="font-size:11px;padding:8px 6px">👥<br>Joueurs</button>
+    <button class="${tabParam==='etapes'?'active':''}" onclick="viewCoachTourneeTab('${id}','etapes')" style="font-size:11px;padding:8px 6px">🎾<br>Étapes</button>
+    <button class="${tabParam==='training'?'active':''}" onclick="viewCoachTourneeTab('${id}','training')" style="font-size:11px;padding:8px 6px">🏋️<br>Entraîn.</button>
+    <button class="${tabParam==='planning'?'active':''}" onclick="viewCoachTourneeTab('${id}','planning')" style="font-size:11px;padding:8px 6px">📆<br>Planning</button>
   </div>`;
 
   let tabContent = '';
@@ -2537,7 +2539,7 @@ async function viewCoachTournee(id){
     <h2 style="margin:8px 0 2px">${esc(tournee.nom)}</h2>
     <p class="muted" style="margin-top:0;margin-bottom:12px">${esc(tournee.lieu||'')}${tournee.date_debut?' · '+tournee.date_debut+(tournee.date_fin?' → '+tournee.date_fin:''):''}</p>
     ${tabBar}
-    <div class="card">${tabContent}</div>
+    ${tabContent}
   `, 'tournee');
 
   document.querySelectorAll('.etapeCoachForm').forEach(form=>{
