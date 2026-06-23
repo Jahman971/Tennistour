@@ -1617,7 +1617,6 @@ function buildPlanningHtml(items, playerName, canScoreMatch){
 async function viewMyPlanning(){
   shell(`<div class="empty">Chargement…</div>`, 'planning');
   const uid = STATE.session.user.id;
-  const teamId = STATE.profile.team_id;
 
   // Matchs assignés via etape_coaches OU match_coaches
   // Équipes du coach (peut en avoir plusieurs)
@@ -1648,7 +1647,9 @@ async function viewMyPlanning(){
     trainings = t || [];
   }
 
-  const { data: roster } = await supabase.from('players').select('id,nom,prenom,genre').eq('team_id', teamId);
+  const { data: roster } = myTeamIds.length
+    ? await supabase.from('players').select('id,nom,prenom,genre').in('team_id', myTeamIds)
+    : { data: [] };
   const playerName = pid => fullName((roster||[]).find(p=>p.id===pid));
 
   // Matchs EN COURS — section prioritaire en haut
