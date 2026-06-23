@@ -1749,7 +1749,7 @@ async function viewTourneePlanning(tourneeId, weekOffset=0, viewMode='joueurs'){
 
   let allMatches = [];
   if(etapeIds.length){
-    const { data: m } = await supabase.from('matches').select('*').in('tournament_id', etapeIds).order('scheduled_at');
+    const { data: m } = await supabase.from('matches').select('*, match_coaches(profile_id)').in('tournament_id', etapeIds).order('scheduled_at');
     allMatches = m || [];
   }
 
@@ -1867,28 +1867,35 @@ async function viewTourneePlanning(tourneeId, weekOffset=0, viewMode='joueurs'){
   // VUE STAFF : par coach, les matchs dont il est responsable cette semaine
   // =====================================================================
   } else {
-    const { data: teamCoaches } = await supabase.from('profiles')
-      .select('id,nom,prenom').eq('team_id', tournee.team_id).eq('role','coach').eq('statut','actif');
+    // Charger via coach_teams (multi-équipes)
+    const { data: coachLinks } = await supabase.from('coach_teams')
+      .select('profile_id, profiles(id,nom,prenom)').eq('team_id', tournee.team_id).eq('statut','actif');
+    const teamCoaches = (coachLinks||[]).map(l=>l.profiles).filter(Boolean);
 
-    if(!(teamCoaches||[]).length){
-      mainHtml = `<div class="empty">Aucun coach dans l'équipe.</div>`;
+    if(!teamCoaches.length){
+      mainHtml = `<div class="empty-state"><div class="icon">👤</div><p>Aucun coach dans cette équipe.</p></div>`;
     } else {
-      mainHtml = (teamCoaches||[]).map(coach=>{
-        const coachEtapeIds = etapeIds.filter(eid=>(coachesByEtape[eid]||[]).some(c=>c&&c.nom===coach.nom));
-        const matchsCoach = allMatches.filter(m=>coachEtapeIds.includes(m.tournament_id));
+      mainHtml = teamCoaches.map(coach=>{
+        // Matchs assignés directement à ce coach (match_coaches)
+        const coachMatchIds = new Set(
+          allMatches.filter(m=>(m.match_coaches||[]).some(mc=>mc.profile_id===coach.id)).map(m=>m.id)
+        );
+        // Matchs des étapes assignées à ce coach (etape_coaches)
+        const coachEtapeIds = etapeIds.filter(eid=>(coachesByEtape[eid]||[]).some(c=>c&&c.id===coach.id));
+        const matchsCoach = allMatches.filter(m=>coachMatchIds.has(m.id)||coachEtapeIds.includes(m.tournament_id));
 
         const cols = dayKeys.map((k,i)=>{
           const isToday = k===todayStr;
-          const cells = (byDay[k]||[]).filter(m=>coachEtapeIds.includes(m.tournament_id))
+          const cells = (byDay[k]||[])
+            .filter(m=>coachMatchIds.has(m.id)||coachEtapeIds.includes(m.tournament_id))
             .sort((a,b)=>(a.scheduled_at||'').localeCompare(b.scheduled_at||''))
             .map(m=>{
-              const time = timeFmt.format(new Date(m.scheduled_at));
+              const time = m.scheduled_at ? timeFmt.format(new Date(m.scheduled_at)) : '';
               const cls = m.statut==='en_cours'?'live':m.statut==='termine'?'done':'';
-              const route = `#/coach/match/${m.id}`;
-              return `<div class="week-match ${cls}" onclick="navigate('${route}')">
+              return `<div class="week-match ${cls}" onclick="navigate('#/coach/match/${m.id}')">
                 <div class="wm-time">🕐 ${esc(time)}</div>
                 <div class="wm-players">${esc(playerName(m.joueur1_id))}</div>
-                <div class="wm-players" style="color:var(--dim)">vs ${esc((m.joueur_ext_nom || playerName(m.joueur2_id)))}</div>
+                <div class="wm-players" style="color:var(--dim)">vs ${esc((m.joueur_ext_nom||playerName(m.joueur2_id)))}</div>
                 <div class="wm-sub">${esc(etapeNom(m.tournament_id))}${m.court?' C.'+esc(m.court):''}</div>
               </div>`;
             }).join('') || '';
@@ -1898,8 +1905,8 @@ async function viewTourneePlanning(tourneeId, weekOffset=0, viewMode='joueurs'){
         const hasMatchThisWeek = cols.some(c=>c.cells);
         if(!hasMatchThisWeek && !isSuperviseur) return '';
 
-        return `<div class="card" style="padding:10px 12px; margin-bottom:10px">
-          <div style="font-weight:700; margin-bottom:8px; font-size:13px">🧑‍🏫 ${esc(fullName(coach))}</div>
+        return `<div class="card" style="padding:10px 12px;margin-bottom:10px">
+          <div style="font-weight:700;margin-bottom:8px;font-size:13px">🧑‍🏫 ${esc(fullName(coach))}</div>
           ${hasMatchThisWeek ? `<div style="overflow-x:auto">
             <table class="week-table">
               <thead><tr>
