@@ -546,7 +546,7 @@ window.editMatch = (matchId, n1, n2, scheduledAt, tour, court) => {
     </div>`;
   document.body.appendChild(overlay);
   overlay.addEventListener('click', e => { if(e.target===overlay) overlay.remove(); });
-  overlay.querySelector('#editMatchForm').addEventListener('submit', async e=>{
+  overlay.querySelector('#editMatchForm')?.addEventListener('submit', async e=>{
     e.preventDefault();
     const f = new FormData(e.target);
     const scheduledAt = f.get('scheduled_at');
@@ -997,7 +997,7 @@ function viewAuth(){
         </form>
       </div>
     </main>`;
-  document.getElementById('authForm').addEventListener('submit', onAuthSubmit);
+  document.getElementById('authForm')?.addEventListener('submit', onAuthSubmit);
 }
 async function onAuthSubmit(e){
   e.preventDefault();
@@ -1035,7 +1035,7 @@ function viewChangePassword(){
         </form>
       </div>
     </main>`;
-  document.getElementById('pwdForm').addEventListener('submit', async e=>{
+  document.getElementById('pwdForm')?.addEventListener('submit', async e=>{
     e.preventDefault();
     const f = new FormData(e.target);
     const p1 = f.get('password'), p2 = f.get('password2');
@@ -1115,7 +1115,7 @@ window.editTeamAdmin = (teamId, currentNom) => {
     </div>`;
   document.body.appendChild(overlay);
   overlay.addEventListener('click', e => { if(e.target===overlay) overlay.remove(); });
-  overlay.querySelector('#editTeamAdminForm').addEventListener('submit', async e=>{
+  overlay.querySelector('#editTeamAdminForm')?.addEventListener('submit', async e=>{
     e.preventDefault();
     const nom = new FormData(e.target).get('nom').trim();
     const { error } = await supabase.from('teams').update({ nom }).eq('id', teamId);
@@ -1148,7 +1148,7 @@ function viewTeamSetup(){
       </div>
     </main>
   `;
-  document.getElementById('teamCreateForm').addEventListener('submit', async e=>{
+  document.getElementById('teamCreateForm')?.addEventListener('submit', async e=>{
     e.preventDefault();
     const nom = new FormData(e.target).get('nom').trim();
     const code = genCode();
@@ -1306,7 +1306,7 @@ async function viewAdminHome(){
     </details>
   `, 'admin');
 
-  document.getElementById('adminCreateTeamForm').addEventListener('submit', async e=>{
+  document.getElementById('adminCreateTeamForm')?.addEventListener('submit', async e=>{
     e.preventDefault();
     const nom = new FormData(e.target).get('nom').trim();
     const { error } = await supabase.from('teams').insert({ nom, code: genCode(), created_by: STATE.session.user.id });
@@ -1467,7 +1467,7 @@ async function viewAdminUsers(){
     ${joueursHtml ? `<p class="section-title">Joueurs</p>${joueursHtml}` : ''}
   `, 'users');
 
-  document.getElementById('createUserForm').addEventListener('submit', async e=>{
+  document.getElementById('createUserForm')?.addEventListener('submit', async e=>{
     e.preventDefault();
     const f = new FormData(e.target);
     const errEl = document.getElementById('createUserErr');
@@ -2183,7 +2183,7 @@ async function viewCoachHome(){
     </div>
   `, 'home');
 
-  document.getElementById('tourneeForm').addEventListener('submit', async e=>{
+  document.getElementById('tourneeForm')?.addEventListener('submit', async e=>{
     e.preventDefault();
     const f = new FormData(e.target);
     const { data, error } = await supabase.from('tournees').insert({
@@ -2474,7 +2474,7 @@ async function viewCoachTournee(id){
     viewCoachTournee(id);
   });
 
-  document.getElementById('newTourneePlayerForm').addEventListener('submit', async e=>{
+  document.getElementById('newTourneePlayerForm')?.addEventListener('submit', async e=>{
     e.preventDefault();
     const f = new FormData(e.target);
     const prenom = f.get('prenom').trim(), nom = f.get('nom').trim();
@@ -2494,7 +2494,7 @@ async function viewCoachTournee(id){
     viewCoachTournee(id);
   });
 
-  document.getElementById('etapeForm').addEventListener('submit', async e=>{
+  document.getElementById('etapeForm')?.addEventListener('submit', async e=>{
     e.preventDefault();
     const f = new FormData(e.target);
     const { data, error } = await supabase.from('tournaments').insert({
@@ -2506,7 +2506,7 @@ async function viewCoachTournee(id){
     navigate('#/coach/tournoi/'+data.id);
   });
 
-  document.getElementById('trainingForm').addEventListener('submit', async e=>{
+  document.getElementById('trainingForm')?.addEventListener('submit', async e=>{
     e.preventDefault();
     const f = new FormData(e.target);
     const scheduledAt = f.get('scheduled_at');
@@ -2673,7 +2673,7 @@ async function viewCoachTournament(id){
     viewCoachTournament(id);
   });
 
-  document.getElementById('matchForm').addEventListener('submit', async e=>{
+  document.getElementById('matchForm')?.addEventListener('submit', async e=>{
     e.preventDefault();
     const f = new FormData(e.target);
     const j1 = f.get('j1');
