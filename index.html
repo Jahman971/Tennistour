@@ -1461,11 +1461,14 @@ window.adminSetRole = async (profileId, role) => {
   toast('Rôle mis à jour');
   viewAdminUsers();
 };
-window.adminSetSuperviseur = async (profileId, value) => {
-  const { error } = await supabase.from('profiles').update({ superviseur: value }).eq('id', profileId);
+window.adminSetSuperviseur = async (profileId, value, teamId) => {
+  // Mettre à jour dans coach_teams (pas profiles)
+  let q = supabase.from('coach_teams').update({ superviseur: value }).eq('profile_id', profileId);
+  if(teamId) q = q.eq('team_id', teamId);
+  const { error } = await q;
   if(error){ toast(error.message, true); return; }
-  toast(value ? 'Promu superviseur' : 'Superviseur retiré');
-  viewAdminUsers();
+  toast(value ? '⭐ Superviseur activé ✅' : '↩ Superviseur retiré');
+  if(teamId) viewAdminHome(); else viewAdminUsers();
 };
 window.adminDeleteUser = async (profileId, nom) => {
   if(!confirm(`Supprimer définitivement le compte de ${nom} ? Cette action est irréversible.`)) return;
