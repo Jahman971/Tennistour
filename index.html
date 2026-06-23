@@ -48,6 +48,12 @@ main{flex:1; padding:16px 16px 100px;} h2{font-size:22px; font-weight:900; lette
 
 /* Cards / generic */
 .card{background:var(--s2); border:1px solid var(--brd); border-radius:var(--rL); padding:16px; margin-bottom:10px; transition:border-color .15s;}
+.card.clickable{cursor:pointer; transition:border-color .15s, background .15s;}
+.card.clickable:active{background:var(--s3); border-color:var(--accent2);}
+.tappable{cursor:pointer; transition:background .12s, border-color .12s;}
+.tappable:active{opacity:.75;}
+.btn.ghost{background:none; border:1px solid var(--brd); color:var(--light);}
+.btn.ghost:active{background:var(--s3);}
 .card h3{margin:0 0 12px; font-size:14px; font-weight:700; text-transform:uppercase; letter-spacing:1.5px; color:var(--light);}
 .muted{color:var(--gray); font-size:13px;}
 .row{display:flex; gap:8px; align-items:center;}
@@ -1209,7 +1215,7 @@ async function viewAdminHome(){
     const teamCoaches = coachesByTeam[team.id] || [];
 
     const tourHtml = tours.map(t => `
-      <div onclick="viewAdminOpenTournee('${t.id}')" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-radius:var(--r);background:var(--s3);margin-bottom:6px;border:1px solid var(--brd)">
+      <div onclick="viewAdminOpenTournee('${t.id}')" class="tappable" style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-radius:var(--r);background:var(--s1);margin-bottom:6px;border:1px solid var(--accent2)">
         <div>
           <div style="font-weight:700">${esc(t.nom)}</div>
           <div class="muted" style="font-size:12px">${t.lieu?'📍 '+esc(t.lieu):''}${t.date_debut?' · '+t.date_debut:''}</div>
@@ -1259,7 +1265,7 @@ async function viewAdminHome(){
 
       <!-- Créer tournée inline -->
       <details style="margin-top:8px">
-        <summary style="cursor:pointer;font-size:13px;font-weight:700;color:var(--accent);list-style:none;padding:8px 12px;background:var(--accent3);border-radius:var(--r);border:1px solid var(--accent2)">+ Créer une tournée</summary>
+        <summary style="cursor:pointer;font-size:13px;font-weight:700;color:var(--accent);list-style:none;padding:10px 14px;background:var(--accent3);border-radius:var(--r);border:1px solid var(--accent);display:flex;align-items:center;gap:8px">➕ Créer une tournée</summary>
         <form class="createTourneeForm" data-team="${team.id}" style="margin-top:8px;padding:12px;background:var(--s3);border-radius:var(--r);border:1px solid var(--brd)">
           <label>Nom de la tournée</label>
           <input name="nom" placeholder="Ex: Tournée Été 2026" required>
@@ -1279,7 +1285,7 @@ async function viewAdminHome(){
     <h2 style="margin:4px 0 14px">Équipes</h2>
     ${teamsHtml}
     <details style="margin-top:4px">
-      <summary style="cursor:pointer;font-size:14px;font-weight:700;color:var(--white);list-style:none;padding:14px 16px;background:var(--s2);border-radius:var(--rL);border:1px dashed var(--brd)">+ Nouvelle équipe</summary>
+      <summary style="cursor:pointer;font-size:14px;font-weight:700;color:var(--white);list-style:none;padding:14px 16px;background:var(--s2);border-radius:var(--rL);border:2px dashed var(--brd);display:flex;align-items:center;gap:8px">➕ Nouvelle équipe</summary>
       <div style="padding:12px;background:var(--s2);border:1px solid var(--brd);border-top:none;border-radius:0 0 var(--rL) var(--rL)">
         <form id="adminCreateTeamForm">
           <input name="nom" required placeholder="Ex: ES Brunoy Tennis — Semaine 1">
@@ -1674,7 +1680,7 @@ async function viewMyPlanning(){
     <div style="margin-bottom:14px">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div class="blink" style="width:8px;height:8px;border-radius:50%;background:var(--live);animation:blink 1s infinite;flex-shrink:0"></div><h3 style="color:var(--live);margin:0;font-size:13px;text-transform:uppercase;letter-spacing:2px">Live · ${liveMatches.length} match${liveMatches.length>1?'s':''} en cours</h3></div>
       ${liveMatches.map(m=>`
-        <div class="card" onclick="navigate('#/coach/match/${m.id}')" style="cursor:pointer; border-color:var(--live); background:rgba(255,60,0,.06)">
+        <div class="card" onclick="navigate('#/coach/match/${m.id}')" class="tappable" style="border-color:var(--live); background:rgba(224,92,58,.08)">
           <div class="row between">
             <div style="font-weight:700">🎾 ${esc(playerName(m.joueur1_id))} vs ${esc(m.joueur_ext_nom||playerName(m.joueur2_id))}</div>
             <span class="pill live">Live</span>
@@ -2121,7 +2127,7 @@ async function viewCoachHome(){
     list = `<div class="empty-state"><div class="icon">🎾</div><p>Aucune tournée pour l'instant.<br>Commence par en créer une.</p></div>`;
   } else {
     list = tournees.map(t => `
-      <div class="card" onclick="navigate('#/coach/tournee/${t.id}')" style="cursor:pointer">
+      <div class="card clickable" onclick="navigate('#/coach/tournee/${t.id}')">
         <h3 style="margin:0">${esc(t.nom)}</h3>
         <p class="muted">${esc(t.lieu||'')} ${t.date_debut?'· '+t.date_debut+(t.date_fin?(' → '+t.date_fin):''):''}</p>
       </div>`).join('');
@@ -2815,7 +2821,7 @@ function renderCoachMatch(m, n1, n2){
     </div>`}
     ` : ''}
 
-    ${m.statut==='a_venir' ? (canScore ? `<button class="btn clay" style="font-size:18px; padding:20px" onclick="startMatch()">▶ Démarrer le match</button>` : `<div class="card" style="text-align:center;background:var(--s1);border-style:dashed"><p class="muted" style="margin:0">👁 Observateur — seul le coach assigné peut démarrer ce match.</p></div>`) : ''}
+    ${m.statut==='a_venir' ? (canScore ? `<button class="btn clay" style="font-size:20px;padding:22px;letter-spacing:3px" onclick="startMatch()">▶ DÉMARRER</button>` : `<div class="card" style="text-align:center;background:var(--s1);border-style:dashed"><p class="muted" style="margin:0">👁 Observateur — seul le coach assigné peut démarrer ce match.</p></div>`) : ''}
 
     <div class="card" style="margin-top:10px">
       <h3>🧑‍🏫 Coachs accompagnants</h3>
