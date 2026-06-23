@@ -1247,6 +1247,17 @@ async function viewAdminHome(){
       </form>`:'<p class="muted" style="font-size:11px;margin:4px 0 0">Tous les coachs ont déjà une équipe.</p>'}
       <p class="section-title">Tournées (${tours.length})</p>
       ${tourHtml}
+      <form class="createTourneeForm" data-team="${team.id}" style="margin-top:8px">
+        <div class="row" style="gap:8px">
+          <input name="nom" placeholder="Nom de la tournée" style="flex:1" required>
+          <button class="btn small clay" type="submit" style="width:auto">+</button>
+        </div>
+        <div class="row" style="gap:8px;margin-top:6px">
+          <input name="lieu" placeholder="Lieu" style="flex:1">
+          <input type="date" name="date_debut" style="flex:1">
+          <input type="date" name="date_fin" style="flex:1">
+        </div>
+      </form>
     </div>`;
   }).join('') : `<div class="empty-state"><div class="icon">🛠️</div><p>Aucune équipe.<br>Crée la première ci-dessous.</p></div>`;
 
@@ -1270,6 +1281,25 @@ async function viewAdminHome(){
     if(error){ document.getElementById('adminTeamErr').textContent = error.message; return; }
     toast(`Équipe "${nom}" créée ✅`);
     viewAdminHome();
+  });
+
+  document.querySelectorAll('.createTourneeForm').forEach(form=>{
+    form.addEventListener('submit', async e=>{
+      e.preventDefault();
+      const f = new FormData(e.target);
+      const nom = f.get('nom').trim();
+      if(!nom) return;
+      const { error } = await supabase.from('tournees').insert({
+        nom, lieu: f.get('lieu')||null,
+        date_debut: f.get('date_debut')||null,
+        date_fin: f.get('date_fin')||null,
+        team_id: form.dataset.team,
+        created_by: STATE.session.user.id
+      });
+      if(error){ toast(error.message, true); return; }
+      toast(`Tournée "${nom}" créée ✅`);
+      viewAdminHome();
+    });
   });
 
   document.querySelectorAll('.addCoachForm').forEach(form=>{
