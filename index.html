@@ -1495,11 +1495,11 @@ async function viewAdminUsers(){
         <label>Identifiant</label>
         <div class="code-badge" style="cursor:pointer;font-size:16px;letter-spacing:2px" onclick="navigator.clipboard?.writeText('${data.login}');toast('Copié 📋')">${esc(data.login)} 📋</div>
         <label>Mot de passe provisoire</label>
-        <div class="code-badge" style="cursor:pointer;font-size:16px;letter-spacing:2px" onclick="navigator.clipboard?.writeText('${data.password}');toast('Copié 📋')">${esc(data.password)} 📋</div>
+        <div class="code-badge" style="cursor:pointer;font-size:16px;letter-spacing:2px;color:var(--accent)" onclick="navigator.clipboard?.writeText('${data.password}');toast('Copié 📋')">${esc(data.password)} 📋</div>
+        <button class="btn secondary" style="margin-top:10px" onclick="viewAdminUsers()">Créer un autre compte</button>
       </div>`;
     e.target.reset();
     document.getElementById('createUserTeamRow').style.display = 'block';
-    viewAdminUsers();
   });
 }
 window.adminDeletePlayerFromList = async (playerId, nom) => {
