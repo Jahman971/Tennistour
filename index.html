@@ -1371,7 +1371,7 @@ async function viewAdminUsers(){
         <label>Rôle</label>
         <select name="role" id="createUserRole" onchange="document.getElementById('createUserTeamRow').style.display=this.value==='coach'?'block':'none'">
           <option value="coach">Coach</option>
-          <option value="admin">Admin</option>
+          <option value="admin">Admin (accès global)</option>
         </select>
         <div id="createUserTeamRow">
           <label>Équipe</label>
@@ -1381,8 +1381,9 @@ async function viewAdminUsers(){
           </select>
           <div class="chk-item" style="margin-top:8px">
             <input type="checkbox" name="superviseur" id="createUserSuperviseur">
-            <label for="createUserSuperviseur">⭐ Superviseur de cette équipe</label>
+            <label for="createUserSuperviseur">⭐ Superviseur — gère les tournées et les joueurs de cette équipe</label>
           </div>
+          <p class="muted" style="font-size:11px;margin:4px 0 0">Un superviseur est aussi coach — il peut saisir les scores ET gérer l'équipe.</p>
         </div>
         <button class="btn clay" type="submit">Créer le compte</button>
         <div class="error" id="createUserErr"></div>
