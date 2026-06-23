@@ -490,6 +490,49 @@ window.viewPlayerPlanning = async (playerId, tourneeId, weekOffset=0, selectedDa
     viewPlayerPlanning(playerId, tourneeId, weekOffset, active);
   });
 };
+window.editEtape = (etapeId, nom, lieu, dateDebut, dateFin, formatId, tourneeId) => {
+  const existing = document.getElementById('editEtapeOverlay');
+  if(existing) existing.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'editEtapeOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;display:flex;align-items:flex-end;backdrop-filter:blur(4px)';
+  overlay.innerHTML = `
+    <div style="background:var(--s2);border:1px solid var(--brd);border-radius:var(--rL) var(--rL) 0 0;width:100%;max-width:560px;margin:0 auto;padding:20px">
+      <div class="row between" style="margin-bottom:14px">
+        <strong>Modifier l'étape</strong>
+        <button onclick="document.getElementById('editEtapeOverlay').remove()" style="background:none;border:none;color:var(--gray);font-size:22px;cursor:pointer;line-height:1">✕</button>
+      </div>
+      <form id="editEtapeForm">
+        <label>Nom</label>
+        <input name="nom" value="${esc(nom)}" required>
+        <label>Lieu</label>
+        <input name="lieu" value="${esc(lieu)}">
+        <div class="row" style="gap:8px">
+          <div style="flex:1"><label>Du</label><input type="date" name="date_debut" value="${dateDebut}"></div>
+          <div style="flex:1"><label>Au</label><input type="date" name="date_fin" value="${dateFin}"></div>
+        </div>
+        <button class="btn clay" type="submit" style="margin-top:12px">Enregistrer</button>
+        <div class="error" id="editEtapeErr"></div>
+      </form>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if(e.target===overlay) overlay.remove(); });
+  overlay.querySelector('#editEtapeForm').addEventListener('submit', async e=>{
+    e.preventDefault();
+    const f = new FormData(e.target);
+    const { error } = await supabase.from('tournaments').update({
+      nom: f.get('nom').trim(),
+      lieu: f.get('lieu')||null,
+      date_debut: f.get('date_debut')||null,
+      date_fin: f.get('date_fin')||null,
+      updated_at: new Date().toISOString()
+    }).eq('id', etapeId);
+    if(error){ document.getElementById('editEtapeErr').textContent = error.message; return; }
+    toast('Étape mise à jour ✅');
+    overlay.remove();
+    viewCoachTournee(tourneeId);
+  });
+};
 window.deleteEtape = async (etapeId, tourneeId, nom) => {
   if(!confirm(`Supprimer l'étape "${nom}" ? Tous ses matchs seront supprimés.`)) return;
   const { error } = await supabase.from('tournaments').delete().eq('id', etapeId);
@@ -2316,7 +2359,10 @@ async function viewCoachTournee(id){
           <p class="muted">${esc(e.lieu||'')} ${e.date_debut?'· '+e.date_debut+(e.date_fin?(' → '+e.date_fin):''):''}</p>
           <p class="muted">Format : ${esc(e.formats?.nom||'—')}</p>
         </div>
-        ${canManage ? `<button class="btn small clay" onclick="deleteEtape('${e.id}','${id}','${esc(e.nom).replace(/'/g,"\\\\'")}')">🗑</button>` : ''}
+        ${canManage ? `<div class="row" style="gap:6px">
+          <button class="btn small secondary" onclick="editEtape('${e.id}','${esc(e.nom).replace(/'/g,"\\\\'")}','${e.lieu||''}','${e.date_debut||''}','${e.date_fin||''}',${e.format_id||1},'${id}')">✏️</button>
+          <button class="btn small clay" onclick="deleteEtape('${e.id}','${id}','${esc(e.nom).replace(/'/g,"\\\\'")}')">🗑</button>
+        </div>` : ''}
       </div>
       <p class="muted" style="margin-top:6px">🧑‍🏫 ${assigned.length ? assigned.map(coachName).map(esc).join(', ') : 'Aucun coach affecté'}</p>
       ${(teamCoaches||[]).length ? `
