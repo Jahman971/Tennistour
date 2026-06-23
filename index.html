@@ -729,18 +729,28 @@ function shell(content, navActive){
   const isSuperviseur = STATE.profile?.superviseur;
   const activeTourneeId = STATE.activeTourneeId;
   let nav = '';
+
   if(role === 'admin'){
     nav = `
       <div class="tab-bar">
-        <button class="${navActive==='admin'?'active':''}" onclick="navigate('#/coach')">🛠️<span class="label">Équipes</span></button>
+        ${activeTourneeId
+          ? `<button class="${navActive==='tournee'||navActive==='home'?'active':''}" onclick="navigate('#/coach/tournee/${activeTourneeId}')">🎾<span class="label">Tournée</span></button>`
+          : `<button class="${navActive==='admin'?'active':''}" onclick="navigate('#/coach')">🎾<span class="label">Tournées</span></button>`
+        }
         ${activeTourneeId ? `<button class="${navActive==='semaine'?'active':''}" onclick="viewTourneePlanning('${activeTourneeId}',0,'joueurs')">📆<span class="label">Semaine</span></button>` : ''}
-        <button class="${navActive==='personnes'||navActive==='users'?'active':''}" onclick="${activeTourneeId?`navigate('#/personnes/${activeTourneeId}')`:`navigate('#/admin/utilisateurs')`}">👥<span class="label">Comptes</span></button>
+        ${activeTourneeId ? `<button class="${navActive==='personnes'?'active':''}" onclick="navigate('#/personnes/${activeTourneeId}')">👥<span class="label">Personnes</span></button>` : ''}
+        <button class="${navActive==='admin'||navActive==='users'?'active':''}" onclick="navigate('#/coach')" style="opacity:.6">⚙️<span class="label">Config</span></button>
         <button class="${navActive==='profile'?'active':''}" onclick="navigate('#/profil')">👤<span class="label">Profil</span></button>
       </div>`;
   } else if(role === 'coach'){
     nav = `
       <div class="tab-bar">
-        ${isSuperviseur ? `<button class="${navActive==='home'?'active':''}" onclick="navigate('#/coach')">🏟️<span class="label">Tournées</span></button>` : ''}
+        ${activeTourneeId
+          ? `<button class="${navActive==='tournee'||navActive==='home'?'active':''}" onclick="navigate('#/coach/tournee/${activeTourneeId}')">🎾<span class="label">Tournée</span></button>`
+          : isSuperviseur
+            ? `<button class="${navActive==='home'?'active':''}" onclick="navigate('#/coach')">🎾<span class="label">Tournées</span></button>`
+            : ''
+        }
         ${activeTourneeId ? `<button class="${navActive==='semaine'?'active':''}" onclick="viewTourneePlanning('${activeTourneeId}',0,'joueurs')">📆<span class="label">Semaine</span></button>` : ''}
         ${activeTourneeId && isSuperviseur ? `<button class="${navActive==='personnes'?'active':''}" onclick="navigate('#/personnes/${activeTourneeId}')">👥<span class="label">Personnes</span></button>` : ''}
         <button class="${navActive==='planning'?'active':''}" onclick="navigate('#/coach/planning')">📅<span class="label">Planning</span></button>
@@ -2426,7 +2436,7 @@ async function viewCoachTournee(id){
     </div>
     ${tabBar}
     <div class="card">${tabContent}</div>
-  `, 'home');
+  `, 'tournee');
 
   document.querySelectorAll('.etapeCoachForm').forEach(form=>{
     form.addEventListener('submit', async e=>{
