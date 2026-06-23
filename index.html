@@ -584,6 +584,7 @@ function toast(msg, isError){
   t.textContent = msg; t.style.opacity='1';
   clearTimeout(t._tm); t._tm = setTimeout(()=>{ t.style.opacity='0'; }, 2400);
 }
+window.toast = toast;
 
 // ---------------------------------------------------------------
 // MOTEUR DE SCORE TENNIS (paramétrable selon le format du tournoi)
