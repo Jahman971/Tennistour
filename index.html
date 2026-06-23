@@ -2451,57 +2451,83 @@ async function viewCoachTournee(id){
   let tabContent = '';
   if(tabParam === 'joueurs'){
     tabContent = `
-      ${tourneePlayersHtml}
-      ${rosterAvailable.length ? `
-      <form id="addTourneePlayerForm" style="margin-top:10px">
-        <div class="row" style="gap:8px">
-          <select name="player_id" style="flex:1">${rosterAvailable.map(p=>`<option value="${p.id}">${esc(p.prenom||p.nom||'?')} ${p.genre==='F'?'👧':'👦'}</option>`).join('')}</select>
-          <button class="btn small" type="submit" style="width:auto">Inscrire</button>
+      ${tourneePlayers.length
+        ? tourneePlayers.map(p=>`
+          <div class="tappable" onclick="viewPlayerPlanning('${p.id}','${id}',0)" style="display:flex;align-items:center;justify-content:space-between;padding:14px;border-radius:var(--r);border:1px solid var(--brd);background:var(--s3);margin-bottom:8px">
+            <div style="display:flex;align-items:center;gap:12px">
+              <span style="font-size:28px">${p.genre==='F'?'👧':p.genre==='G'?'👦':'🎾'}</span>
+              <div>
+                <div style="font-weight:700;font-size:16px">${esc(p.prenom||'')} ${esc(p.nom||'')}</div>
+                <div class="muted" style="font-size:12px">Voir le planning →</div>
+              </div>
+            </div>
+            <div class="row" style="gap:6px" onclick="event.stopPropagation()">
+              <button class="btn small secondary" onclick="showPlayerCode('${p.code}','${esc(fullName(p)).replace(/'/g,"\\\\'")}')">📋</button>
+              ${canManage?`<button class="btn small clay" onclick="deletePlayer('${p.id}','${esc(fullName(p)).replace(/'/g,"\\\\'")}','${id}')">🗑</button>`:''}
+            </div>
+          </div>`).join('')
+        : `<div class="empty-state"><div class="icon">👤</div><p>Aucun joueur inscrit.<br>Ajoute le premier ci-dessous.</p></div>`}
+
+      ${canManage ? `<details style="margin-top:10px">
+        <summary style="cursor:pointer;list-style:none;padding:12px 14px;background:var(--accent3);border:1px solid var(--accent);border-radius:var(--r);font-weight:700;font-size:13px;color:var(--accent)">➕ Ajouter un joueur</summary>
+        <div style="background:var(--s3);border:1px solid var(--brd);border-top:none;border-radius:0 0 var(--r) var(--r);padding:14px">
+          ${rosterAvailable.length ? `
+          <p style="font-weight:600;font-size:12px;margin:0 0 8px">Depuis l'effectif :</p>
+          <form id="addTourneePlayerForm">
+            <div class="row" style="gap:8px">
+              <select name="player_id" style="flex:1">${rosterAvailable.map(p=>`<option value="${p.id}">${esc(p.prenom||p.nom||'?')} ${p.genre==='F'?'👧':'👦'}</option>`).join('')}</select>
+              <button class="btn small" type="submit" style="width:auto">Inscrire</button>
+            </div>
+          </form>
+          <div style="text-align:center;color:var(--gray);margin:10px 0;font-size:12px">— ou créer —</div>` : ''}
+          <form id="newTourneePlayerForm">
+            <div class="row" style="gap:6px">
+              <input name="prenom" placeholder="Prénom" style="flex:1">
+              <input name="nom" placeholder="Nom" style="flex:1">
+              <select name="genre" style="width:60px"><option value="">?</option><option value="G">👦</option><option value="F">👧</option></select>
+            </div>
+            ${(etapes||[]).length ? `<div class="chk-group" style="margin-top:8px">${(etapes||[]).map((e,i)=>`<div class="chk-item"><input type="checkbox" name="etape_ids" value="${e.id}" id="npe_${i}"><label for="npe_${i}" style="font-size:12px">${esc(e.nom)}</label></div>`).join('')}</div>` : ''}
+            <button class="btn small clay" type="submit" style="margin-top:8px">Créer le joueur</button>
+          </form>
         </div>
-      </form>` : ''}
-      <div style="border-top:1px solid var(--brd);margin-top:14px;padding-top:14px">
-        <p style="font-weight:700;margin:0 0 10px;font-size:13px">+ Nouveau joueur</p>
-        <form id="newTourneePlayerForm">
-          <div class="row" style="gap:6px">
-            <input name="prenom" placeholder="Prénom" style="flex:1">
-            <input name="nom" placeholder="Nom" style="flex:1">
-            <select name="genre" style="width:auto"><option value="">?</option><option value="G">👦</option><option value="F">👧</option></select>
-          </div>
-          ${(etapes||[]).length ? `<div class="chk-group" style="margin-top:8px">${(etapes||[]).map((e,i)=>`<div class="chk-item"><input type="checkbox" name="etape_ids" value="${e.id}" id="npe_${i}"><label for="npe_${i}">${esc(e.nom)}</label></div>`).join('')}</div>` : ''}
-          <button class="btn small clay" type="submit" style="margin-top:8px">Créer</button>
-        </form>
-      </div>`;
+      </details>` : ''}`;
+
   } else if(tabParam === 'etapes'){
     tabContent = `
       ${etapesHtml}
-      <div class="card" style="border-style:dashed">
-        <p style="font-weight:700;margin:0 0 10px">+ Ajouter une étape</p>
-        <form id="etapeForm">
-          <input name="nom" required placeholder="Ex: Tournoi de Brunoy">
-          <input name="lieu" placeholder="Lieu">
-          <div class="row" style="gap:8px"><input type="date" name="date_debut" style="flex:1"><input type="date" name="date_fin" style="flex:1"></div>
-          <select name="format_id">${(formats||[]).map(f=>`<option value="${f.id}">${esc(f.nom)}</option>`).join('')}</select>
-          <button class="btn clay" type="submit">Créer</button>
-          <div class="error" id="etapeErr"></div>
-        </form>
-      </div>`;
+      ${canManage ? `<details style="margin-top:10px">
+        <summary style="cursor:pointer;list-style:none;padding:12px 14px;background:var(--accent3);border:1px solid var(--accent);border-radius:var(--r);font-weight:700;font-size:13px;color:var(--accent)">➕ Ajouter une étape</summary>
+        <div style="background:var(--s3);border:1px solid var(--brd);border-top:none;border-radius:0 0 var(--r) var(--r);padding:14px">
+          <form id="etapeForm">
+            <input name="nom" required placeholder="Ex: Tournoi de Brunoy">
+            <input name="lieu" placeholder="Lieu">
+            <div class="row" style="gap:8px"><input type="date" name="date_debut" style="flex:1"><input type="date" name="date_fin" style="flex:1"></div>
+            <select name="format_id">${(formats||[]).map(f=>`<option value="${f.id}">${esc(f.nom)}</option>`).join('')}</select>
+            <button class="btn clay" type="submit">Créer l'étape</button>
+            <div class="error" id="etapeErr"></div>
+          </form>
+        </div>
+      </details>` : ''}`;
+
   } else if(tabParam === 'training'){
     tabContent = `
       ${trainingsHtml}
-      <div class="card" style="border-style:dashed">
-        <p style="font-weight:700;margin:0 0 10px">+ Ajouter un entraînement</p>
-        <form id="trainingForm">
-          <input name="titre" required placeholder="Ex: Séance physique matinale">
-          <input name="description" placeholder="Description (optionnel)">
-          <input name="lieu" placeholder="Lieu (optionnel)">
-          <input type="datetime-local" name="scheduled_at">
-          <input type="number" name="duration_minutes" placeholder="Durée en minutes">
-          <div class="chk-group">${tourneePlayers.map((p,i)=>`<div class="chk-item"><input type="checkbox" name="player_ids" value="${p.id}" id="tp_${i}"><label for="tp_${i}">${p.genre==='F'?'👧':'👦'} ${esc(p.prenom||p.nom||'?')}</label></div>`).join('')}</div>
-          <p class="muted">Laisse tout décoché pour toute l'équipe.</p>
-          <button class="btn clay" type="submit">Enregistrer</button>
-          <div class="error" id="trainingErr"></div>
-        </form>
-      </div>`;
+      ${canManage ? `<details style="margin-top:10px">
+        <summary style="cursor:pointer;list-style:none;padding:12px 14px;background:var(--accent3);border:1px solid var(--accent);border-radius:var(--r);font-weight:700;font-size:13px;color:var(--accent)">➕ Ajouter un entraînement</summary>
+        <div style="background:var(--s3);border:1px solid var(--brd);border-top:none;border-radius:0 0 var(--r) var(--r);padding:14px">
+          <form id="trainingForm">
+            <input name="titre" required placeholder="Ex: Séance physique matinale">
+            <input name="description" placeholder="Description">
+            <input name="lieu" placeholder="Lieu">
+            <input type="datetime-local" name="scheduled_at">
+            <input type="number" name="duration_minutes" placeholder="Durée (min)">
+            <div class="chk-group" style="margin-top:8px">${tourneePlayers.map((p,i)=>`<div class="chk-item"><input type="checkbox" name="player_ids" value="${p.id}" id="tp_${i}"><label for="tp_${i}" style="font-size:12px">${p.genre==='F'?'👧':'👦'} ${esc(p.prenom||p.nom||'?')}</label></div>`).join('')}</div>
+            <p class="muted" style="font-size:11px">Laisser vide = toute l'équipe</p>
+            <button class="btn clay" type="submit">Enregistrer</button>
+            <div class="error" id="trainingErr"></div>
+          </form>
+        </div>
+      </details>` : ''}`;
   } else {
     tabContent = planningHtml;
   }
