@@ -930,11 +930,13 @@ async function viewPlayerCode(code){
   // Entraînements non affichés aux parents
 
   const idsNeeded = new Set();
-  (matches||[]).forEach(m=>{ idsNeeded.add(m.joueur1_id); idsNeeded.add(m.joueur2_id); });
+  idsNeeded.add(player.id); // toujours inclure le joueur connecté
+  (matches||[]).forEach(m=>{ if(m.joueur1_id) idsNeeded.add(m.joueur1_id); if(m.joueur2_id) idsNeeded.add(m.joueur2_id); });
   let namesMap = {};
+  namesMap[player.id] = fullName(player); // pré-remplir avec le joueur courant
   if(idsNeeded.size){
     const { data: pls } = await supabase.from('players').select('id,nom,prenom').in('id', [...idsNeeded]);
-    (pls||[]).forEach(p=>namesMap[p.id]=fullName(p));
+    (pls||[]).forEach(p=>{ namesMap[p.id] = p.prenom || fullName(p); });
   }
 
   const order = { en_cours:0, a_venir:1, termine:2 };
@@ -988,7 +990,7 @@ async function viewPlayerCode(code){
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
         <div style="font-size:32px">${player.genre==='F'?'👧':player.genre==='G'?'👦':'🎾'}</div>
         <div>
-          <div style="font-family:var(--fnt-head);font-size:22px;font-weight:900">${esc(fullName(player))}</div>
+          <div style="font-family:var(--fnt-head);font-size:24px;font-weight:900">${esc(player.prenom||fullName(player))}</div>
           <div class="muted" style="font-size:12px">Tournée tennis</div>
         </div>
       </div>
