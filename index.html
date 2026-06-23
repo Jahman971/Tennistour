@@ -1542,11 +1542,11 @@ window.adminResetPassword = async (profileId, prenom) => {
   const overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px';
   overlay.innerHTML = `
-    <div style="background:var(--s2);border:1px solid var(--accent);border-radius:var(--rL);padding:24px;max-width:360px;width:100%;text-align:center">
+    <div data-overlay style="background:var(--s2);border:1px solid var(--accent);border-radius:var(--rL);padding:24px;max-width:360px;width:100%;text-align:center">
       <div style="font-size:32px;margin-bottom:12px">🔑</div>
       <h3 style="margin:0 0 6px">Nouveau mot de passe</h3>
       <p class="muted" style="margin:0 0 16px">${esc(prenom)} doit changer ce mot de passe à la prochaine connexion.</p>
-      <div class="code-badge" style="font-size:22px;letter-spacing:4px;cursor:pointer;color:var(--accent)" onclick="navigator.clipboard?.writeText('${data.password}');toast('Copié 📋')">${esc(data.password)} 📋</div>
+      <div class="code-badge" style="font-size:22px;letter-spacing:4px;cursor:pointer;color:var(--accent)" onclick="navigator.clipboard?.writeText('${data.password}');toast('Copié 📋');this.closest('[data-overlay]').remove()">${esc(data.password)} 📋</div>
       <button class="btn secondary" style="margin-top:16px" onclick="this.closest('div[style]').remove()">Fermer</button>
     </div>`;
   document.body.appendChild(overlay);
