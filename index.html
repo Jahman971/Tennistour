@@ -1305,20 +1305,28 @@ async function viewAdminUsers(){
   shell(`<div class="empty">Chargement…</div>`, 'users');
   const { data: profiles } = await supabase.from('profiles').select('*').order('created_at',{ascending:false});
   const { data: teams } = await supabase.from('teams').select('id, nom');
-  const { data: allPlayers } = await supabase.from('players').select('id,prenom,nom,genre,team_id').order('nom');
+  const { data: allPlayers } = await supabase.from('players').select('id,prenom,nom,genre,team_id,code').order('nom');
+  const { data: coachTeamsAll } = await supabase.from('coach_teams').select('profile_id,team_id,superviseur,statut');
   const teamName = tid => (teams||[]).find(t=>t.id===tid)?.nom || '—';
+
+  // Pour chaque coach, récupérer ses équipes et son statut superviseur
+  const coachTeamMap = {}; // profile_id -> [{team_id, superviseur, statut}]
+  (coachTeamsAll||[]).forEach(ct=>{ (coachTeamMap[ct.profile_id]||=[]).push(ct); });
 
   const rows = (profiles||[]).length ? (profiles||[]).map(p=>{
     const isMe = p.id === STATE.session.user.id;
-    const statut = p.role==='admin' ? 'Admin' : p.superviseur ? 'Superviseur' : 'Coach';
-    const pPrenom = esc(p.prenom||p.nom?.split(' ')[0]||'?');
-    const statutColor = p.role==='admin' ? 'done' : p.superviseur ? 'live' : 'upcoming';
+    const myTeams = coachTeamMap[p.id] || [];
+    const isSuperviseurSomewhere = myTeams.some(t=>t.superviseur);
+    const statut = p.role==='admin' ? 'Admin' : isSuperviseurSomewhere ? 'Superviseur' : 'Coach';
+    const statutColor = p.role==='admin' ? 'done' : isSuperviseurSomewhere ? 'live' : 'upcoming';
+    const teamsLabel = myTeams.length ? myTeams.map(t=>esc(teamName(t.team_id))).join(', ') : 'Sans équipe';
+
     return `
     <div class="card">
       <div class="row between" style="gap:10px">
         <div>
           <div style="font-weight:700">${esc(p.prenom||'')} <span style="opacity:.6;font-size:13px">${esc(p.nom||'')}</span></div>
-          <div class="muted" style="font-size:12px">${p.team_id?esc(teamName(p.team_id)):'Sans équipe'}</div>
+          <div class="muted" style="font-size:12px">${teamsLabel}</div>
         </div>
         <div style="text-align:right;flex-shrink:0">
           <span class="pill ${statutColor}">${statut}</span>
@@ -1328,8 +1336,8 @@ async function viewAdminUsers(){
       <div class="row" style="margin-top:10px;flex-wrap:wrap;gap:6px">
         ${p.role==='coach' && p.statut!=='actif' ? `<button class="btn small" onclick="adminSetStatut('${p.id}','actif')">✅ Valider</button>` : ''}
         ${p.role==='coach' && p.statut==='actif' ? `<button class="btn small secondary" onclick="adminSetStatut('${p.id}','en_attente')">Désactiver</button>` : ''}
-        ${p.role==='coach' && p.team_id && !p.superviseur ? `<button class="btn small secondary" onclick="adminSetSuperviseur('${p.id}',true)">⭐ Superviseur</button>` : ''}
-        ${p.role==='coach' && p.superviseur ? `<button class="btn small secondary" onclick="adminSetSuperviseur('${p.id}',false)">↩ Retirer superv.</button>` : ''}
+        ${p.role==='coach' && myTeams.length && !isSuperviseurSomewhere ? `<button class="btn small secondary" onclick="adminSetSuperviseur('${p.id}',true,null)">⭐ Superviseur</button>` : ''}
+        ${p.role==='coach' && isSuperviseurSomewhere ? `<button class="btn small secondary" onclick="adminSetSuperviseur('${p.id}',false,null)">↩ Retirer superv.</button>` : ''}
         ${p.role==='coach' ? `<button class="btn small secondary" onclick="adminSetRole('${p.id}','admin')">→ Admin</button>` : ''}
         ${p.role==='admin' && !isMe ? `<button class="btn small secondary" onclick="adminSetRole('${p.id}','coach')">→ Coach</button>` : ''}
         ${!isMe ? `<button class="btn small clay" onclick="adminDeleteUser('${p.id}','${esc(fullName(p)).replace(/'/g,"\\\\'")}')">🗑</button>` : ''}
