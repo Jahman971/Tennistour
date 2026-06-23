@@ -2111,20 +2111,20 @@ async function viewCoachHome(){
       </div>`).join('');
   }
 
-  // Validation des coachs adjoints en attente
+  // Validation des coachs adjoints en attente (pour toutes les équipes du superviseur)
   let pendingHtml = '';
-  const { data: team } = await supabase.from('teams').select('*').eq('id', teamId).maybeSingle();
-  if(team && (team.created_by === STATE.session.user.id || STATE.profile.superviseur)){
-    const { data: pending } = await supabase.from('profiles')
-      .select('id, nom, prenom').eq('team_id', teamId).eq('role','coach').eq('statut','en_attente');
+  if(myTeamIds.length){
+    const { data: pending } = await supabase.from('coach_teams')
+      .select('profile_id, team_id, profiles(id,nom,prenom)')
+      .in('team_id', myTeamIds).eq('statut','en_attente');
     if(pending && pending.length){
       pendingHtml = `
         <div class="card" style="border-color:var(--accent)">
           <h3>Coachs en attente de validation</h3>
           ${pending.map(p=>`
             <div class="row between" style="padding:6px 0">
-              <div>${esc(fullName(p))}</div>
-              <button class="btn small" onclick="validateCoach('${p.id}')">Valider</button>
+              <div>${esc(fullName(p.profiles))}</div>
+              <button class="btn small" onclick="validateCoach('${p.profile_id}')">Valider</button>
             </div>`).join('')}
         </div>`;
     }
