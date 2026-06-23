@@ -551,16 +551,16 @@ window.deleteMatchFromPlayer = async (matchId, playerId, tourneeId, weekOffset) 
   if(!confirm('Supprimer ce match définitivement ?')) return;
   await supabase.from('match_coaches').delete().eq('match_id', matchId);
   const { error } = await supabase.from('matches').delete().eq('id', matchId);
-  if(error){ toast(error.message, true); return; }
-  toast('Match supprimé');
-  viewPlayerPlanning(playerId, tourneeId, weekOffset);
+  if(error){ toast('Erreur : ' + error.message, true); return; }
+  toast('Match supprimé ✅');
+  viewPlayerPlanning(playerId, tourneeId, weekOffset||0);
 };
 window.deleteMatch = async (matchId, tournamentId) => {
   if(!confirm('Supprimer ce match définitivement ?')) return;
   await supabase.from('match_coaches').delete().eq('match_id', matchId);
   const { error } = await supabase.from('matches').delete().eq('id', matchId);
-  if(error){ toast(error.message, true); return; }
-  toast('Match supprimé');
+  if(error){ toast('Erreur : ' + error.message, true); return; }
+  toast('Match supprimé ✅');
   viewCoachTournament(tournamentId);
 };
 window.editMatch = (matchId, n1, n2, scheduledAt, tour, court) => {
