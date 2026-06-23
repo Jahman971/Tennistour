@@ -2108,7 +2108,10 @@ async function viewPersonnes(tourneeId){
           <div style="font-weight:600">${esc(c.prenom||c.nom||'?')}</div>
           <div class="muted" style="font-size:12px">${c.superviseur?'Superviseur':'Coach'}</div>
         </div>
-        <span class="pill ${c.superviseur?'live':'done'}" style="font-size:10px">${c.superviseur?'Superv.':'Actif'}</span>
+        <div class="row" style="gap:6px;flex-shrink:0">
+          <span class="pill ${c.superviseur?'live':'done'}" style="font-size:10px">${c.superviseur?'Superv.':'Actif'}</span>
+          ${canManage?`<button class="btn small secondary" onclick="adminResetPassword('${c.id}','${esc(c.prenom||c.nom||'?').replace(/'/g,"\\\\'")}')">🔑</button>`:''}
+        </div>
       </div>`).join('')
     : `<p class="muted">Aucun coach dans cette équipe.</p>`;
 
