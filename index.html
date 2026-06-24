@@ -1749,6 +1749,8 @@ async function viewMyPlanning(){
     : { data: [] };
   const playerName = pid => fullName((roster||[]).find(p=>p.id===pid));
 
+  const liveMatches = matches.filter(m=>m.statut==='en_cours');
+
   // Charger live_state pour les matchs en cours
   const liveHtml = liveMatches.length ? `
     <div style="margin-bottom:16px">
