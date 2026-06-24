@@ -1749,19 +1749,44 @@ async function viewMyPlanning(){
     : { data: [] };
   const playerName = pid => fullName((roster||[]).find(p=>p.id===pid));
 
-  // Matchs EN COURS — section prioritaire en haut
-  const liveMatches = matches.filter(m=>m.statut==='en_cours');
+  // Charger live_state pour les matchs en cours
   const liveHtml = liveMatches.length ? `
-    <div style="margin-bottom:14px">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div class="blink" style="width:8px;height:8px;border-radius:50%;background:var(--live);animation:blink 1s infinite;flex-shrink:0"></div><h3 style="color:var(--live);margin:0;font-size:13px;text-transform:uppercase;letter-spacing:2px">Live · ${liveMatches.length} match${liveMatches.length>1?'s':''} en cours</h3></div>
-      ${liveMatches.map(m=>`
-        <div class="card" onclick="navigate('#/coach/match/${m.id}')" class="tappable" style="border-color:var(--live); background:rgba(224,92,58,.08)">
-          <div class="row between">
-            <div style="font-weight:700">🎾 ${esc(playerName(m.joueur1_id))} vs ${esc(m.joueur_ext_nom||playerName(m.joueur2_id))}</div>
-            <span class="pill live">Live</span>
+    <div style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <div style="width:8px;height:8px;border-radius:50%;background:var(--live);animation:blink 1s infinite;flex-shrink:0"></div>
+        <h3 style="color:var(--live);margin:0;font-size:13px;text-transform:uppercase;letter-spacing:2px">Live · ${liveMatches.length} match${liveMatches.length>1?'s':''} en cours</h3>
+      </div>
+      ${liveMatches.map(m=>{
+        const st = m.live_state;
+        const sw = st ? setsWon(st) : [0,0];
+        const tbActive = st && (st.inTiebreak||st.inSuperTb);
+        const g1 = tbActive ? st.points[0] : (st?.games?.[0]??0);
+        const g2 = tbActive ? st.points[1] : (st?.games?.[1]??0);
+        const n1 = playerName(m.joueur1_id);
+        const n2 = m.joueur_ext_nom||playerName(m.joueur2_id);
+        return `<div onclick="navigate('#/coach/match/${m.id}')" class="tappable"
+          style="border:2px solid var(--live);border-radius:var(--rL);background:rgba(224,92,58,.07);margin-bottom:8px;overflow:hidden">
+          <div style="padding:10px 14px 6px">
+            <div style="font-size:11px;color:var(--live);font-weight:700;margin-bottom:8px;display:flex;justify-content:space-between">
+              <span>🔴 ${esc(m.tournaments?.nom||'')}${m.court?' · Court '+esc(m.court):''}</span>
+              <span>${tbActive?'TB':''}</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr auto auto auto;align-items:center;gap:6px">
+              <span style="font-weight:700;font-size:15px;${st?.serve===0?'color:var(--accent)':''}">${esc(n1)}${st?.serve===0?' 🎾':''}</span>
+              ${sw.map((s,i)=>`<span style="font-size:11px;color:var(--dim);text-align:center">${s}</span>`).join('')}
+              <span style="font-family:var(--fnt-head);font-size:28px;font-weight:900;color:${st?.serve===0?'var(--accent)':'var(--light)'};text-align:right;min-width:28px">${g1}</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr auto auto auto;align-items:center;gap:6px;margin-top:4px">
+              <span style="font-weight:700;font-size:15px;${st?.serve===1?'color:var(--accent)':''}">${esc(n2)}${st?.serve===1?' 🎾':''}</span>
+              ${sw.map((s,i)=>`<span style="font-size:11px;color:var(--dim);text-align:center"></span>`).join('')}
+              <span style="font-family:var(--fnt-head);font-size:28px;font-weight:900;color:${st?.serve===1?'var(--accent)':'var(--light)'};text-align:right;min-width:28px">${g2}</span>
+            </div>
           </div>
-          <p class="muted">${esc(m.tournaments?.nom||'')}${m.court?' · Court '+esc(m.court):''}</p>
-        </div>`).join('')}
+          <div style="background:var(--live);padding:6px 14px;font-size:11px;font-weight:700;text-align:center;letter-spacing:1px;color:#fff">
+            TOUCHER POUR SAISIR →
+          </div>
+        </div>`;
+      }).join('')}
     </div>` : '';
 
   const items = [];
@@ -1776,6 +1801,14 @@ async function viewMyPlanning(){
     ${buildPlanningHtml(items, playerName, true)}
     ${isSuperviseur ? `<button class="btn secondary" style="margin-top:10px" onclick="navigate('#/coach')">🏟️ Gérer les tournées</button>` : ''}
   `, 'planning');
+
+  // Auto-refresh toutes les 15s si matchs live
+  if(liveMatches.length){
+    clearTimeout(window._planningRefreshT);
+    window._planningRefreshT = setTimeout(()=>{
+      if(location.hash==='#/coach/planning') viewMyPlanning();
+    }, 15000);
+  }
 }
 
 // ---------------------------------------------------------------
