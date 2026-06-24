@@ -2914,36 +2914,33 @@ function renderCoachMatch(m, n1, n2){
     ${isLive ? `
     <div class="lsBoard">
       <div class="lsHeader">
-        <span>🔴 Live — ${esc(modeLabel)}</span>
-        <span style="display:flex;align-items:center;gap:8px">${setsHtml} ${(m.match_coaches||[]).map(mc=>esc(fullName(mc.profiles))).filter(Boolean).map(n=>`<span style="color:var(--light)">🧑‍🏫 ${n}</span>`).join(' ')}</span>
+        <span style="display:flex;align-items:center;gap:6px">
+          <span style="width:7px;height:7px;border-radius:50%;background:var(--live);animation:blink 1s infinite;flex-shrink:0"></span>
+          <span>${esc(modeLabel)}</span>
+          ${setsHtml ? `<span style="opacity:.5">·</span><span>${setsHtml}</span>` : ''}
+        </span>
+        <span style="color:var(--light);font-size:11px">${(m.match_coaches||[]).map(mc=>esc(mc.profiles?.prenom||fullName(mc.profiles))).filter(Boolean).join(', ')}</span>
       </div>
       <div class="lsScoreRow">
         <div class="lsPlayer ${st.serve===0?'serving':''}">
           <div class="lsPlayerName">
-            <span>${esc(n1)}</span>
-            <span class="lsServeIcon" style="opacity:${st.serve===0?1:.2}">🎾</span>
+            <span>${esc(n1.split(' ')[0])}</span>
+            <span class="lsServeIcon" style="opacity:${st.serve===0?1:.15}">🎾</span>
           </div>
           <div class="lsBig">${disp1}</div>
-          ${tbActive ? '' : `<div class="lsMini">
-            <div class="lsMiniBox"><span class="k">Points</span><span class="v">${ptDisp(0)}</span></div>
-            <div class="lsMiniBox"><span class="k">Sets</span><span class="v">${sw[0]}</span></div>
-          </div>`}
+          ${!tbActive ? `<div style="font-size:13px;color:var(--gray);margin-top:4px;text-align:center">${ptDisp(0)}</div>` : ''}
         </div>
         <div class="lsVs">
-          <span class="lsMode">${esc(modeLabel)}</span>
           <span class="lsSets">${sw[0]}-${sw[1]}</span>
           <span class="lsSetsSub">Sets</span>
         </div>
         <div class="lsPlayer ${st.serve===1?'serving':''}">
           <div class="lsPlayerName">
-            <span class="lsServeIcon" style="opacity:${st.serve===1?1:.2}">🎾</span>
-            <span>${esc(n2)}</span>
+            <span class="lsServeIcon" style="opacity:${st.serve===1?1:.15}">🎾</span>
+            <span>${esc(n2.split(' ')[0])}</span>
           </div>
           <div class="lsBig">${disp2}</div>
-          ${tbActive ? '' : `<div class="lsMini">
-            <div class="lsMiniBox"><span class="k">Points</span><span class="v">${ptDisp(1)}</span></div>
-            <div class="lsMiniBox"><span class="k">Sets</span><span class="v">${sw[1]}</span></div>
-          </div>`}
+          ${!tbActive ? `<div style="font-size:13px;color:var(--gray);margin-top:4px;text-align:center">${ptDisp(1)}</div>` : ''}
         </div>
       </div>
     </div>
