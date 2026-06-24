@@ -2928,7 +2928,6 @@ function renderCoachMatch(m, n1, n2){
             <span class="lsServeIcon" style="opacity:${st.serve===0?1:.15}">🎾</span>
           </div>
           <div class="lsBig">${disp1}</div>
-          ${!tbActive ? `<div style="font-size:13px;color:var(--gray);margin-top:4px;text-align:center">${ptDisp(0)}</div>` : ''}
         </div>
         <div class="lsVs">
           <span class="lsSets">${sw[0]}-${sw[1]}</span>
@@ -2940,7 +2939,6 @@ function renderCoachMatch(m, n1, n2){
             <span>${esc(n2.split(' ')[0])}</span>
           </div>
           <div class="lsBig">${disp2}</div>
-          ${!tbActive ? `<div style="font-size:13px;color:var(--gray);margin-top:4px;text-align:center">${ptDisp(1)}</div>` : ''}
         </div>
       </div>
     </div>
