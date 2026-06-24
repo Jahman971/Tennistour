@@ -2890,11 +2890,6 @@ function renderCoachMatch(m, n1, n2){
   const sw = setsWon(st);
   const disp1 = tbActive ? st.points[0] : st.games[0];
   const disp2 = tbActive ? st.points[1] : st.games[1];
-  const ptLabel = ['0','15','30','40'];
-  const ptDisp = (i) => {
-    if(tbActive) return st.points[i];
-    return ptLabel[Math.min(st.points?.[i]||0, 3)] || '0';
-  };
   const canScore = STATE._canScore !== false; // true par défaut
   const isOver = m.statut === 'termine';
   const isLive = m.statut === 'en_cours';
