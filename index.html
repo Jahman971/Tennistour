@@ -2667,14 +2667,19 @@ async function viewCoachTournee(id){
         <summary style="cursor:pointer;list-style:none;padding:12px 14px;background:var(--accent3);border:1px solid var(--accent);border-radius:var(--r);font-weight:700;font-size:13px;color:var(--accent)">➕ Ajouter un joueur</summary>
         <div style="background:var(--s3);border:1px solid var(--brd);border-top:none;border-radius:0 0 var(--r) var(--r);padding:14px">
           ${rosterAvailable.length ? `
-          <p style="font-weight:600;font-size:12px;margin:0 0 8px">Depuis l'effectif (${rosterAvailable.length} joueur${rosterAvailable.length>1?'s':''}) :</p>
+          <p style="font-weight:600;font-size:12px;margin:0 0 10px">Choisir depuis l'effectif :</p>
           <form id="addTourneePlayerForm">
+            <div class="chk-group" style="margin-bottom:10px">
+              ${rosterAvailable.map((p,i)=>`<div class="chk-item">
+                <input type="checkbox" name="player_ids" value="${p.id}" id="rp_${i}">
+                <label for="rp_${i}">${p.genre==='F'?'👧':p.genre==='G'?'👦':'🎾'} ${esc(p.prenom||'')} ${esc(p.nom||'')}</label>
+              </div>`).join('')}
+            </div>
             <div class="row" style="gap:8px">
-              <select name="player_id" style="flex:1">${rosterAvailable.map(p=>`<option value="${p.id}">${esc(p.prenom||p.nom||'?')} ${p.genre==='F'?'👧':'👦'}</option>`).join('')}</select>
-              <button class="btn small" type="submit" style="width:auto">Inscrire</button>
+              <button class="btn small secondary" type="button" onclick="this.closest('form').querySelectorAll('input[type=checkbox]').forEach(c=>c.checked=true)">Tout cocher</button>
+              <button class="btn small clay" type="submit">Inscrire</button>
             </div>
           </form>
-          <button class="btn secondary" style="margin-top:8px;width:100%" onclick="inscireTousJoueurs('${id}','${id}',${JSON.stringify(rosterAvailable.map(p=>p.id))})">⚡ Inscrire tous les ${rosterAvailable.length} joueurs</button>
           <div style="text-align:center;color:var(--gray);margin:10px 0;font-size:12px">— ou nouveau joueur —</div>` : ''}
           <form id="newTourneePlayerForm">
             <div class="row" style="gap:6px">
@@ -2765,10 +2770,13 @@ async function viewCoachTournee(id){
 
   document.getElementById('addTourneePlayerForm')?.addEventListener('submit', async e=>{
     e.preventDefault();
-    const playerId = new FormData(e.target).get('player_id');
-    const { error } = await supabase.from('tournee_players').insert({ tournee_id: id, player_id: playerId });
+    const checked = [...e.target.querySelectorAll('input[name=player_ids]:checked')].map(i=>i.value);
+    if(!checked.length){ toast('Coche au moins un joueur', true); return; }
+    const rows = checked.map(pid=>({ tournee_id: id, player_id: pid }));
+    const { error } = await supabase.from('tournee_players').upsert(rows, { onConflict: 'tournee_id,player_id', ignoreDuplicates: true });
     if(error){ toast(error.message, true); return; }
-    toast('Joueur inscrit à la tournée');
+    toast(`${checked.length} joueur${checked.length>1?'s':''} inscrit${checked.length>1?'s':''} ✅`);
+    STATE._tourneeTab = 'joueurs';
     viewCoachTournee(id);
   });
 
