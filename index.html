@@ -2231,15 +2231,37 @@ async function viewPersonnes(tourneeId){
       </div>`).join('')
     : `<p class="muted" style="padding:8px 0">Aucun coach affecté.</p>`;
 
-  const addCoachHtml = canManage && coachesDisponibles.length ? `
-    <form id="addCoachTourneeForm" style="margin-top:8px">
-      <div class="row" style="gap:8px">
-        <select name="coach_id" style="flex:1">
-          ${coachesDisponibles.map(c=>`<option value="${c.id}">${esc(c.prenom||c.nom||'?')}</option>`).join('')}
-        </select>
-        <button class="btn small clay" type="submit" style="width:auto">+ Ajouter</button>
-      </div>
-    </form>` : '';
+  const addCoachHtml = canManage ? `
+    <div style="margin-top:8px">
+      ${coachesDisponibles.length ? `
+      <form id="addCoachTourneeForm" style="margin-bottom:8px">
+        <div class="row" style="gap:8px">
+          <select name="coach_id" style="flex:1">
+            ${coachesDisponibles.map(c=>`<option value="${c.id}">${esc(c.prenom||c.nom||'?')}</option>`).join('')}
+          </select>
+          <button class="btn small clay" type="submit" style="width:auto">+ Affecter</button>
+        </div>
+      </form>` : ''}
+      <details style="margin-top:6px">
+        <summary style="cursor:pointer;list-style:none;padding:10px 14px;background:var(--s3);border:1px solid var(--brd);border-radius:var(--r);font-size:13px;font-weight:700;color:var(--accent)">➕ Créer un nouveau coach</summary>
+        <div style="background:var(--s3);border:1px solid var(--brd);border-top:none;border-radius:0 0 var(--r) var(--r);padding:14px">
+          <form id="createCoachFromPersonnesForm">
+            <div class="row" style="gap:6px">
+              <input name="prenom" placeholder="Prénom" style="flex:1">
+              <input name="nom" placeholder="Nom" required style="flex:1">
+            </div>
+            <input name="login" placeholder="Identifiant (ex: julien)" required autocapitalize="none" style="margin-top:6px">
+            <div class="chk-item" style="margin-top:8px">
+              <input type="checkbox" name="superviseur" id="newCoachSuperviseur">
+              <label for="newCoachSuperviseur">⭐ Superviseur de cette équipe</label>
+            </div>
+            <button class="btn clay" type="submit" style="margin-top:10px">Créer le compte</button>
+            <div class="error" id="createCoachErr"></div>
+            <div id="createCoachResult"></div>
+          </form>
+        </div>
+      </details>
+    </div>` : '';
 
   // ── Formulaire ajout joueur (replié) ──
   const addPlayerHtml = canManage ? `
@@ -2288,7 +2310,31 @@ async function viewPersonnes(tourneeId){
     const coachId = new FormData(e.target).get('coach_id');
     const { error } = await supabase.from('coach_teams').upsert({ profile_id: coachId, team_id: tournee.team_id, statut:'actif', superviseur: false });
     if(error){ toast(error.message, true); return; }
-    toast('Coach ajouté ✅');
+    toast('Coach affecté ✅');
+    viewPersonnes(tourneeId);
+  });
+
+  document.getElementById('createCoachFromPersonnesForm')?.addEventListener('submit', async e=>{
+    e.preventDefault();
+    const f = new FormData(e.target);
+    const errEl = document.getElementById('createCoachErr');
+    const resEl = document.getElementById('createCoachResult');
+    errEl.textContent = ''; resEl.innerHTML = '';
+    const isSuperviseur = f.get('superviseur') === 'on';
+    const { data, error } = await supabase.functions.invoke('admin-create-user', {
+      body: { nom: f.get('nom'), prenom: f.get('prenom')||null, login: f.get('login'), role: 'coach', team_id: tournee.team_id }
+    });
+    if(error){ errEl.textContent = 'Erreur : ' + error.message; return; }
+    if(data?.error){ errEl.textContent = data.error; return; }
+    // Insérer dans coach_teams
+    await supabase.from('coach_teams').upsert({ profile_id: data.user_id, team_id: tournee.team_id, statut:'actif', superviseur: isSuperviseur });
+    resEl.innerHTML = `
+      <div style="margin-top:10px;padding:12px;background:var(--s2);border:1px solid var(--accent);border-radius:var(--r)">
+        <div style="font-weight:700;color:var(--accent);margin-bottom:8px">✅ Compte créé</div>
+        <div style="font-size:13px;margin-bottom:4px">Identifiant : <span style="cursor:pointer;font-weight:700" onclick="navigator.clipboard?.writeText('${data.login}');toast('Copié 📋')">${esc(data.login)} 📋</span></div>
+        <div style="font-size:13px">Mot de passe : <span style="cursor:pointer;font-weight:700;color:var(--accent)" onclick="navigator.clipboard?.writeText('${data.password}');toast('Copié 📋');this.closest('[style*=border]').remove()">${esc(data.password)} 📋</span></div>
+      </div>`;
+    e.target.reset();
     viewPersonnes(tourneeId);
   });
 
