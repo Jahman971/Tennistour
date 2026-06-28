@@ -2116,7 +2116,7 @@ async function viewTourneePlanning(tourneeId, weekOffset=0, viewMode='joueurs'){
     </div>` : '';
 
   shell(`
-    <button class="btn ghost" onclick="history.back()">← ${esc(tournee.nom)}</button>
+    <button class="btn ghost" onclick="navigate('#/coach/tournee/${tourneeId}')">← ${esc(tournee.nom)}</button>
     ${weekNav}
     ${tabBar}
     ${mainHtml}
@@ -2718,7 +2718,7 @@ async function viewCoachTournee(id){
   }
 
   shell(`
-    <button class="btn ghost" onclick="history.back()">← Tournées</button>
+    <button class="btn ghost" onclick="navigate('#/coach')">← Tournées</button>
     <h2 style="margin:8px 0 2px">${esc(tournee.nom)}</h2>
     <p class="muted" style="margin-top:0;margin-bottom:12px">${esc(tournee.lieu||'')}${tournee.date_debut?' · '+tournee.date_debut+(tournee.date_fin?' → '+tournee.date_fin:''):''}</p>
     ${tabBar}
