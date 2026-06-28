@@ -2311,9 +2311,13 @@ async function viewPersonnes(tourneeId){
 
   const canManage = STATE.profile?.role==='admin' || STATE.profile?.superviseur;
 
+  // Stocker pour showAllCodes
+  STATE._allCodes = tourneePlayers.map(p=>({prenom:p.prenom||'',nom:p.nom||'',code:p.code||'',genre:p.genre||''}));
+
   // ── Joueurs ──
   const joueursHtml = tourneePlayers.length
-    ? tourneePlayers.map(p=>`
+    ? `<button class="btn secondary" style="width:100%;margin-bottom:10px" onclick="showAllCodesFromState()">📋 Voir tous les codes (${tourneePlayers.length})</button>` +
+    tourneePlayers.map(p=>`
       <div class="tappable" onclick="viewPlayerPlanning('${p.id}','${tourneeId}',0)"
         style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:var(--rL);border:1px solid var(--brd);background:var(--s2);margin-bottom:8px">
         <span style="font-size:32px;flex-shrink:0">${p.genre==='F'?'👧':p.genre==='G'?'👦':'🎾'}</span>
