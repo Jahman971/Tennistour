@@ -1126,6 +1126,7 @@ async function viewProfil(){
       <h3>${esc(fullName(p))}</h3>
       <p class="muted">${p.superviseur?'Superviseur · ':p.role==='admin'?'Admin · ':'Coach · '}${p.role==='coach' ? (p.statut==='actif' ? '<span style="color:var(--accent)">Validé</span>' : '<span style="color:var(--live)">En attente</span>') : ''}</p>
       <p class="muted">Identifiant : <strong>${esc(emailToLogin(STATE.session.user.email))}</strong></p>
+      ${p.role==='coach' ? `<button class="btn secondary" onclick="navigate('#/aide')">❓ Aide & mode d'emploi</button>` : ''}
       <button class="btn secondary" onclick="logout()">Se déconnecter</button>
     </div>
     ${teamHtml}
@@ -1141,6 +1142,28 @@ async function viewProfil(){
     toast('Nom mis à jour ✅');
     viewProfil();
   });
+}
+function viewAide(){
+  shell(`
+    <button class="btn ghost" onclick="history.back()">← Profil</button>
+    <h2 style="margin:8px 0 16px">🎾 Bienvenue sur Tennistour</h2>
+    <div class="card"><p style="line-height:1.7;margin:0">Tennistour est votre outil de suivi de tournée tennis, conçu pour vous permettre de vous concentrer sur vos joueurs — pas sur la paperasse.</p></div>
+
+    <p class="section-title">Votre planning</p>
+    <div class="card"><p style="line-height:1.7;margin:0">Dès la connexion, vous accédez à votre <strong>planning personnel</strong>. Vous y retrouvez tous les matchs et entraînements qui vous sont assignés. Si plusieurs joueurs jouent en même temps, leurs matchs apparaissent en tête avec le score — un simple tap pour passer de l'un à l'autre.</p></div>
+
+    <p class="section-title">Saisir un score en live</p>
+    <div class="card"><p style="line-height:1.7;margin:0">Ouvrez le match depuis votre planning et appuyez sur <strong>▶ Démarrer</strong>. Deux grands boutons apparaissent, un par joueur. Appuyez sur celui qui gagne le jeu. L'application gère automatiquement les sets, le tie-break et le super tie-break. Les parents voient le score en direct sur leur téléphone.</p></div>
+
+    <p class="section-title">Après le match</p>
+    <div class="card"><p style="line-height:1.7;margin:0">Rédigez un <strong>débrief</strong> pour chaque joueur — un retour personnalisé visible depuis leur espace personnel avec leurs parents.</p></div>
+
+    <p class="section-title">La vue semaine</p>
+    <div class="card"><p style="line-height:1.7;margin:0">L'onglet 📆 <strong>Semaine</strong> donne une vue d'ensemble de la semaine en cours. Naviguez semaine par semaine pour voir qui joue quand et sur quel court.</p></div>
+
+    <p class="section-title">Connexion & mot de passe</p>
+    <div class="card"><p style="line-height:1.7;margin:0">Votre identifiant et mot de passe vous ont été fournis par votre <strong>superviseur ou l'administrateur</strong> du club. À votre première connexion, choisissez un nouveau mot de passe personnel. En cas d'oubli, contactez-les — ils peuvent en générer un nouveau en quelques secondes.</p></div>
+  `, 'profile');
 }
 window.editTeamAdmin = (teamId, currentNom) => {
   const overlay = document.createElement('div');
@@ -3361,6 +3384,7 @@ function router(){
     navigate((role==='coach'||role==='admin') ? '#/coach' : '#/suivi'); return;
   }
   if(hash === '#/profil') return viewProfil();
+  if(hash === '#/aide') return viewAide();
   if(hash === '#/equipe') return viewTeamSetup();
   if(hash === '#/coach') return role==='admin' ? viewAdminHome() : viewCoachHome();
   if(hash === '#/mon-equipe') return STATE.profile.team_id ? viewCoachHome() : (navigate('#/coach'), undefined);
