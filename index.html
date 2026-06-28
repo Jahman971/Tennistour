@@ -2301,8 +2301,9 @@ async function viewPersonnes(tourneeId){
     <div style="background:var(--s2);border:1px solid var(--brd);border-radius:var(--rL);padding:4px 14px">
       ${coachsHtml}
     </div>
+    ${addCoachHtml}
     ${STATE.profile?.role==='admin'?`<button class="btn secondary" style="margin-top:12px" onclick="navigate('#/admin/utilisateurs')">⚙️ Gérer les comptes</button>`:''}
-    <p style="text-align:center;font-size:11px;color:var(--gray);margin-top:24px;opacity:.5">© 2026 JMS² · Tous droits réservés</p>
+    <p style="text-align:center;font-size:11px;color:var(--gray);margin-top:24px;opacity:.5">© 2026 JMS²</p>
   `, 'personnes');
 
   document.getElementById('addCoachTourneeForm')?.addEventListener('submit', async e=>{
@@ -2311,7 +2312,7 @@ async function viewPersonnes(tourneeId){
     const { error } = await supabase.from('coach_teams').upsert({ profile_id: coachId, team_id: tournee.team_id, statut:'actif', superviseur: false });
     if(error){ toast(error.message, true); return; }
     toast('Coach affecté ✅');
-    viewPersonnes(tourneeId);
+    setTimeout(()=>viewPersonnes(tourneeId), 800);
   });
 
   document.getElementById('createCoachFromPersonnesForm')?.addEventListener('submit', async e=>{
@@ -3537,6 +3538,5 @@ if('serviceWorker' in navigator){
   window.addEventListener('load', ()=> navigator.serviceWorker.register('sw.js').catch(()=>{}));
 }
 </script>
-<div id="jms-copyright" style="position:fixed;bottom:58px;left:0;right:0;text-align:center;font-size:9px;color:rgba(255,255,255,.12);pointer-events:none;z-index:0;letter-spacing:1px">© 2026 JMS²</div>
 </body>
 </html>
