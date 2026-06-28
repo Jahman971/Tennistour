@@ -298,35 +298,61 @@ const esc = s => (s ?? '').toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<'
 const fullName = p => [p?.prenom, p?.nom].filter(Boolean).join(' ') || '—';
 window.showAllCodesFromState = () => { showAllCodes(STATE._allCodes || []); };
 window.showAllCodes = (players) => {
+  STATE._allCodesData = players; // stocker pour le bouton copier tout
   const overlay = document.createElement('div');
+  overlay.id = 'allCodesOverlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:200;overflow-y:auto;backdrop-filter:blur(4px)';
-  const rows = players.map(p=>`
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--brd)">
+
+  const inner = document.createElement('div');
+  inner.style.cssText = 'background:var(--s2);border-radius:var(--rL);margin:20px auto;padding:20px;max-width:500px';
+
+  const header = document.createElement('div');
+  header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:16px';
+  header.innerHTML = `<strong style="font-size:16px">📋 Codes joueurs (${players.length})</strong>`;
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = '✕';
+  closeBtn.style.cssText = 'background:none;border:none;color:var(--gray);font-size:22px;cursor:pointer';
+  closeBtn.onclick = () => overlay.remove();
+  header.appendChild(closeBtn);
+  inner.appendChild(header);
+
+  players.forEach(p => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--brd)';
+    row.innerHTML = `
       <div style="display:flex;align-items:center;gap:10px">
         <span style="font-size:22px">${p.genre==='F'?'👧':p.genre==='G'?'👦':'🎾'}</span>
         <div>
           <div style="font-weight:700">${esc(p.prenom)} ${esc(p.nom)}</div>
           <div style="font-family:monospace;font-size:18px;font-weight:900;letter-spacing:4px;color:var(--accent)">${esc(p.code)}</div>
         </div>
-      </div>
-      <button style="background:none;border:1px solid var(--brd);border-radius:8px;color:var(--light);padding:6px 10px;cursor:pointer;font-size:14px" onclick="navigator.clipboard?.writeText('${p.code}');toast('${esc(p.prenom)} copié 📋')">📋</button>
-    </div>`).join('');
+      </div>`;
+    const copyBtn = document.createElement('button');
+    copyBtn.textContent = '📋';
+    copyBtn.style.cssText = 'background:none;border:1px solid var(--brd);border-radius:8px;color:var(--light);padding:6px 10px;cursor:pointer;font-size:14px';
+    copyBtn.onclick = () => { navigator.clipboard?.writeText(p.code); toast(`${p.prenom} copié 📋`); };
+    row.appendChild(copyBtn);
+    inner.appendChild(row);
+  });
 
-  const allText = players.map(p=>`${p.prenom} ${p.nom} : ${p.code}`).join('\n');
+  const copyAllBtn = document.createElement('button');
+  copyAllBtn.className = 'btn clay';
+  copyAllBtn.style.cssText = 'width:100%;margin-top:16px';
+  copyAllBtn.textContent = '📋 Copier tous les codes';
+  copyAllBtn.onclick = () => {
+    const txt = players.map(p=>`${p.prenom} ${p.nom} : ${p.code}`).join('\n');
+    navigator.clipboard?.writeText(txt);
+    toast('Tous les codes copiés 📋');
+  };
+  inner.appendChild(copyAllBtn);
 
-  overlay.innerHTML = `
-    <div style="background:var(--s2);border-radius:var(--rL);margin:20px;padding:20px;max-width:500px;margin:20px auto">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-        <strong style="font-size:16px">📋 Codes joueurs (${players.length})</strong>
-        <button onclick="document.querySelector('[data-allcodes]').remove()" style="background:none;border:none;color:var(--gray);font-size:22px;cursor:pointer">✕</button>
-      </div>
-      ${rows}
-      <button class="btn clay" style="width:100%;margin-top:16px" onclick="navigator.clipboard?.writeText(${JSON.stringify(allText)});toast('Tous les codes copiés 📋')">
-        📋 Copier tous les codes
-      </button>
-      <p class="muted" style="font-size:11px;text-align:center;margin-top:8px">Chaque parent entre le code sur tennistour.vercel.app</p>
-    </div>`;
-  overlay.dataset.allcodes = '1';
+  const hint = document.createElement('p');
+  hint.className = 'muted';
+  hint.style.cssText = 'font-size:11px;text-align:center;margin-top:8px';
+  hint.textContent = 'Chaque parent entre le code sur tennistour.vercel.app';
+  inner.appendChild(hint);
+
+  overlay.appendChild(inner);
   overlay.addEventListener('click', e=>{ if(e.target===overlay) overlay.remove(); });
   document.body.appendChild(overlay);
 };
