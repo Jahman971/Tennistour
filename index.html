@@ -608,6 +608,47 @@ window.editMatch = (matchId, n1, n2, scheduledAt, tour, court) => {
     if(m) viewCoachTournament(m[1]);
   });
 };
+window.editPlayer = (playerId, prenom, nom, genre, tourneeId, returnTo) => {
+  const overlay = document.createElement('div');
+  overlay.id = 'editPlayerOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;display:flex;align-items:flex-end;backdrop-filter:blur(4px)';
+  overlay.innerHTML = `
+    <div data-overlay style="background:var(--s2);border:1px solid var(--brd);border-radius:var(--rL) var(--rL) 0 0;width:100%;max-width:560px;margin:0 auto;padding:20px">
+      <div class="row between" style="margin-bottom:14px">
+        <strong>Modifier le joueur</strong>
+        <button onclick="document.getElementById('editPlayerOverlay').remove()" style="background:none;border:none;color:var(--gray);font-size:22px;cursor:pointer;line-height:1">✕</button>
+      </div>
+      <form id="editPlayerForm">
+        <div class="row" style="gap:8px">
+          <input name="prenom" value="${esc(prenom)}" placeholder="Prénom" style="flex:1">
+          <input name="nom" value="${esc(nom)}" placeholder="Nom" style="flex:1">
+          <select name="genre" style="width:60px">
+            <option value="" ${genre===''?'selected':''}>?</option>
+            <option value="G" ${genre==='G'?'selected':''}>👦</option>
+            <option value="F" ${genre==='F'?'selected':''}>👧</option>
+          </select>
+        </div>
+        <button class="btn clay" type="submit" style="margin-top:12px">Enregistrer</button>
+        <div class="error" id="editPlayerErr"></div>
+      </form>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if(e.target===overlay) overlay.remove(); });
+  overlay.querySelector('#editPlayerForm').addEventListener('submit', async e=>{
+    e.preventDefault();
+    const f = new FormData(e.target);
+    const { error } = await supabase.from('players').update({
+      prenom: f.get('prenom').trim()||null,
+      nom: f.get('nom').trim()||null,
+      genre: f.get('genre')||null
+    }).eq('id', playerId);
+    if(error){ document.getElementById('editPlayerErr').textContent = error.message; return; }
+    toast('Joueur mis à jour ✅');
+    overlay.remove();
+    if(returnTo==='personnes') viewPersonnes(tourneeId);
+    else viewCoachTournee(tourneeId);
+  });
+};
 window.deletePlayer = async (playerId, nom, tourneeId) => {
   if(!confirm(`Supprimer ${nom} ? Cette action supprime le joueur de toute l'application (matchs, entraînements, tournées).`)) return;
   const { error } = await supabase.from('players').delete().eq('id', playerId);
@@ -2153,6 +2194,7 @@ async function viewPersonnes(tourneeId){
         </div>
         <div class="row" style="gap:8px;flex-shrink:0" onclick="event.stopPropagation()">
           <button class="btn small secondary" onclick="showPlayerCode('${p.code}','${esc(fullName(p)).replace(/'/g,"\\\\'")}')">📋</button>
+          ${canManage?`<button class="btn small secondary" onclick="editPlayer('${p.id}','${esc(p.prenom||'').replace(/'/g,"\\\\'")}','${esc(p.nom||'').replace(/'/g,"\\\\'")}','${p.genre||''}','${tourneeId}','personnes')">✏️</button>`:''}
           ${canManage?`<button class="btn small clay" onclick="deletePlayer('${p.id}','${esc(fullName(p)).replace(/'/g,"\\\\'")}','${tourneeId}')">🗑</button>`:''}
         </div>
       </div>`)
@@ -2403,7 +2445,8 @@ async function viewCoachTournee(id){
         <span style="font-size:11px; color:var(--accent2)">→</span>
       </div>
       <div class="row" style="gap:6px">
-        <button class="btn small secondary" onclick="showPlayerCode('${p.code}','${esc(fullName(p)).replace(/'/g,"\\\\'")}')">📋 Code</button>
+        <button class="btn small secondary" onclick="showPlayerCode('${p.code}','${esc(fullName(p)).replace(/'/g,"\\\\'")}')">📋</button>
+        ${canManage?`<button class="btn small secondary" onclick="editPlayer('${p.id}','${esc(p.prenom||'').replace(/'/g,"\\\\'")}','${esc(p.nom||'').replace(/'/g,"\\\\'")}','${p.genre||''}','${id}','tournee')">✏️</button>`:''}
         ${canDeletePlayer ? `<button class="btn small clay" onclick="deletePlayer('${p.id}','${esc(fullName(p)).replace(/'/g,"\\\\'")}','${id}')">🗑</button>` : ''}
       </div>
     </div>`).join('') : `<p class="muted">Aucun joueur inscrit à cette tournée.</p>`;
@@ -2523,6 +2566,7 @@ async function viewCoachTournee(id){
             </div>
             <div class="row" style="gap:6px" onclick="event.stopPropagation()">
               <button class="btn small secondary" onclick="showPlayerCode('${p.code}','${esc(fullName(p)).replace(/'/g,"\\\\'")}')">📋</button>
+              ${canManage?`<button class="btn small secondary" onclick="editPlayer('${p.id}','${esc(p.prenom||'').replace(/'/g,"\\\\'")}','${esc(p.nom||'').replace(/'/g,"\\\\'")}','${p.genre||''}','${id}','tournee')">✏️</button>`:''}
               ${canManage?`<button class="btn small clay" onclick="deletePlayer('${p.id}','${esc(fullName(p)).replace(/'/g,"\\\\'")}','${id}')">🗑</button>`:''}
             </div>
           </div>`).join('')
