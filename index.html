@@ -296,6 +296,39 @@ try{
 // ---------------------------------------------------------------
 const esc = s => (s ?? '').toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fullName = p => [p?.prenom, p?.nom].filter(Boolean).join(' ') || '—';
+window.showAllCodes = (players) => {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:200;overflow-y:auto;backdrop-filter:blur(4px)';
+  const rows = players.map(p=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--brd)">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:22px">${p.genre==='F'?'👧':p.genre==='G'?'👦':'🎾'}</span>
+        <div>
+          <div style="font-weight:700">${esc(p.prenom)} ${esc(p.nom)}</div>
+          <div style="font-family:monospace;font-size:18px;font-weight:900;letter-spacing:4px;color:var(--accent)">${esc(p.code)}</div>
+        </div>
+      </div>
+      <button style="background:none;border:1px solid var(--brd);border-radius:8px;color:var(--light);padding:6px 10px;cursor:pointer;font-size:14px" onclick="navigator.clipboard?.writeText('${p.code}');toast('${esc(p.prenom)} copié 📋')">📋</button>
+    </div>`).join('');
+
+  const allText = players.map(p=>`${p.prenom} ${p.nom} : ${p.code}`).join('\n');
+
+  overlay.innerHTML = `
+    <div style="background:var(--s2);border-radius:var(--rL);margin:20px;padding:20px;max-width:500px;margin:20px auto">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <strong style="font-size:16px">📋 Codes joueurs (${players.length})</strong>
+        <button onclick="document.querySelector('[data-allcodes]').remove()" style="background:none;border:none;color:var(--gray);font-size:22px;cursor:pointer">✕</button>
+      </div>
+      ${rows}
+      <button class="btn clay" style="width:100%;margin-top:16px" onclick="navigator.clipboard?.writeText(${JSON.stringify(allText)});toast('Tous les codes copiés 📋')">
+        📋 Copier tous les codes
+      </button>
+      <p class="muted" style="font-size:11px;text-align:center;margin-top:8px">Chaque parent entre le code sur tennistour.vercel.app</p>
+    </div>`;
+  overlay.dataset.allcodes = '1';
+  overlay.addEventListener('click', e=>{ if(e.target===overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+};
 window.showPlayerCode = (code, nom) => {
   toast(`📋 ${nom} — Code : ${code}`);
   navigator.clipboard?.writeText(code).catch(()=>{});
@@ -2684,6 +2717,8 @@ async function viewCoachTournee(id){
   let tabContent = '';
   if(tabParam === 'joueurs'){
     tabContent = `
+      ${tourneePlayers.length ? `
+      <button class="btn secondary" style="width:100%;margin-bottom:12px" onclick="showAllCodes(${JSON.stringify(tourneePlayers.map(p=>({prenom:p.prenom||'',nom:p.nom||'',code:p.code,genre:p.genre||''})))})">📋 Voir tous les codes (${tourneePlayers.length})</button>` : ''}
       ${tourneePlayers.length
         ? tourneePlayers.map(p=>`
           <div class="tappable" onclick="viewPlayerPlanning('${p.id}','${id}',0)" style="display:flex;align-items:center;justify-content:space-between;padding:14px;border-radius:var(--r);border:1px solid var(--brd);background:var(--s3);margin-bottom:8px">
