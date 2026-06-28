@@ -2753,7 +2753,7 @@ async function viewCoachTournee(id){
   const tabBar = `<div class="tabs" style="margin-bottom:14px;gap:6px">
     <button class="${tabParam==='joueurs'?'active':''}" onclick="viewCoachTourneeTab('${id}','joueurs')" style="font-size:11px;padding:8px 6px">👥<br>Joueurs</button>
     <button class="${tabParam==='etapes'?'active':''}" onclick="viewCoachTourneeTab('${id}','etapes')" style="font-size:11px;padding:8px 6px">🎾<br>Étapes</button>
-    <button class="${tabParam==='training'?'active':''}" onclick="viewCoachTourneeTab('${id}','training')" style="font-size:11px;padding:8px 6px">🏋️<br>Entraîn.</button>
+
     <button class="${tabParam==='planning'?'active':''}" onclick="viewCoachTourneeTab('${id}','planning')" style="font-size:11px;padding:8px 6px">📆<br>Planning</button>
   </div>`;
 
@@ -2825,25 +2825,6 @@ async function viewCoachTournee(id){
         </div>
       </details>` : ''}`;
 
-  } else if(tabParam === 'training'){
-    tabContent = `
-      ${trainingsHtml}
-      ${canManage ? `<details style="margin-top:10px">
-        <summary style="cursor:pointer;list-style:none;padding:12px 14px;background:var(--accent3);border:1px solid var(--accent);border-radius:var(--r);font-weight:700;font-size:13px;color:var(--accent)">➕ Ajouter un entraînement</summary>
-        <div style="background:var(--s3);border:1px solid var(--brd);border-top:none;border-radius:0 0 var(--r) var(--r);padding:14px">
-          <form id="trainingForm">
-            <input name="titre" required placeholder="Ex: Séance physique matinale">
-            <input name="description" placeholder="Description">
-            <input name="lieu" placeholder="Lieu">
-            <input type="datetime-local" name="scheduled_at">
-            <input type="number" name="duration_minutes" placeholder="Durée (min)">
-            <div class="chk-group" style="margin-top:8px">${tourneePlayers.map((p,i)=>`<div class="chk-item"><input type="checkbox" name="player_ids" value="${p.id}" id="tp_${i}"><label for="tp_${i}" style="font-size:12px">${p.genre==='F'?'👧':'👦'} ${esc(p.prenom||p.nom||'?')}</label></div>`).join('')}</div>
-            <p class="muted" style="font-size:11px">Laisser vide = toute l'équipe</p>
-            <button class="btn clay" type="submit">Enregistrer</button>
-            <div class="error" id="trainingErr"></div>
-          </form>
-        </div>
-      </details>` : ''}`;
   } else {
     tabContent = planningHtml;
   }
