@@ -1246,12 +1246,51 @@ window.editTeamAdmin = (teamId, currentNom) => {
   });
 };
 window.removeCoachFromPersonnes = async (coachId, prenom, tourneeId) => {
-  if(!confirm(`Retirer ${prenom} de cette équipe ?`)) return;
-  const { data: tournee } = await supabase.from('tournees').select('team_id').eq('id', tourneeId).maybeSingle();
-  if(!tournee) return;
-  await supabase.from('coach_teams').delete().eq('profile_id', coachId).eq('team_id', tournee.team_id);
-  toast(`${prenom} retiré ✅`);
-  viewPersonnes(tourneeId);
+  // Proposer deux options : retirer de la tournée OU de l'équipe
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;display:flex;align-items:flex-end;backdrop-filter:blur(4px)';
+  overlay.innerHTML = `
+    <div data-overlay style="background:var(--s2);border:1px solid var(--brd);border-radius:var(--rL) var(--rL) 0 0;width:100%;max-width:560px;margin:0 auto;padding:20px">
+      <p style="font-weight:700;margin:0 0 14px">Que faire avec <strong>${esc(prenom)}</strong> ?</p>
+      <button id="btn-retirer-tournee" class="btn secondary" style="width:100%;margin-bottom:8px">
+        📅 Retirer de cette tournée uniquement<br>
+        <span style="font-size:11px;opacity:.6;font-weight:400">Il reste dans l'équipe et ses autres tournées</span>
+      </button>
+      <button id="btn-retirer-equipe" class="btn clay" style="width:100%;margin-bottom:8px">
+        🗑 Retirer de l'équipe complètement<br>
+        <span style="font-size:11px;opacity:.6;font-weight:400">Il n'aura plus accès à aucune tournée de cette équipe</span>
+      </button>
+      <button onclick="this.closest('div[style*=fixed]').remove()" class="btn ghost" style="width:100%">Annuler</button>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e=>{ if(e.target===overlay) overlay.remove(); });
+
+  overlay.querySelector('#btn-retirer-tournee').onclick = async () => {
+    overlay.remove();
+    // Supprimer les affectations etape_coaches pour les étapes de cette tournée
+    const { data: etapes } = await supabase.from('tournaments').select('id').eq('tournee_id', tourneeId);
+    const etapeIds = (etapes||[]).map(e=>e.id);
+    if(etapeIds.length){
+      await supabase.from('etape_coaches').delete().eq('profile_id', coachId).in('tournament_id', etapeIds);
+    }
+    // Supprimer aussi les match_coaches pour les matchs de cette tournée
+    const { data: matches } = etapeIds.length ? await supabase.from('matches').select('id').in('tournament_id', etapeIds) : { data: [] };
+    const matchIds = (matches||[]).map(m=>m.id);
+    if(matchIds.length){
+      await supabase.from('match_coaches').delete().eq('profile_id', coachId).in('match_id', matchIds);
+    }
+    toast(`${prenom} retiré de cette tournée ✅`);
+    viewPersonnes(tourneeId);
+  };
+
+  overlay.querySelector('#btn-retirer-equipe').onclick = async () => {
+    if(!confirm(`Supprimer ${prenom} de l'équipe ? Il perdra accès à toutes les tournées.`)) return;
+    overlay.remove();
+    const { data: tournee } = await supabase.from('tournees').select('team_id').eq('id', tourneeId).maybeSingle();
+    if(tournee) await supabase.from('coach_teams').delete().eq('profile_id', coachId).eq('team_id', tournee.team_id);
+    toast(`${prenom} retiré de l'équipe ✅`);
+    viewPersonnes(tourneeId);
+  };
 };
 window.logout = async () => { await supabase.auth.signOut(); STATE.profile=null; navigate('#/'); };
 
