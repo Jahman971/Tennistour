@@ -1235,6 +1235,14 @@ window.editTeamAdmin = (teamId, currentNom) => {
     viewAdminHome();
   });
 };
+window.removeCoachFromPersonnes = async (coachId, prenom, tourneeId) => {
+  if(!confirm(`Retirer ${prenom} de cette équipe ?`)) return;
+  const { data: tournee } = await supabase.from('tournees').select('team_id').eq('id', tourneeId).maybeSingle();
+  if(!tournee) return;
+  await supabase.from('coach_teams').delete().eq('profile_id', coachId).eq('team_id', tournee.team_id);
+  toast(`${prenom} retiré ✅`);
+  viewPersonnes(tourneeId);
+};
 window.logout = async () => { await supabase.auth.signOut(); STATE.profile=null; navigate('#/'); };
 
 // ---------------------------------------------------------------
@@ -2201,7 +2209,12 @@ async function viewPersonnes(tourneeId){
     .join('')
     : `<div class="empty-state"><div class="icon">👤</div><p>Aucun joueur pour l'instant.</p></div>`;
 
+
   // ── Coachs ──
+  const { data: allCoaches } = await supabase.from('profiles').select('id,prenom,nom').eq('role','coach').eq('statut','actif').order('prenom');
+  const coachIds = new Set(coaches.map(c=>c.id));
+  const coachesDisponibles = (allCoaches||[]).filter(c=>!coachIds.has(c.id));
+
   const coachsHtml = coaches.length
     ? coaches.map(c=>`
       <div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--brd)">
@@ -2212,10 +2225,21 @@ async function viewPersonnes(tourneeId){
         </div>
         <div class="row" style="gap:6px;flex-shrink:0">
           <span class="pill ${c.superviseur?'live':'done'}" style="font-size:10px">${c.superviseur?'Superv.':'Actif'}</span>
-          ${canManage?`<button class="btn small secondary" onclick="adminResetPassword('${c.id}','${esc(c.prenom||c.nom||'?').replace(/'/g,"\\\\'")}')">🔑</button>`:''}
+          ${canManage?`<button class="btn small secondary" onclick="adminResetPassword('${c.id}','${esc(c.prenom||c.nom||'?').replace(/'/g,"\\'")}')">🔑</button>`:''}
+          ${canManage?`<button class="btn small clay" onclick="removeCoachFromPersonnes('${c.id}','${esc(c.prenom||'').replace(/'/g,"\\'")}','${tourneeId}')">✕</button>`:''}
         </div>
       </div>`).join('')
-    : `<p class="muted">Aucun coach dans cette équipe.</p>`;
+    : `<p class="muted" style="padding:8px 0">Aucun coach affecté.</p>`;
+
+  const addCoachHtml = canManage && coachesDisponibles.length ? `
+    <form id="addCoachTourneeForm" style="margin-top:8px">
+      <div class="row" style="gap:8px">
+        <select name="coach_id" style="flex:1">
+          ${coachesDisponibles.map(c=>`<option value="${c.id}">${esc(c.prenom||c.nom||'?')}</option>`).join('')}
+        </select>
+        <button class="btn small clay" type="submit" style="width:auto">+ Ajouter</button>
+      </div>
+    </form>` : '';
 
   // ── Formulaire ajout joueur (replié) ──
   const addPlayerHtml = canManage ? `
@@ -2256,9 +2280,19 @@ async function viewPersonnes(tourneeId){
       ${coachsHtml}
     </div>
     ${STATE.profile?.role==='admin'?`<button class="btn secondary" style="margin-top:12px" onclick="navigate('#/admin/utilisateurs')">⚙️ Gérer les comptes</button>`:''}
+    <p style="text-align:center;font-size:11px;color:var(--gray);margin-top:24px;opacity:.5">© 2026 JMS² · Tous droits réservés</p>
   `, 'personnes');
 
-  document.getElementById('addExistingPlayerForm')?.addEventListener('submit', async e=>{
+  document.getElementById('addCoachTourneeForm')?.addEventListener('submit', async e=>{
+    e.preventDefault();
+    const coachId = new FormData(e.target).get('coach_id');
+    const { error } = await supabase.from('coach_teams').upsert({ profile_id: coachId, team_id: tournee.team_id, statut:'actif', superviseur: false });
+    if(error){ toast(error.message, true); return; }
+    toast('Coach ajouté ✅');
+    viewPersonnes(tourneeId);
+  });
+
+    document.getElementById('addExistingPlayerForm')?.addEventListener('submit', async e=>{
     e.preventDefault();
     const playerId = new FormData(e.target).get('player_id');
     const { error } = await supabase.from('tournee_players').insert({ tournee_id: tourneeId, player_id: playerId });
@@ -3457,5 +3491,6 @@ if('serviceWorker' in navigator){
   window.addEventListener('load', ()=> navigator.serviceWorker.register('sw.js').catch(()=>{}));
 }
 </script>
+<div id="jms-copyright" style="position:fixed;bottom:58px;left:0;right:0;text-align:center;font-size:9px;color:rgba(255,255,255,.12);pointer-events:none;z-index:0;letter-spacing:1px">© 2026 JMS²</div>
 </body>
 </html>
