@@ -961,6 +961,19 @@ function viewLanding(){
           </div>`).join('')}
       </div>` : '';
 
+const installHtml = `
+        <div style="margin-top:16px;padding:14px 16px;background:var(--s2);border:1px solid var(--brd);border-radius:var(--rL)">
+          <p style="font-weight:700;font-size:13px;margin:0 0 10px">📲 Ajouter l'appli sur votre téléphone</p>
+          <div style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--brd)">
+            <div style="font-weight:600;font-size:12px;margin-bottom:4px">🍎 iPhone / iPad</div>
+            <div class="muted" style="font-size:12px;line-height:1.6">Ouvre Safari → appuie sur <strong>⎋ Partager</strong> en bas → <strong>« Sur l'écran d'accueil »</strong> → Ajouter</div>
+          </div>
+          <div>
+            <div style="font-weight:600;font-size:12px;margin-bottom:4px">🤖 Android</div>
+            <div class="muted" style="font-size:12px;line-height:1.6">Ouvre Chrome → appuie sur <strong>⋮</strong> en haut à droite → <strong>« Ajouter à l'écran d'accueil »</strong> → Installer</div>
+          </div>
+        </div>`;
+
     app.innerHTML = `
       <div style="background:var(--s1);padding:32px 20px 20px;text-align:center;border-bottom:1px solid var(--brd)">
         <div style="font-family:var(--fnt-head);font-size:38px;font-weight:900;letter-spacing:5px;color:var(--accent);text-transform:uppercase">🎾 Tennistour</div>
@@ -980,6 +993,8 @@ function viewLanding(){
           <div class="error" id="landingErr"></div>
         </div>
         <button class="btn secondary" onclick="navigate('#/coach-login')" style="opacity:.6">🔑 Espace coach</button>
+        ${installHtml}
+        <p style="text-align:center;font-size:11px;color:var(--gray);margin-top:16px;opacity:.4">© 2026 JMS²</p>
       </main>`;
 
     const input = document.getElementById('playerCodeInput');
