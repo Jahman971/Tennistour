@@ -896,7 +896,7 @@ function shell(content, navActive){
           : `<button class="${navActive==='admin'?'active':''}" onclick="navigate('#/coach')">🎾<span class="label">Tournées</span></button>`
         }
         ${activeTourneeId ? `<button class="${navActive==='semaine'?'active':''}" onclick="viewTourneePlanning('${activeTourneeId}',0,'joueurs')">📆<span class="label">Semaine</span></button>` : ''}
-        ${activeTourneeId ? `<button class="${navActive==='personnes'?'active':''}" onclick="navigate('#/personnes/${activeTourneeId}')">👥<span class="label">Joueurs</span></button>` : ''}
+        ${activeTourneeId ? `<button class="${navActive==='personnes'?'active':''}" onclick="navigate('#/personnes/${activeTourneeId}')">👥<span class="label">Personnes</span></button>` : ''}
         <button class="${navActive==='admin'||navActive==='users'?'active':''}" onclick="navigate('#/coach')" style="opacity:.6">⚙️<span class="label">Config</span></button>
         <button class="${navActive==='profile'?'active':''}" onclick="navigate('#/profil')">👤<span class="label">Profil</span></button>
       </div>`;
@@ -910,7 +910,7 @@ function shell(content, navActive){
             : ''
         }
         ${activeTourneeId ? `<button class="${navActive==='semaine'?'active':''}" onclick="viewTourneePlanning('${activeTourneeId}',0,'joueurs')">📆<span class="label">Semaine</span></button>` : ''}
-        ${activeTourneeId && isSuperviseur ? `<button class="${navActive==='personnes'?'active':''}" onclick="navigate('#/personnes/${activeTourneeId}')">👥<span class="label">Joueurs</span></button>` : ''}
+        ${activeTourneeId && isSuperviseur ? `<button class="${navActive==='personnes'?'active':''}" onclick="navigate('#/personnes/${activeTourneeId}')">👥<span class="label">Personnes</span></button>` : ''}
         <button class="${navActive==='planning'?'active':''}" onclick="navigate('#/coach/planning')">📅<span class="label">Planning</span></button>
         <button class="${navActive==='profile'?'active':''}" onclick="navigate('#/profil')">👤<span class="label">Profil</span></button>
       </div>`;
