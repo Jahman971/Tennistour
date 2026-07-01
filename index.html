@@ -269,6 +269,21 @@ const SUPABASE_ANON_KEY = 'sb_publishable_49oduZZ5jt9TOo1p4oTbpw_LwpbWUXV';
 // =============================================================
 
 const app = document.getElementById('app');
+// Date locale (évite le bug UTC vs Europe/Paris)
+const localDateStr = (d = new Date()) => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+};
+const localMondayOf = (d = new Date()) => {
+  const dt = new Date(d);
+  const dow = dt.getDay() || 7;
+  dt.setDate(dt.getDate() - dow + 1);
+  dt.setHours(0,0,0,0);
+  return dt;
+};
+
 const STATE = { session:null, profile:null, route:'#/login', cache:{}, history:[] };
 
 // Affiche toute erreur fatale au lieu de laisser un écran noir silencieux
@@ -390,13 +405,13 @@ window.viewPlayerPlanning = async (playerId, tourneeId, weekOffset=0, selectedDa
   const isSuperviseur = STATE.profile?.superviseur || STATE.profile?.role==='admin';
 
   const now = new Date();
-  const todayStr = now.toISOString().slice(0,10);
+  const todayStr = localDateStr(now);
   const monday = new Date(now);
   const dow = now.getDay();
   monday.setDate(now.getDate() - (dow===0?6:dow-1) + weekOffset*7);
   monday.setHours(0,0,0,0);
   const days = Array.from({length:7},(_,i)=>{ const d=new Date(monday); d.setDate(monday.getDate()+i); return d; });
-  const dayKeys = days.map(d=>d.toISOString().slice(0,10));
+  const dayKeys = days.map(d=>localDateStr(d));
   const dayNamesShort = ['L','M','M','J','V','S','D'];
   const monthFmt = new Intl.DateTimeFormat('fr-FR',{day:'numeric',month:'short'});
   const dayFmt = new Intl.DateTimeFormat('fr-FR',{weekday:'long',day:'numeric',month:'long'});
@@ -2059,13 +2074,13 @@ async function viewTourneePlanning(tourneeId, weekOffset=0, viewMode='joueurs'){
 
   // Semaine
   const now = new Date();
-  const todayStr = now.toISOString().slice(0,10);
+  const todayStr = localDateStr(now);
   const monday = new Date(now);
   const dow = now.getDay();
   monday.setDate(now.getDate() - (dow===0?6:dow-1) + weekOffset*7);
   monday.setHours(0,0,0,0);
   const days = Array.from({length:7},(_,i)=>{ const d=new Date(monday); d.setDate(monday.getDate()+i); return d; });
-  const dayKeys = days.map(d=>d.toISOString().slice(0,10));
+  const dayKeys = days.map(d=>localDateStr(d));
   const dayNames = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
   const monthFmt = new Intl.DateTimeFormat('fr-FR',{day:'numeric',month:'short'});
   const timeFmt = new Intl.DateTimeFormat('fr-FR',{hour:'2-digit',minute:'2-digit'});
